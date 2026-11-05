@@ -27,7 +27,7 @@ namespace {
 
 using namespace Builder;
 
-constexpr auto kBoxContentWidth = 420;
+constexpr auto kBoxContentWidth = 480;
 
 class MakuGramSection : public Section<MakuGramSection> {
 public:
@@ -59,7 +59,7 @@ void AddCheckboxRow(
 			st::boxRowPadding.right(),
 			about ? 0 : st::boxMediumSkip));
 	cb->setAllowTextLines(0);
-	cb->setCheckAlignment(style::al_top);
+	cb->setCheckAlignment(style::al_topleft);
 	cb->checkedChanges(
 	) | rpl::on_next([=](bool checked) {
 		onChange(checked);
@@ -72,7 +72,7 @@ void AddCheckboxRow(
 				std::move(about),
 				st::boxDividerLabel),
 			style::margins(
-				st::boxRowPadding.left() + 30,
+				st::boxRowPadding.left() + 42,
 				3,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
@@ -116,7 +116,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 				st::boxRowPadding.right(),
 				2));
 		excludeSearch->setAllowTextLines(0);
-		excludeSearch->setCheckAlignment(style::al_top);
+		excludeSearch->setCheckAlignment(style::al_topleft);
 
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
@@ -124,7 +124,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 				QString::fromUtf8("Сообщения, содержащие нежелательные слова, не будут отображаться в результатах глобального поиска и поиска по чату."),
 				st::boxDividerLabel),
 			style::margins(
-				st::boxRowPadding.left() + 30,
+				st::boxRowPadding.left() + 42,
 				3,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
@@ -226,7 +226,7 @@ void ShowModerationBox(not_null<Window::SessionController*> controller) {
 				tr::lng_settings_makugram_spam_setup(),
 				st::defaultBoxButton),
 			style::margins(
-				st::boxRowPadding.left() + 30,
+				st::boxRowPadding.left() + 42,
 				0,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
