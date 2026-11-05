@@ -9362,8 +9362,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_settings_makugram_fast_download_about" = "Увеличивает количество параллельных сессий загрузки для максимальной скорости скачивания файлов.";
 
 "lng_settings_makugram_spam_filter" = "Локальный спам-фильтр по ключевым словам";
-"lng_settings_makugram_spam_filter_about" = "Скрывать сообщения с нежелательными словами в чатах и в личных сообщениях.";
-"lng_settings_makugram_spam_setup" = "Настроить ключевые слова...";
+"lng_settings_makugram_spam_filter_about" = "Скрывать сообщения со скрываемыми словами в чатах и в личных сообщениях.";
+"lng_settings_makugram_spam_setup" = "Настроить скрываемые слова...";
 "lng_settings_makugram_fwd_no_author_hint" = "Кнопка «Переслать без автора» доступна в контекстном меню любого сообщения.";
 
 // Keys finished

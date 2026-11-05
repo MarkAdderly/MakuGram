@@ -88,7 +88,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 			object_ptr<Ui::FlatLabel>(
 				box,
 				QString::fromUtf8(
-					"Введите стоп-слова через запятую или с новой строки.\n"
+					"Введите скрываемые слова через запятую или с новой строки.\n"
 					"Поддерживается звёздочка * (например: сборк* скроет «сборка», «сборки», «сборку» и т.д.):"),
 				st::boxLabel),
 			st::boxRowPadding);
@@ -107,7 +107,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 		const auto excludeSearch = box->addRow(
 			object_ptr<Ui::Checkbox>(
 				box,
-				QString::fromUtf8("Исключить слова из поиска"),
+				QString::fromUtf8("Исключить скрываемые слова из поиска"),
 				MakuGram::Settings::instance().filterSpamInSearch(),
 				st::defaultBoxCheckbox),
 			style::margins(
@@ -121,7 +121,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
-				QString::fromUtf8("Сообщения, содержащие нежелательные слова, не будут отображаться в результатах глобального поиска и поиска по чату."),
+				QString::fromUtf8("Сообщения, содержащие скрываемые слова, не будут отображаться в результатах глобального поиска и поиска по чату."),
 				st::boxDividerLabel),
 			style::margins(
 				st::boxRowPadding.left() + 42,
@@ -133,7 +133,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 			MakuGram::Settings::instance().setSpamKeywords(field->getLastText());
 			MakuGram::Settings::instance().setFilterSpamInSearch(excludeSearch->checked());
 			box->closeBox();
-			controller->showToast(QString::fromUtf8("Настройки спам-фильтра сохранены"));
+			controller->showToast(QString::fromUtf8("Настройки сохранены"));
 		});
 		box->addButton(tr::lng_cancel(), [=] {
 			box->closeBox();
@@ -163,6 +163,31 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 				tr::lng_settings_makugram_fwd_no_author_hint(),
 				st::boxDividerLabel),
 			st::boxRowPadding);
+
+		box->addSkip(st::boxMediumSkip);
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_spam_filter(),
+			MakuGram::Settings::instance().spamFilterEnabled(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setSpamFilterEnabled(checked);
+			},
+			tr::lng_settings_makugram_spam_filter_about());
+
+		const auto spamSetupBtn = box->addRow(
+			object_ptr<Ui::RoundButton>(
+				box,
+				tr::lng_settings_makugram_spam_setup(),
+				st::defaultBoxButton),
+			style::margins(
+				st::boxRowPadding.left() + 42,
+				0,
+				st::boxRowPadding.right(),
+				st::boxMediumSkip));
+		spamSetupBtn->setClickedCallback([=] {
+			ShowSpamFilterBox(controller);
+		});
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -210,29 +235,6 @@ void ShowModerationBox(not_null<Window::SessionController*> controller) {
 				MakuGram::Settings::instance().setShowNewbieBadge(checked);
 			},
 			tr::lng_settings_makugram_newbie_badge_about());
-
-		AddCheckboxRow(
-			box,
-			tr::lng_settings_makugram_spam_filter(),
-			MakuGram::Settings::instance().spamFilterEnabled(),
-			[=](bool checked) {
-				MakuGram::Settings::instance().setSpamFilterEnabled(checked);
-			},
-			tr::lng_settings_makugram_spam_filter_about());
-
-		const auto spamSetupBtn = box->addRow(
-			object_ptr<Ui::RoundButton>(
-				box,
-				tr::lng_settings_makugram_spam_setup(),
-				st::defaultBoxButton),
-			style::margins(
-				st::boxRowPadding.left() + 42,
-				0,
-				st::boxRowPadding.right(),
-				st::boxMediumSkip));
-		spamSetupBtn->setClickedCallback([=] {
-			ShowSpamFilterBox(controller);
-		});
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -308,9 +310,9 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 				box,
 				QString::fromUtf8(
 					"• Безлимитный мультиаккаунт (до 100 аккаунтов) активен по умолчанию.\n"
-					"• Модерация: спам-фильтр со звёздочками (*), быстрый бан в заявках, удаление и бан из меню сообщений, бейдж [Новичок].\n"
-					"• Приватность: точное время сообщений с секундами, пересылка без автора.\n"
-					"• Медиа: открытие во весь экран, ускоренная параллельная загрузка файлов.\n\n"
+					"• Приватность и сообщения: фильтр скрываемых слов со звёздочками (*), точное время с секундами, пересылка без автора.\n"
+					"• Модерация и безопасность: быстрый бан в заявках, удаление и бан из меню сообщений, бейдж [Новичок], скрытие сообщений заблокированных.\n"
+					"• Медиа и сеть: открытие во весь экран, ускоренная параллельная загрузка файлов.\n\n"
 					"Версия клиента: MakuGram 6.3.0"),
 				st::boxDividerLabel),
 			st::boxRowPadding);
@@ -334,7 +336,7 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.title = tr::lng_settings_makugram_section_privacy(),
 		.icon = { &st::menuIconLock },
 		.onClick = [=] { ShowPrivacyBox(controller); },
-		.keywords = { u"time"_q, u"seconds"_q, u"exact"_q, u"forward"_q, u"время"_q, u"секунды"_q, u"пересылка"_q },
+		.keywords = { u"time"_q, u"seconds"_q, u"exact"_q, u"forward"_q, u"spam"_q, u"words"_q, u"время"_q, u"секунды"_q, u"пересылка"_q, u"спам"_q, u"слова"_q, u"скрыть"_q },
 	});
 
 	// 2. Модерация и безопасность
@@ -342,7 +344,7 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.title = tr::lng_settings_makugram_section_moderation(),
 		.icon = { &st::menuIconAdmin },
 		.onClick = [=] { ShowModerationBox(controller); },
-		.keywords = { u"spam"_q, u"ban"_q, u"badge"_q, u"requests"_q, u"спам"_q, u"бан"_q, u"новичок"_q, u"заявки"_q },
+		.keywords = { u"ban"_q, u"badge"_q, u"requests"_q, u"бан"_q, u"новичок"_q, u"заявки"_q, u"блок"_q },
 	});
 
 	// 3. Профиль и информация
