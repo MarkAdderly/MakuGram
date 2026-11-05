@@ -37,7 +37,19 @@ void Settings::parseSpamKeywords() {
 	if (_spamKeywords.trimmed().isEmpty()) {
 		return;
 	}
-	const auto parts = _spamKeywords.split(QRegularExpression(u"[,;\r\n]+"_q), Qt::SkipEmptyParts);
+	auto parts = QStringList();
+	const auto lines = _spamKeywords.split(QRegularExpression(u"[\r\n]+"_q), Qt::SkipEmptyParts);
+	for (const auto &line : lines) {
+		const auto trimmedLine = line.trimmed();
+		if (trimmedLine.isEmpty()) {
+			continue;
+		}
+		if (trimmedLine.contains(',') || trimmedLine.contains(';')) {
+			parts.append(trimmedLine.split(QRegularExpression(u"[,;]+"_q), Qt::SkipEmptyParts));
+		} else {
+			parts.append(trimmedLine.split(QRegularExpression(u"\\s+"_q), Qt::SkipEmptyParts));
+		}
+	}
 	for (const auto &part : parts) {
 		const auto trimmed = part.trimmed().toLower();
 		if (trimmed.isEmpty()) {

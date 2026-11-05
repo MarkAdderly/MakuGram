@@ -29,6 +29,12 @@ using namespace Builder;
 
 constexpr auto kBoxContentWidth = 480;
 
+[[nodiscard]] int CheckboxTextSkip() {
+	return st::defaultBoxCheckbox.checkPosition.x()
+		+ st::defaultCheck.diameter
+		+ st::defaultBoxCheckbox.textPosition.x();
+}
+
 class MakuGramSection : public Section<MakuGramSection> {
 public:
 	MakuGramSection(
@@ -72,7 +78,7 @@ void AddCheckboxRow(
 				std::move(about),
 				st::boxDividerLabel),
 			style::margins(
-				st::boxRowPadding.left() + 42,
+				st::boxRowPadding.left() + CheckboxTextSkip(),
 				3,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
@@ -124,7 +130,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 				QString::fromUtf8("Сообщения, содержащие скрываемые слова, не будут отображаться в результатах глобального поиска и поиска по чату."),
 				st::boxDividerLabel),
 			style::margins(
-				st::boxRowPadding.left() + 42,
+				st::boxRowPadding.left() + CheckboxTextSkip(),
 				3,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
@@ -155,17 +161,6 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 			},
 			tr::lng_settings_makugram_exact_time_about());
 
-		box->addSkip(st::boxMediumSkip);
-
-		box->addRow(
-			object_ptr<Ui::FlatLabel>(
-				box,
-				tr::lng_settings_makugram_fwd_no_author_hint(),
-				st::boxDividerLabel),
-			st::boxRowPadding);
-
-		box->addSkip(st::boxMediumSkip);
-
 		AddCheckboxRow(
 			box,
 			tr::lng_settings_makugram_spam_filter(),
@@ -181,7 +176,7 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 				tr::lng_settings_makugram_spam_setup(),
 				st::defaultBoxButton),
 			style::margins(
-				st::boxRowPadding.left() + 42,
+				st::boxRowPadding.left() + CheckboxTextSkip(),
 				0,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));

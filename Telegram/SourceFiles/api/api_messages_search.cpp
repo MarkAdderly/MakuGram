@@ -180,7 +180,7 @@ void MessagesSearch::searchReceived(
 			_history->peer->processTopics(data.vtopics());
 		}
 		auto items = HistoryItemsFromTL(&owner, data.vmessages().v);
-		const auto total = int(data.vmessages().v.size());
+		const auto total = int(items.size());
 		return FoundMessages{ total, std::move(items), nextToken };
 	}, [&](const MTPDmessages_messagesSlice &data) {
 		if (_requestId != 0) {
@@ -191,7 +191,8 @@ void MessagesSearch::searchReceived(
 		}
 		auto items = HistoryItemsFromTL(&owner, data.vmessages().v);
 		// data.vnext_rate() is used only in global search.
-		const auto total = int(data.vcount().v);
+		const auto filtered = int(data.vmessages().v.size()) - int(items.size());
+		const auto total = std::max(0, int(data.vcount().v) - filtered);
 		return FoundMessages{ total, std::move(items), nextToken };
 	}, [&](const MTPDmessages_channelMessages &data) {
 		if (_requestId != 0) {
@@ -208,7 +209,8 @@ void MessagesSearch::searchReceived(
 			_history->peer->processTopics(data.vtopics());
 		}
 		auto items = HistoryItemsFromTL(&owner, data.vmessages().v);
-		const auto total = int(data.vcount().v);
+		const auto filtered = int(data.vmessages().v.size()) - int(items.size());
+		const auto total = std::max(0, int(data.vcount().v) - filtered);
 		return FoundMessages{ total, std::move(items), nextToken };
 	}, [](const MTPDmessages_messagesNotModified &data) {
 		return FoundMessages{};

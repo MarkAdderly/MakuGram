@@ -85,7 +85,36 @@ bool IsSearchMessageHidden(const HistoryItem *item) {
 	if (!settings.filterSpamInSearch()) {
 		return false;
 	}
-	return IsSpamKeywordMessageHidden(item);
+	const auto &patterns = settings.spamPatterns();
+	if (patterns.empty()) {
+		return false;
+	}
+
+	const auto checkText = [&](const QString &text) {
+		if (text.isEmpty()) {
+			return false;
+		}
+		for (const auto &p : patterns) {
+			if (p.isWildcard) {
+				if (p.regex.match(text).hasMatch()) {
+					return true;
+				}
+			} else {
+				if (text.contains(p.raw, Qt::CaseInsensitive)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	};
+
+	if (checkText(item->originalText().text)) {
+		return true;
+	}
+	if (checkText(item->notificationText().text)) {
+		return true;
+	}
+	return false;
 }
 
 } // namespace MakuGram
