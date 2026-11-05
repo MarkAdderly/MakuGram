@@ -15,6 +15,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/history.h"
 #include "history/history_item.h"
 #include "apiwrap.h"
+#include "makugram/makugram_filter.h"
 
 namespace Api {
 namespace {
@@ -129,6 +130,8 @@ GlobalMediaResult ParseGlobalMediaResult(
 		if (item) {
 			result.offsetPosition = item->position();
 			if (onlyForwardable && !item->allowsForward()) {
+				++result.filteredCount;
+			} else if (MakuGram::IsSearchMessageHidden(item)) {
 				++result.filteredCount;
 			} else {
 				result.messageIds.push_back(item->position());
@@ -269,7 +272,9 @@ SearchResult ParseSearchResult(
 			const auto itemId = item->id;
 			if ((type == Storage::SharedMediaType::kCount)
 				|| item->sharedMediaTypes().test(type)) {
-				result.messageIds.push_back(itemId);
+				if (!MakuGram::IsSearchMessageHidden(item)) {
+					result.messageIds.push_back(itemId);
+				}
 			}
 			accumulate_min(result.noSkipRange.from, itemId);
 			accumulate_max(result.noSkipRange.till, itemId);

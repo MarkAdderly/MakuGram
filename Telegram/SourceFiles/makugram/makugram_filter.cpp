@@ -77,4 +77,15 @@ bool IsSpamKeywordMessageHidden(const HistoryItem *item) {
 	return false;
 }
 
+bool IsSearchMessageHidden(const HistoryItem *item) {
+	if (!item) {
+		return false;
+	}
+	const auto &settings = Settings::instance();
+	if (!settings.filterSpamInSearch()) {
+		return false;
+	}
+	return IsSpamKeywordMessageHidden(item);
+}
+
 } // namespace MakuGram

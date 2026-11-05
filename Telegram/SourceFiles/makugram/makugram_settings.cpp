@@ -22,6 +22,7 @@ Settings::Settings() {
 	_showExactTime = s.value("showExactTime", false).toBool();
 	_fastDownload = s.value("fastDownload", true).toBool();
 	_spamFilterEnabled = s.value("spamFilterEnabled", true).toBool();
+	_filterSpamInSearch = s.value("filterSpamInSearch", true).toBool();
 	_spamKeywords = s.value("spamKeywords", QString()).toString();
 	_showNewbieBadge = s.value("showNewbieBadge", true).toBool();
 	_showProfileDetails = s.value("showProfileDetails", true).toBool();
@@ -174,6 +175,23 @@ void Settings::setSpamFilterEnabled(bool enabled) {
 
 rpl::producer<bool> Settings::spamFilterEnabledChanges() const {
 	return _spamFilterEnabledChanges.events();
+}
+
+bool Settings::filterSpamInSearch() const {
+	return _filterSpamInSearch;
+}
+
+void Settings::setFilterSpamInSearch(bool enabled) {
+	if (_filterSpamInSearch != enabled) {
+		_filterSpamInSearch = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("filterSpamInSearch", enabled);
+		_filterSpamInSearchChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::filterSpamInSearchChanges() const {
+	return _filterSpamInSearchChanges.events();
 }
 
 QString Settings::spamKeywords() const {

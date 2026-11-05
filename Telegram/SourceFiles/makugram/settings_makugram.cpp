@@ -16,6 +16,7 @@ a custom Telegram Desktop client fork.
 #include "ui/boxes/confirm_box.h"
 #include "ui/layers/generic_box.h"
 #include "ui/widgets/buttons.h"
+#include "ui/widgets/checkbox.h"
 #include "ui/widgets/fields/input_field.h"
 #include "ui/widgets/labels.h"
 #include "ui/wrap/vertical_layout.h"
@@ -37,6 +38,38 @@ public:
 private:
 	void setupContent();
 };
+
+void AddCheckboxRow(
+		not_null<Ui::GenericBox*> box,
+		rpl::producer<QString> title,
+		bool checked,
+		Fn<void(bool)> onChange,
+		rpl::producer<QString> about = nullptr) {
+	const auto cb = box->addRow(
+		object_ptr<Ui::Checkbox>(
+			box,
+			std::move(title),
+			checked,
+			st::defaultBoxCheckbox),
+		st::boxRowPadding);
+	cb->checkedChanges(
+	) | rpl::on_next([=](bool checked) {
+		onChange(checked);
+	}, cb->lifetime());
+
+	if (about) {
+		box->addRow(
+			object_ptr<Ui::FlatLabel>(
+				box,
+				std::move(about),
+				st::boxLabel),
+			style::margins(
+				st::boxRowPadding.left() + 28,
+				2,
+				st::boxRowPadding.right(),
+				st::boxMediumSkip));
+	}
+}
 
 void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
@@ -63,10 +96,34 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 		field->setFocus();
 		field->setMinHeight(130);
 
+		const auto excludeSearch = box->addRow(
+			object_ptr<Ui::Checkbox>(
+				box,
+				QString::fromUtf8("Исключить слова из поиска"),
+				MakuGram::Settings::instance().filterSpamInSearch(),
+				st::defaultBoxCheckbox),
+			style::margins(
+				st::boxRowPadding.left(),
+				st::boxMediumSkip,
+				st::boxRowPadding.right(),
+				2));
+
+		box->addRow(
+			object_ptr<Ui::FlatLabel>(
+				box,
+				QString::fromUtf8("Сообщения, содержащие нежелательные слова, не будут отображаться в результатах глобального поиска и поиска по чату."),
+				st::boxLabel),
+			style::margins(
+				st::boxRowPadding.left() + 28,
+				2,
+				st::boxRowPadding.right(),
+				st::boxMediumSkip));
+
 		box->addButton(tr::lng_settings_save(), [=] {
 			MakuGram::Settings::instance().setSpamKeywords(field->getLastText());
+			MakuGram::Settings::instance().setFilterSpamInSearch(excludeSearch->checked());
 			box->closeBox();
-			controller->showToast(QString::fromUtf8("Список ключевых слов сохранен"));
+			controller->showToast(QString::fromUtf8("Настройки спам-фильтра сохранены"));
 		});
 		box->addButton(tr::lng_cancel(), [=] {
 			box->closeBox();
@@ -74,151 +131,245 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 	}));
 }
 
+void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
+	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+		box->setWidth(st::boxWideWidth);
+		box->setTitle(tr::lng_settings_makugram_section_privacy());
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_exact_time(),
+			MakuGram::Settings::instance().showExactTime(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setShowExactTime(checked);
+			},
+			tr::lng_settings_makugram_exact_time_about());
+
+		box->addSkip(st::boxMediumSkip);
+
+		box->addRow(
+			object_ptr<Ui::FlatLabel>(
+				box,
+				tr::lng_settings_makugram_fwd_no_author_hint(),
+				st::boxLabel),
+			st::boxRowPadding);
+
+		box->addButton(tr::lng_close(), [=] {
+			box->closeBox();
+		});
+	}));
+}
+
+void ShowModerationBox(not_null<Window::SessionController*> controller) {
+	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+		box->setWidth(st::boxWideWidth);
+		box->setTitle(tr::lng_settings_makugram_section_moderation());
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_hide_blocked(),
+			MakuGram::Settings::instance().hideMessagesFromBlocked(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setHideMessagesFromBlocked(checked);
+			},
+			tr::lng_settings_makugram_hide_blocked_about());
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_quick_ban(),
+			MakuGram::Settings::instance().quickBanInRequests(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setQuickBanInRequests(checked);
+			},
+			tr::lng_settings_makugram_quick_ban_about());
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_quick_delete_ban(),
+			MakuGram::Settings::instance().quickDeleteAndBan(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setQuickDeleteAndBan(checked);
+			},
+			tr::lng_settings_makugram_quick_delete_ban_about());
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_newbie_badge(),
+			MakuGram::Settings::instance().showNewbieBadge(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setShowNewbieBadge(checked);
+			},
+			tr::lng_settings_makugram_newbie_badge_about());
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_spam_filter(),
+			MakuGram::Settings::instance().spamFilterEnabled(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setSpamFilterEnabled(checked);
+			},
+			tr::lng_settings_makugram_spam_filter_about());
+
+		const auto spamSetupBtn = box->addRow(
+			object_ptr<Ui::RoundButton>(
+				box,
+				tr::lng_settings_makugram_spam_setup(),
+				st::defaultBoxButton),
+			style::margins(
+				st::boxRowPadding.left() + 28,
+				st::boxMediumSkip,
+				st::boxRowPadding.right(),
+				st::boxMediumSkip));
+		spamSetupBtn->setClickedCallback([=] {
+			ShowSpamFilterBox(controller);
+		});
+
+		box->addLeftButton(rpl::single(QString::fromUtf8("Стоп-слова")), [=] {
+			ShowSpamFilterBox(controller);
+		});
+
+		box->addButton(tr::lng_close(), [=] {
+			box->closeBox();
+		});
+	}));
+}
+
+void ShowProfileBox(not_null<Window::SessionController*> controller) {
+	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+		box->setWidth(st::boxWideWidth);
+		box->setTitle(tr::lng_settings_makugram_section_profile());
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_profile_details(),
+			MakuGram::Settings::instance().showProfileDetails(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setShowProfileDetails(checked);
+			},
+			tr::lng_settings_makugram_profile_details_about());
+
+		box->addButton(tr::lng_close(), [=] {
+			box->closeBox();
+		});
+	}));
+}
+
+void ShowMediaBox(not_null<Window::SessionController*> controller) {
+	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+		box->setWidth(st::boxWideWidth);
+		box->setTitle(tr::lng_settings_makugram_section_media());
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_always_zoom(),
+			MakuGram::Settings::instance().alwaysZoomMediaToScreen(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setAlwaysZoomMediaToScreen(checked);
+			},
+			tr::lng_settings_makugram_always_zoom_about());
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_fast_download(),
+			MakuGram::Settings::instance().fastDownload(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setFastDownload(checked);
+			},
+			tr::lng_settings_makugram_fast_download_about());
+
+		box->addButton(tr::lng_close(), [=] {
+			box->closeBox();
+		});
+	}));
+}
+
+void ShowAboutBox(not_null<Window::SessionController*> controller) {
+	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+		box->setWidth(st::boxWideWidth);
+		box->setTitle(QString::fromUtf8("О клиенте MakuGram"));
+
+		box->addRow(
+			object_ptr<Ui::FlatLabel>(
+				box,
+				tr::lng_settings_makugram_about(),
+				st::boxLabel),
+			st::boxRowPadding);
+
+		box->addSkip(st::boxMediumSkip);
+
+		box->addRow(
+			object_ptr<Ui::FlatLabel>(
+				box,
+				QString::fromUtf8(
+					"• Безлимитный мультиаккаунт (до 100 аккаунтов) активен по умолчанию.\n"
+					"• Модерация: спам-фильтр со звёздочками (*), быстрый бан в заявках, удаление и бан из меню сообщений, бейдж [Новичок].\n"
+					"• Приватность: точное время сообщений с секундами, пересылка без автора.\n"
+					"• Медиа: открытие во весь экран, ускоренная параллельная загрузка файлов.\n\n"
+					"Версия клиента: MakuGram 6.3.0"),
+				st::boxLabel),
+			st::boxRowPadding);
+
+		box->addButton(tr::lng_close(), [=] {
+			box->closeBox();
+		});
+	}));
+}
+
 void BuildMakuGramSection(SectionBuilder &builder) {
 	const auto controller = builder.controller();
+	if (!controller) {
+		return;
+	}
+
+	builder.addSubsectionTitle(rpl::single(QString::fromUtf8("Категории настроек")));
 
 	// 1. Приватность и сообщения
-	builder.addSubsectionTitle(tr::lng_settings_makugram_section_privacy());
-
-	const auto exactTimeToggle = builder.addButton({
-		.title = tr::lng_settings_makugram_exact_time(),
-		.toggled = rpl::single(MakuGram::Settings::instance().showExactTime()),
-		.keywords = { u"time"_q, u"seconds"_q, u"точное"_q, u"время"_q, u"секунды"_q },
+	builder.addButton({
+		.title = tr::lng_settings_makugram_section_privacy(),
+		.icon = { &st::menuIconLock },
+		.label = rpl::single(QString::fromUtf8("Точное время, пересылка")),
+		.onClick = [=] { ShowPrivacyBox(controller); },
+		.keywords = { u"time"_q, u"seconds"_q, u"exact"_q, u"forward"_q, u"время"_q, u"секунды"_q, u"пересылка"_q },
 	});
-	if (exactTimeToggle) {
-		exactTimeToggle->toggledValue(
-		) | rpl::on_next([=](bool checked) {
-			MakuGram::Settings::instance().setShowExactTime(checked);
-		}, exactTimeToggle->lifetime());
-	}
-	builder.addDividerText(tr::lng_settings_makugram_exact_time_about());
-
-	builder.addDividerText(tr::lng_settings_makugram_fwd_no_author_hint());
 
 	// 2. Модерация и безопасность
-	builder.addSubsectionTitle(tr::lng_settings_makugram_section_moderation());
-
-	const auto hideBlockedToggle = builder.addButton({
-		.title = tr::lng_settings_makugram_hide_blocked(),
-		.toggled = rpl::single(MakuGram::Settings::instance().hideMessagesFromBlocked()),
-		.keywords = { u"blocked"_q, u"hide"_q, u"messages"_q, u"заблокированные"_q },
+	builder.addButton({
+		.title = tr::lng_settings_makugram_section_moderation(),
+		.icon = { &st::menuIconAdmin },
+		.label = rpl::single(QString::fromUtf8("Спам, бан, бейджи")),
+		.onClick = [=] { ShowModerationBox(controller); },
+		.keywords = { u"spam"_q, u"ban"_q, u"badge"_q, u"requests"_q, u"спам"_q, u"бан"_q, u"новичок"_q, u"заявки"_q },
 	});
-	if (hideBlockedToggle) {
-		hideBlockedToggle->toggledValue(
-		) | rpl::on_next([=](bool checked) {
-			MakuGram::Settings::instance().setHideMessagesFromBlocked(checked);
-		}, hideBlockedToggle->lifetime());
-	}
-	builder.addDividerText(tr::lng_settings_makugram_hide_blocked_about());
-
-	const auto quickBanToggle = builder.addButton({
-		.title = tr::lng_settings_makugram_quick_ban(),
-		.toggled = rpl::single(MakuGram::Settings::instance().quickBanInRequests()),
-		.keywords = { u"ban"_q, u"requests"_q, u"moderation"_q, u"бан"_q, u"заявки"_q },
-	});
-	if (quickBanToggle) {
-		quickBanToggle->toggledValue(
-		) | rpl::on_next([=](bool checked) {
-			MakuGram::Settings::instance().setQuickBanInRequests(checked);
-		}, quickBanToggle->lifetime());
-	}
-	builder.addDividerText(tr::lng_settings_makugram_quick_ban_about());
-
-	const auto quickDeleteBanToggle = builder.addButton({
-		.title = tr::lng_settings_makugram_quick_delete_ban(),
-		.toggled = rpl::single(MakuGram::Settings::instance().quickDeleteAndBan()),
-		.keywords = { u"delete"_q, u"ban"_q, u"удалить"_q, u"забанить"_q },
-	});
-	if (quickDeleteBanToggle) {
-		quickDeleteBanToggle->toggledValue(
-		) | rpl::on_next([=](bool checked) {
-			MakuGram::Settings::instance().setQuickDeleteAndBan(checked);
-		}, quickDeleteBanToggle->lifetime());
-	}
-	builder.addDividerText(tr::lng_settings_makugram_quick_delete_ban_about());
-
-	const auto newbieBadgeToggle = builder.addButton({
-		.title = tr::lng_settings_makugram_newbie_badge(),
-		.toggled = rpl::single(MakuGram::Settings::instance().showNewbieBadge()),
-		.keywords = { u"newbie"_q, u"badge"_q, u"новичок"_q, u"бейдж"_q },
-	});
-	if (newbieBadgeToggle) {
-		newbieBadgeToggle->toggledValue(
-		) | rpl::on_next([=](bool checked) {
-			MakuGram::Settings::instance().setShowNewbieBadge(checked);
-		}, newbieBadgeToggle->lifetime());
-	}
-	builder.addDividerText(tr::lng_settings_makugram_newbie_badge_about());
-
-	const auto spamFilterToggle = builder.addButton({
-		.title = tr::lng_settings_makugram_spam_filter(),
-		.toggled = rpl::single(MakuGram::Settings::instance().spamFilterEnabled()),
-		.keywords = { u"spam"_q, u"filter"_q, u"спам"_q, u"фильтр"_q },
-	});
-	if (spamFilterToggle) {
-		spamFilterToggle->toggledValue(
-		) | rpl::on_next([=](bool checked) {
-			MakuGram::Settings::instance().setSpamFilterEnabled(checked);
-		}, spamFilterToggle->lifetime());
-	}
-	builder.addDividerText(tr::lng_settings_makugram_spam_filter_about());
-
-	if (controller) {
-		builder.addButton({
-			.title = tr::lng_settings_makugram_spam_setup(),
-			.onClick = [=] { ShowSpamFilterBox(controller); },
-		});
-	}
 
 	// 3. Профиль и информация
-	builder.addSubsectionTitle(tr::lng_settings_makugram_section_profile());
-
-	const auto profileDetailsToggle = builder.addButton({
-		.title = tr::lng_settings_makugram_profile_details(),
-		.toggled = rpl::single(MakuGram::Settings::instance().showProfileDetails()),
-		.keywords = { u"id"_q, u"profile"_q, u"профиль"_q, u"возраст"_q },
+	builder.addButton({
+		.title = tr::lng_settings_makugram_section_profile(),
+		.icon = { &st::menuIconProfile },
+		.label = rpl::single(QString::fromUtf8("ID, дата регистрации")),
+		.onClick = [=] { ShowProfileBox(controller); },
+		.keywords = { u"id"_q, u"profile"_q, u"registration"_q, u"профиль"_q, u"возраст"_q, u"регистрация"_q },
 	});
-	if (profileDetailsToggle) {
-		profileDetailsToggle->toggledValue(
-		) | rpl::on_next([=](bool checked) {
-			MakuGram::Settings::instance().setShowProfileDetails(checked);
-		}, profileDetailsToggle->lifetime());
-	}
-	builder.addDividerText(tr::lng_settings_makugram_profile_details_about());
 
 	// 4. Медиа и сеть
-	builder.addSubsectionTitle(tr::lng_settings_makugram_section_media());
-
-	const auto alwaysZoomToggle = builder.addButton({
-		.title = tr::lng_settings_makugram_always_zoom(),
-		.toggled = rpl::single(MakuGram::Settings::instance().alwaysZoomMediaToScreen()),
-		.keywords = { u"media"_q, u"zoom"_q, u"fullscreen"_q, u"медиа"_q, u"масштаб"_q, u"экран"_q },
+	builder.addButton({
+		.title = tr::lng_settings_makugram_section_media(),
+		.icon = { &st::menuIconPhoto },
+		.label = rpl::single(QString::fromUtf8("Полный экран, скорость")),
+		.onClick = [=] { ShowMediaBox(controller); },
+		.keywords = { u"media"_q, u"zoom"_q, u"download"_q, u"медиа"_q, u"масштаб"_q, u"скорость"_q, u"экран"_q },
 	});
-	if (alwaysZoomToggle) {
-		alwaysZoomToggle->toggledValue(
-		) | rpl::on_next([=](bool checked) {
-			MakuGram::Settings::instance().setAlwaysZoomMediaToScreen(checked);
-		}, alwaysZoomToggle->lifetime());
-	}
-	builder.addDividerText(tr::lng_settings_makugram_always_zoom_about());
-
-	const auto fastDownloadToggle = builder.addButton({
-		.title = tr::lng_settings_makugram_fast_download(),
-		.toggled = rpl::single(MakuGram::Settings::instance().fastDownload()),
-		.keywords = { u"download"_q, u"speed"_q, u"скачивание"_q, u"скорость"_q },
-	});
-	if (fastDownloadToggle) {
-		fastDownloadToggle->toggledValue(
-		) | rpl::on_next([=](bool checked) {
-			MakuGram::Settings::instance().setFastDownload(checked);
-		}, fastDownloadToggle->lifetime());
-	}
-	builder.addDividerText(tr::lng_settings_makugram_fast_download_about());
 
 	// 5. О клиенте
-	builder.addSubsectionTitle(rpl::single(QString::fromUtf8("О клиенте")));
-	builder.addDividerText(tr::lng_settings_makugram_about());
-	builder.addDividerText(rpl::single(QString::fromUtf8("• Безлимитный мультиаккаунт (до 100 аккаунтов) активен по умолчанию.")));
+	builder.addButton({
+		.title = rpl::single(QString::fromUtf8("О клиенте")),
+		.icon = { &st::menuIconInfo },
+		.label = rpl::single(QString::fromUtf8("MakuGram 6.3.0")),
+		.onClick = [=] { ShowAboutBox(controller); },
+		.keywords = { u"about"_q, u"makugram"_q, u"версия"_q, u"информация"_q },
+	});
+
+	builder.addDivider();
+	builder.addDividerText(rpl::single(QString::fromUtf8("Нажмите на категорию для настройки параметров MakuGram.")));
 }
 
 const auto kMeta = BuildHelper({

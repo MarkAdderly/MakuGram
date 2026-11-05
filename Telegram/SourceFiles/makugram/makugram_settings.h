@@ -52,6 +52,10 @@ public:
 	void setSpamFilterEnabled(bool enabled);
 	[[nodiscard]] rpl::producer<bool> spamFilterEnabledChanges() const;
 
+	[[nodiscard]] bool filterSpamInSearch() const;
+	void setFilterSpamInSearch(bool enabled);
+	[[nodiscard]] rpl::producer<bool> filterSpamInSearchChanges() const;
+
 	[[nodiscard]] QString spamKeywords() const;
 	void setSpamKeywords(const QString &keywords);
 	[[nodiscard]] rpl::producer<QString> spamKeywordsChanges() const;
@@ -88,6 +92,7 @@ private:
 	bool _showExactTime = false;
 	bool _fastDownload = true;
 	bool _spamFilterEnabled = true;
+	bool _filterSpamInSearch = true;
 	QString _spamKeywords;
 	std::vector<QString> _spamKeywordsList;
 	std::vector<SpamPattern> _spamPatterns;
@@ -101,6 +106,7 @@ private:
 	rpl::event_stream<bool> _showExactTimeChanges;
 	rpl::event_stream<bool> _fastDownloadChanges;
 	rpl::event_stream<bool> _spamFilterEnabledChanges;
+	rpl::event_stream<bool> _filterSpamInSearchChanges;
 	rpl::event_stream<QString> _spamKeywordsChanges;
 	rpl::event_stream<bool> _showNewbieBadgeChanges;
 	rpl::event_stream<bool> _showProfileDetailsChanges;

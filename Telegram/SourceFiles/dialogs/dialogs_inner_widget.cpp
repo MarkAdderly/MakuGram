@@ -26,6 +26,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/history.h"
 #include "history/history_item.h"
 #include "history/history_item_helpers.h"
+#include "makugram/makugram_filter.h"
 #include "core/application.h"
 #include "core/click_handler_types.h"
 #include "core/file_utilities.h"
@@ -4913,17 +4914,22 @@ void InnerWidget::searchReceived(
 			|| inject->history() == _searchState.inChat.history())) {
 		Assert(_searchResults.empty());
 		Assert(!toPreview);
-		const auto index = int(_searchResults.size());
-		_searchResults.push_back(
-			std::make_unique<FakeRow>(
-				key,
-				inject,
-				[=] { repaintSearchResult(index); }));
-		trackResultsHistory(inject->history());
-		++fullCount;
+		if (!MakuGram::IsSearchMessageHidden(inject)) {
+			const auto index = int(_searchResults.size());
+			_searchResults.push_back(
+				std::make_unique<FakeRow>(
+					key,
+					inject,
+					[=] { repaintSearchResult(index); }));
+			trackResultsHistory(inject->history());
+			++fullCount;
+		}
 	}
 	auto &results = toPreview ? _previewResults : _searchResults;
 	for (const auto &item : messages) {
+		if (MakuGram::IsSearchMessageHidden(item)) {
+			continue;
+		}
 		const auto history = item->history();
 		if (toPreview || !uniquePeers || !hasHistoryInResults(history)) {
 			const auto index = int(results.size());

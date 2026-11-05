@@ -10,5 +10,6 @@ namespace MakuGram {
 
 [[nodiscard]] bool IsBlockedMessageHidden(const HistoryItem *item);
 [[nodiscard]] bool IsSpamKeywordMessageHidden(const HistoryItem *item);
+[[nodiscard]] bool IsSearchMessageHidden(const HistoryItem *item);
 
 } // namespace MakuGram

@@ -16,6 +16,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/history.h"
 #include "history/history_item.h"
 #include "main/main_session.h"
+#include "makugram/makugram_filter.h"
 
 namespace Api {
 namespace {
@@ -34,6 +35,9 @@ constexpr auto kSearchPerPage = 50;
 					message,
 					MessageFlags(),
 					NewMessageType::Existing);
+				if (MakuGram::IsSearchMessageHidden(item)) {
+					continue;
+				}
 				result.push_back(item->fullId());
 			}
 		} else {
