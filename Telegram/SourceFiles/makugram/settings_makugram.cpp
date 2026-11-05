@@ -12,6 +12,7 @@ a custom Telegram Desktop client fork.
 #include "styles/style_menu_icons.h"
 #include "styles/style_settings.h"
 #include "styles/style_boxes.h"
+#include "styles/style_layers.h"
 #include "ui/boxes/confirm_box.h"
 #include "ui/layers/generic_box.h"
 #include "ui/widgets/buttons.h"
@@ -39,13 +40,28 @@ private:
 
 void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
-		box->setTitle(tr::lng_settings_makugram_spam_filter());
+		box->setWidth(st::boxWideWidth);
+		box->setTitle(QString::fromUtf8("Локальный спам-фильтр"));
 
-		const auto field = box->addRow(object_ptr<Ui::InputField>(
-			box,
-			st::settingsBio,
-			rpl::single(QString::fromUtf8("Слова через запятую (напр.: казино, 1xbet, крипта)")),
-			MakuGram::Settings::instance().spamKeywords()));
+		box->addRow(
+			object_ptr<Ui::FlatLabel>(
+				box,
+				QString::fromUtf8(
+					"Введите стоп-слова через запятую или с новой строки.\n"
+					"Поддерживается звёздочка * (например: сборк* скроет «сборка», «сборки», «сборку» и т.д.):"),
+				st::boxLabel),
+			st::boxRowPadding);
+
+		const auto field = box->addRow(
+			object_ptr<Ui::InputField>(
+				box,
+				st::supportInfoField,
+				Ui::InputField::Mode::MultiLine,
+				rpl::single(QString::fromUtf8("Введите слова или шаблоны (*)...")),
+				MakuGram::Settings::instance().spamKeywords()),
+			st::boxRowPadding);
+		field->setFocus();
+		field->setMinHeight(130);
 
 		box->addButton(tr::lng_settings_save(), [=] {
 			MakuGram::Settings::instance().setSpamKeywords(field->getLastText());

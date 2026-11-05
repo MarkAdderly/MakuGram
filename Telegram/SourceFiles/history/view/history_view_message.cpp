@@ -1160,11 +1160,7 @@ void Message::refreshRightBadge() {
 		if (!fromRank.isEmpty()) {
 			return { fromRank, BadgeRole::User, false };
 		}
-		if (MakuGram::Settings::instance().showNewbieBadge()) {
-			if (MakuGram::IsNewbieInChat(item->history()->peer, user)) {
-				return { QString::fromUtf8("Новичок"), BadgeRole::User, false };
-			}
-		}
+
 		return { QString(), BadgeRole::User, false };
 	}();
 	auto tagText = TextWithEntities{
@@ -1606,7 +1602,14 @@ QSize Message::performCountOptimalSize() {
 				const auto &name = from
 					? _fromName
 					: item->displayHiddenSenderInfo()->nameText();
+				const auto isNewbie = MakuGram::Settings::instance().showNewbieBadge()
+					&& from
+					&& from->isUser()
+					&& MakuGram::IsNewbieInChat(history()->peer, from->asUser());
+				static const auto kNewbieText = QString::fromUtf8("[Новичок] ");
+				const auto newbieWidth = isNewbie ? st::msgNameFont->width(kNewbieText) : 0;
 				auto namew = st::msgPadding.left()
+					+ newbieWidth
 					+ name.maxWidth()
 					+ (_fromNameStatus
 						? st::dialogsPremiumIcon.icon.width()
@@ -2586,6 +2589,20 @@ void Message::paintFromName(
 		} else if (from && from->isPremium()) {
 			st::dialogsPremiumIcon.icon.paint(p, x, y, width(), color);
 		}
+	}
+	const auto isNewbie = MakuGram::Settings::instance().showNewbieBadge()
+		&& from
+		&& from->isUser()
+		&& MakuGram::IsNewbieInChat(history()->peer, from->asUser());
+	static const auto kNewbieText = QString::fromUtf8("[Новичок] ");
+	const auto newbieWidth = isNewbie ? st::msgNameFont->width(kNewbieText) : 0;
+	if (newbieWidth > 0 && availableWidth > newbieWidth) {
+		static const auto kNewbieYellow = QColor(235, 170, 25);
+		p.setFont(st::msgNameFont);
+		p.setPen(kNewbieYellow);
+		p.drawText(availableLeft, trect.top() + st::msgNameFont->ascent, kNewbieText);
+		availableLeft += newbieWidth;
+		availableWidth -= newbieWidth;
 	}
 	p.setFont(st::msgNameFont);
 	p.setPen(nameFg);
@@ -4289,6 +4306,22 @@ bool Message::getStateFromName(
 				outResult->link = _fromNameStatus->link;
 				return true;
 			}
+		}
+		const auto isNewbie = MakuGram::Settings::instance().showNewbieBadge()
+			&& from
+			&& from->isUser()
+			&& MakuGram::IsNewbieInChat(history()->peer, from->asUser());
+		static const auto kNewbieText = QString::fromUtf8("[Новичок] ");
+		const auto newbieWidth = isNewbie ? st::msgNameFont->width(kNewbieText) : 0;
+		if (newbieWidth > 0 && availableWidth > newbieWidth) {
+			if (point.x() >= availableLeft && point.x() < availableLeft + newbieWidth) {
+				outResult->link = fromLink();
+				recordLinkRipplePoint(point, trect.topLeft());
+				_fromLinkRipplePointSet = 1;
+				return true;
+			}
+			availableLeft += newbieWidth;
+			availableWidth -= newbieWidth;
 		}
 		if (point.x() >= availableLeft
 			&& point.x() < availableLeft + availableWidth
@@ -6455,9 +6488,16 @@ void Message::fromNameUpdated(int width) const {
 	if (!via && !guestChat) {
 		return;
 	}
+	const auto isNewbie = MakuGram::Settings::instance().showNewbieBadge()
+		&& from
+		&& from->isUser()
+		&& MakuGram::IsNewbieInChat(history()->peer, from->asUser());
+	static const auto kNewbieText = QString::fromUtf8("[Новичок] ");
+	const auto newbieWidth = isNewbie ? st::msgNameFont->width(kNewbieText) : 0;
 	const auto available = width
 		- st::msgPadding.left()
 		- st::msgPadding.right()
+		- newbieWidth
 		- (_fromNameStatus
 			? (st::dialogsPremiumIcon.icon.width()
 				+ st::msgServiceFont->spacew)

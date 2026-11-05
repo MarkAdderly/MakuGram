@@ -7,9 +7,16 @@ a custom Telegram Desktop client fork.
 #include "rpl/event_stream.h"
 #include "rpl/producer.h"
 #include <QtCore/QString>
+#include <QtCore/QRegularExpression>
 #include <vector>
 
 namespace MakuGram {
+
+struct SpamPattern {
+	QString raw;
+	bool isWildcard = false;
+	QRegularExpression regex;
+};
 
 class Settings final {
 public:
@@ -49,6 +56,7 @@ public:
 	void setSpamKeywords(const QString &keywords);
 	[[nodiscard]] rpl::producer<QString> spamKeywordsChanges() const;
 	[[nodiscard]] const std::vector<QString> &spamKeywordsList() const;
+	[[nodiscard]] const std::vector<SpamPattern> &spamPatterns() const;
 
 	// 7. Newbie chat badge (< 3 months)
 	[[nodiscard]] bool showNewbieBadge() const;
@@ -82,6 +90,7 @@ private:
 	bool _spamFilterEnabled = true;
 	QString _spamKeywords;
 	std::vector<QString> _spamKeywordsList;
+	std::vector<SpamPattern> _spamPatterns;
 	bool _showNewbieBadge = true;
 	bool _showProfileDetails = true;
 	bool _quickDeleteAndBan = true;

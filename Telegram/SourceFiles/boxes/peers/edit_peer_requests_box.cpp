@@ -41,6 +41,23 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 namespace {
 
+const auto &RejectButtonBg() {
+	static const auto color = style::internal::OwnedColor(QColor(215, 60, 60));
+	return color.color();
+}
+const auto &RejectButtonBgOver() {
+	static const auto color = style::internal::OwnedColor(QColor(190, 45, 45));
+	return color.color();
+}
+const auto &BanButtonBg() {
+	static const auto color = style::internal::OwnedColor(QColor(135, 20, 20));
+	return color.color();
+}
+const auto &BanButtonBgOver() {
+	static const auto color = style::internal::OwnedColor(QColor(105, 12, 12));
+	return color.color();
+}
+
 constexpr auto kFirstPageCount = 16;
 constexpr auto kPerPage = 200;
 constexpr auto kServerSearchDelay = crl::time(1000);
@@ -298,19 +315,17 @@ RequestsBoxController::RowHelper::RowHelper(bool isGroup)
 	st::requestsAcceptButton.textBgOver)
 , _rejectRect(
 	st::requestsAcceptButton.height / 2,
-	st::requestsRejectButton.textBg)
+	RejectButtonBg())
 , _rejectRectOver(
 	st::requestsAcceptButton.height / 2,
-	st::requestsRejectButton.textBgOver)
+	RejectButtonBgOver())
 , _banRect(
 	st::requestsAcceptButton.height / 2,
-	st::requestsBanButton.textBg)
+	BanButtonBg())
 , _banRectOver(
 	st::requestsAcceptButton.height / 2,
-	st::requestsBanButton.textBgOver)
-, _acceptText(isGroup
-	? tr::lng_group_requests_add(tr::now)
-	: tr::lng_group_requests_add_channel(tr::now))
+	BanButtonBgOver())
+, _acceptText(QString::fromUtf8("Принять"))
 , _rejectText(tr::lng_group_requests_dismiss(tr::now))
 , _banText(tr::lng_makugram_ban_button(tr::now))
 , _acceptTextWidth(st::requestsAcceptButton.style.font->width(_acceptText))
@@ -744,7 +759,10 @@ void RequestsBoxController::RowHelper::paintButton(
 		+ ((geometry.width() - textWidth) / 2);
 	const auto textTop = geometry.y() + st.textTop;
 	p.setFont(st.style.font);
-	p.setPen(over ? st.textFgOver : st.textFg);
+	const auto fg = (&rect == &_acceptRect)
+		? (over ? st.textFgOver : st.textFg)
+		: st::activeButtonFg;
+	p.setPen(fg);
 	p.drawTextLeft(textLeft, textTop, outerWidth, text);
 }
 

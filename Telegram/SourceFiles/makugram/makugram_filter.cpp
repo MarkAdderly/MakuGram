@@ -52,8 +52,8 @@ bool IsSpamKeywordMessageHidden(const HistoryItem *item) {
 	if (!settings.spamFilterEnabled()) {
 		return false;
 	}
-	const auto &keywords = settings.spamKeywordsList();
-	if (keywords.empty()) {
+	const auto &patterns = settings.spamPatterns();
+	if (patterns.empty()) {
 		return false;
 	}
 	if (item->out()) {
@@ -63,9 +63,15 @@ bool IsSpamKeywordMessageHidden(const HistoryItem *item) {
 	if (text.isEmpty()) {
 		return false;
 	}
-	for (const auto &kw : keywords) {
-		if (text.contains(kw, Qt::CaseInsensitive)) {
-			return true;
+	for (const auto &p : patterns) {
+		if (p.isWildcard) {
+			if (p.regex.match(text).hasMatch()) {
+				return true;
+			}
+		} else {
+			if (text.contains(p.raw, Qt::CaseInsensitive)) {
+				return true;
+			}
 		}
 	}
 	return false;

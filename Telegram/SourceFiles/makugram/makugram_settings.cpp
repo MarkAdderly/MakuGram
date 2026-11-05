@@ -32,15 +32,45 @@ Settings::Settings() {
 
 void Settings::parseSpamKeywords() {
 	_spamKeywordsList.clear();
+	_spamPatterns.clear();
 	if (_spamKeywords.trimmed().isEmpty()) {
 		return;
 	}
-	const auto parts = _spamKeywords.split(',', Qt::SkipEmptyParts);
+	const auto parts = _spamKeywords.split(QRegularExpression(u"[,;\r\n]+"_q), Qt::SkipEmptyParts);
 	for (const auto &part : parts) {
 		const auto trimmed = part.trimmed().toLower();
-		if (!trimmed.isEmpty()) {
-			_spamKeywordsList.push_back(trimmed);
+		if (trimmed.isEmpty()) {
+			continue;
 		}
+		_spamKeywordsList.push_back(trimmed);
+
+		SpamPattern p;
+		p.raw = trimmed;
+		if (trimmed.contains('*') || trimmed.contains('?')) {
+			p.isWildcard = true;
+			const auto startsWithStar = trimmed.startsWith('*');
+			const auto endsWithStar = trimmed.endsWith('*');
+			auto clean = trimmed;
+			while (clean.startsWith('*')) clean.remove(0, 1);
+			while (clean.endsWith('*')) clean.chop(1);
+			const auto escaped = QRegularExpression::escape(clean);
+
+			QString pattern;
+			if (startsWithStar && endsWithStar) {
+				pattern = escaped;
+			} else if (startsWithStar) {
+				pattern = u"[\\p{L}\\p{N}_]*"_q + escaped + u"(?:$|[^\\p{L}\\p{N}_])"_q;
+			} else if (endsWithStar) {
+				pattern = u"(?:^|[^\\p{L}\\p{N}_])"_q + escaped + u"[\\p{L}\\p{N}_]*"_q;
+			} else {
+				pattern = escaped;
+			}
+			p.regex = QRegularExpression(
+				pattern,
+				QRegularExpression::CaseInsensitiveOption
+				| QRegularExpression::UseUnicodePropertiesOption);
+		}
+		_spamPatterns.push_back(std::move(p));
 	}
 }
 
@@ -166,6 +196,10 @@ rpl::producer<QString> Settings::spamKeywordsChanges() const {
 
 const std::vector<QString> &Settings::spamKeywordsList() const {
 	return _spamKeywordsList;
+}
+
+const std::vector<SpamPattern> &Settings::spamPatterns() const {
+	return _spamPatterns;
 }
 
 bool Settings::showNewbieBadge() const {
