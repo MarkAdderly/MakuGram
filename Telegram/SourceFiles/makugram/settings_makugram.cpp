@@ -64,6 +64,21 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 	}
 	builder.addDividerText(tr::lng_settings_makugram_quick_ban_about());
 
+	builder.addSubsectionTitle(rpl::single(QString::fromUtf8("Просмотр медиа")));
+
+	const auto alwaysZoomToggle = builder.addButton({
+		.title = tr::lng_settings_makugram_always_zoom(),
+		.toggled = rpl::single(MakuGram::Settings::instance().alwaysZoomMediaToScreen()),
+		.keywords = { u"media"_q, u"zoom"_q, u"fullscreen"_q, u"медиа"_q, u"масштаб"_q, u"экран"_q },
+	});
+	if (alwaysZoomToggle) {
+		alwaysZoomToggle->toggledValue(
+		) | rpl::on_next([=](bool checked) {
+			MakuGram::Settings::instance().setAlwaysZoomMediaToScreen(checked);
+		}, alwaysZoomToggle->lifetime());
+	}
+	builder.addDividerText(tr::lng_settings_makugram_always_zoom_about());
+
 	builder.addSubsectionTitle(rpl::single(QString::fromUtf8("О клиенте")));
 	builder.addDividerText(tr::lng_settings_makugram_about());
 }

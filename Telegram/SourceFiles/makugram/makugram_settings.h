@@ -21,6 +21,10 @@ public:
 	void setQuickBanInRequests(bool enabled);
 	[[nodiscard]] rpl::producer<bool> quickBanInRequestsChanges() const;
 
+	[[nodiscard]] bool alwaysZoomMediaToScreen() const;
+	void setAlwaysZoomMediaToScreen(bool enabled);
+	[[nodiscard]] rpl::producer<bool> alwaysZoomMediaToScreenChanges() const;
+
 private:
 	Settings();
 	~Settings() = default;
@@ -30,9 +34,11 @@ private:
 
 	bool _hideMessagesFromBlocked = true;
 	bool _quickBanInRequests = true;
+	bool _alwaysZoomMediaToScreen = true;
 
 	rpl::event_stream<bool> _hideMessagesFromBlockedChanges;
 	rpl::event_stream<bool> _quickBanInRequestsChanges;
+	rpl::event_stream<bool> _alwaysZoomMediaToScreenChanges;
 };
 
 } // namespace MakuGram

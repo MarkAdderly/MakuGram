@@ -53,6 +53,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/boxes/confirm_box.h"
 #include "ui/ui_utility.h"
 #include "info/info_memento.h"
+#include "makugram/makugram_settings.h"
 #include "info/info_controller.h"
 #include "info/statistics/info_statistics_widget.h"
 #include "boxes/delete_messages_box.h"
@@ -693,6 +694,12 @@ OverlayWidget::OverlayWidget()
 	Lang::Updated(
 	) | rpl::on_next([=] {
 		refreshLang();
+	}, lifetime());
+
+	MakuGram::Settings::instance().alwaysZoomMediaToScreenChanges(
+	) | rpl::on_next([=] {
+		resizeContentByScreenSize();
+		update();
 	}, lifetime());
 
 	_lastPositiveVolume = (Core::App().settings().videoVolume() > 0.)
@@ -2836,7 +2843,10 @@ void OverlayWidget::resizeContentByScreenSize() {
 	}
 	const auto usew = _fullScreenVideo ? width() : availableWidth;
 	const auto useh = _fullScreenVideo ? _maxUsedHeight : _availableHeight;
-	if ((_width > usew) || (_height > useh) || _fullScreenVideo) {
+	const auto alwaysZoom = MakuGram::Settings::instance().alwaysZoomMediaToScreen()
+		&& (_width > 0 && _height > 0)
+		&& !(_document && _document->sticker());
+	if ((_width > usew) || (_height > useh) || _fullScreenVideo || alwaysZoom) {
 		const auto use = _fullScreenVideo ? _zoomToScreen : _zoomToDefault;
 		_zoom = kZoomToScreenLevel;
 		if (use >= 0) {

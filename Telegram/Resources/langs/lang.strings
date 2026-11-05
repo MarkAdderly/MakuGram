@@ -9339,5 +9339,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_settings_makugram_quick_ban_about" = "Добавляет кнопку быстрого бана прямо рядом с кнопками одобрения и отклонения заявок на вступление.";
 "lng_makugram_ban_button" = "Забанить";
 "lng_makugram_banned_toast" = "Пользователь {user} заблокирован(а).";
+"lng_settings_makugram_always_zoom" = "Всегда открывать медиа по размеру экрана";
+"lng_settings_makugram_always_zoom_about" = "Автоматически растягивать изображения и медиафайлы до границ окна по соотношению сторон при открытии (аналогично нажатию на колёсико мыши).";
 
 // Keys finished

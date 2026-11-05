@@ -17,6 +17,7 @@ Settings::Settings() {
 	QSettings s("MakuGram", "MakuGram");
 	_hideMessagesFromBlocked = s.value("hideMessagesFromBlocked", true).toBool();
 	_quickBanInRequests = s.value("quickBanInRequests", true).toBool();
+	_alwaysZoomMediaToScreen = s.value("alwaysZoomMediaToScreen", true).toBool();
 }
 
 bool Settings::hideMessagesFromBlocked() const {
@@ -51,6 +52,23 @@ void Settings::setQuickBanInRequests(bool enabled) {
 
 rpl::producer<bool> Settings::quickBanInRequestsChanges() const {
 	return _quickBanInRequestsChanges.events();
+}
+
+bool Settings::alwaysZoomMediaToScreen() const {
+	return _alwaysZoomMediaToScreen;
+}
+
+void Settings::setAlwaysZoomMediaToScreen(bool enabled) {
+	if (_alwaysZoomMediaToScreen != enabled) {
+		_alwaysZoomMediaToScreen = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("alwaysZoomMediaToScreen", enabled);
+		_alwaysZoomMediaToScreenChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::alwaysZoomMediaToScreenChanges() const {
+	return _alwaysZoomMediaToScreenChanges.events();
 }
 
 } // namespace MakuGram
