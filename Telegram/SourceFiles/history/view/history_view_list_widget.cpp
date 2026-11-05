@@ -7,6 +7,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_list_widget.h"
 
+#include "makugram/makugram_filter.h"
+#include "makugram/makugram_settings.h"
+
 #include "history/view/history_view_about_view.h"
 #include "base/unixtime.h"
 #include "base/qt/qt_key_modifiers.h"
@@ -699,6 +702,24 @@ ListWidget::ListWidget(
 		itemRemoved(item);
 	}, lifetime());
 
+	rpl::merge(
+		_session->changes().peerUpdates(
+			Data::PeerUpdate::Flag::IsBlocked
+		) | rpl::to_empty,
+		MakuGram::Settings::instance().hideMessagesFromBlockedChanges()
+			| rpl::to_empty
+	) | rpl::on_next([=] {
+		crl::on_main(this, [=] {
+			if (_viewsCapacity.empty()) {
+				for (const auto &view : _items) {
+					view->setPendingResize();
+				}
+				const auto old = _slice;
+				refreshRows(old);
+			}
+		});
+	}, lifetime());
+
 	setupThanosEffect();
 
 	using MessageUpdateFlag = Data::MessageUpdate::Flag;
@@ -936,6 +957,9 @@ void ListWidget::refreshRows(const Data::MessagesSlice &old) {
 	auto nearestIndex = -1;
 	const auto pushItem = [&](const FullMsgId &fullId) {
 		if (const auto item = session().data().message(fullId)) {
+			if (MakuGram::IsBlockedMessageHidden(item)) {
+				return;
+			}
 			if (_slice.nearestToAround == fullId) {
 				nearestIndex = int(_items.size());
 			}

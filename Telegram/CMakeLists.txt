@@ -1963,6 +1963,12 @@ PRIVATE
     settings/sections/settings_local_passcode.h
     settings/sections/settings_local_storage.cpp
     settings/sections/settings_local_storage.h
+    makugram/makugram_filter.cpp
+    makugram/makugram_filter.h
+    makugram/makugram_settings.cpp
+    makugram/makugram_settings.h
+    makugram/settings_makugram.cpp
+    makugram/settings_makugram.h
     settings/sections/settings_main.cpp
     settings/sections/settings_main.h
     settings/settings_recent_searches.cpp

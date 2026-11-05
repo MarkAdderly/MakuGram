@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "settings/sections/settings_main.h"
 
+#include "makugram/settings_makugram.h"
+
 #include "settings/settings_common_session.h"
 
 #include "api/api_cloud_password.h"
@@ -377,6 +379,13 @@ void BuildSectionButtons(SectionBuilder &builder) {
 			.keywords = { u"profile"_q, u"edit"_q, u"information"_q },
 		});
 	}
+
+	builder.addSectionButton({
+		.title = tr::lng_settings_makugram(),
+		.targetSection = MakuGramId(),
+		.icon = { &st::menuIconManage },
+		.keywords = { u"makugram"_q, u"maku"_q, u"features"_q, u"функции"_q, u"блокировка"_q, u"заявки"_q },
+	});
 
 	builder.addSectionButton({
 		.title = tr::lng_settings_section_notify(),

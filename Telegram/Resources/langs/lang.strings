@@ -9331,4 +9331,13 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_passcode_strength_advice_variety" = "Make it longer and mix in more kinds of characters.";
 "lng_passcode_strength_advice_fine" = "This passcode is hard to guess.";
 
+"lng_settings_makugram" = "Функции MakuGram";
+"lng_settings_makugram_about" = "MakuGram — форк Telegram с расширенными возможностями модерации и приватности.";
+"lng_settings_makugram_hide_blocked" = "Скрывать сообщения от заблокированных";
+"lng_settings_makugram_hide_blocked_about" = "Не отображать сообщения заблокированных пользователей в общих чатах и группах.";
+"lng_settings_makugram_quick_ban" = "Кнопка «Забанить» в заявках";
+"lng_settings_makugram_quick_ban_about" = "Добавляет кнопку быстрого бана прямо рядом с кнопками одобрения и отклонения заявок на вступление.";
+"lng_makugram_ban_button" = "Забанить";
+"lng_makugram_banned_toast" = "Пользователь {user} заблокирован(а).";
+
 // Keys finished

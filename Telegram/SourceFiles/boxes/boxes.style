@@ -455,6 +455,15 @@ requestsRejectButton: RoundButton(defaultBoxButton) {
 	textTop: 5px;
 	style: semiboldTextStyle;
 }
+requestsBanButton: RoundButton(requestsAcceptButton) {
+	textBg: attentionButtonFg;
+	textBgOver: dialogsReactionIconFg;
+	textFg: activeButtonFg;
+	textFgOver: activeButtonFg;
+	ripple: RippleAnimation(defaultRippleAnimation) {
+		color: attentionButtonBgRipple;
+	}
+}
 requestButtonsSkip: 9px;
 communityRequestsBoxItem: PeerListItem(peerListBoxItem) {
 	height: 89px;
