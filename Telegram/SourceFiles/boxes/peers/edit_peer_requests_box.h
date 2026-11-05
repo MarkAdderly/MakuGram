@@ -85,6 +85,7 @@ private:
 
 	base::flat_map<not_null<UserData*>, TimeId> _dates;
 
+	Ui::RpWidget *_massActions = nullptr;
 	TimeId _offsetDate = 0;
 	UserData *_offsetUser = nullptr;
 	mtpRequestId _loadRequestId = 0;
@@ -102,6 +103,7 @@ public:
 	bool loadMoreRows() override;
 
 	void removeFromCache(not_null<UserData*> user);
+	void clearCache();
 	[[nodiscard]] TimeId dateForUser(not_null<UserData*> user);
 
 	std::unique_ptr<SavedStateBase> saveState() const override;

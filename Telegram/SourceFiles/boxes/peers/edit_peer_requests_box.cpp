@@ -8,6 +8,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "boxes/peers/edit_peer_requests_box.h"
 #include "ui/widgets/buttons.h"
 #include "window/window_session_controller.h"
+#include "styles/style_info_community_requests_widget.h"
+#include "makugram/makugram_details.h"
 
 #include "api/api_invite_links.h"
 #include "api/api_chat_participants.h"
@@ -420,26 +422,32 @@ void RequestsBoxController::prepare() {
 }
 
 void RequestsBoxController::setupMassActions() {
-	auto container = object_ptr<Ui::RpWidget>(nullptr);
+	auto container = object_ptr<Ui::RpWidget>::fromRaw(new Ui::RpWidget(nullptr));
 	const auto raw = container.data();
-	raw->resize(0, st::requestsAcceptButton.height + 14);
+	_massActions = raw;
+	const auto buttonHeight = st::requestsAddAllButton.height;
+	raw->resize(0, buttonHeight + 12);
 
 	const auto acceptAll = Ui::CreateChild<Ui::RoundButton>(
 		raw,
-		rpl::single(QString::fromUtf8("Принять все")),
-		st::requestsAcceptButton);
+		tr::lng_community_requests_add_all(),
+		st::requestsAddAllButton);
 	const auto rejectAll = Ui::CreateChild<Ui::RoundButton>(
 		raw,
-		rpl::single(QString::fromUtf8("Отклонить все")),
-		st::requestsRejectButton);
+		tr::lng_community_requests_decline_all(),
+		st::requestsDeclineAllButton);
+	acceptAll->setFullRadius(true);
+	rejectAll->setFullRadius(true);
 
 	raw->widthValue(
 	) | rpl::on_next([=](int width) {
 		if (width <= 0) return;
 		const auto padding = 12;
 		const auto buttonWidth = (width - padding * 3) / 2;
-		acceptAll->setGeometry(padding, 6, buttonWidth, st::requestsAcceptButton.height);
-		rejectAll->setGeometry(padding * 2 + buttonWidth, 6, buttonWidth, st::requestsRejectButton.height);
+		acceptAll->setFullWidth(buttonWidth);
+		acceptAll->moveToLeft(padding, 6);
+		rejectAll->setFullWidth(buttonWidth);
+		rejectAll->moveToLeft(padding * 2 + buttonWidth, 6);
 	}, raw->lifetime());
 
 	acceptAll->setClickedCallback([=] {
@@ -449,6 +457,7 @@ void RequestsBoxController::setupMassActions() {
 		processAllRequests(false);
 	});
 
+	raw->hide();
 	delegate()->peerListSetAboveWidget(std::move(container));
 }
 
@@ -458,18 +467,20 @@ void RequestsBoxController::processAllRequests(bool approved) {
 		MTP_flags(approved ? Flag::f_approved : Flag(0)),
 		_peer->input(),
 		MTPstring()
-	)).done([=] {
+	)).done(crl::guard(this, [=] {
 		_dates.clear();
 		while (delegate()->peerListFullRowsCount() > 0) {
 			delegate()->peerListRemoveRow(delegate()->peerListRowAt(0));
 		}
-		delegate()->peerListRefreshRows();
-		if (const auto window = _navigation->parentController()) {
-			window->showToast(approved
-				? QString::fromUtf8("Все заявки одобрены")
-				: QString::fromUtf8("Все заявки отклонены"));
+		if (const auto search = static_cast<RequestsBoxSearchController*>(searchController())) {
+			search->clearCache();
 		}
-	}).send();
+		refreshDescription();
+		delegate()->peerListRefreshRows();
+		delegate()->peerListUiShow()->showToast(approved
+			? QString::fromUtf8("Все заявки одобрены")
+			: QString::fromUtf8("Все заявки отклонены"));
+	})).send();
 }
 
 void RequestsBoxController::loadMoreRows() {
@@ -521,7 +532,11 @@ void RequestsBoxController::loadMoreRows() {
 }
 
 void RequestsBoxController::refreshDescription() {
-	setDescriptionText((delegate()->peerListFullRowsCount() > 0)
+	const auto count = delegate()->peerListFullRowsCount();
+	if (_massActions) {
+		_massActions->setVisible(count > 0);
+	}
+	setDescriptionText((count > 0)
 		? QString()
 		: _peer->isBroadcast()
 		? tr::lng_group_requests_none_channel(tr::now)
@@ -611,9 +626,13 @@ void RequestsBoxController::appendRow(
 		TimeId date) {
 	if (!delegate()->peerListFindRow(user->id.value)) {
 		_dates.emplace(user, date);
+		MakuGram::RecordChatJoinDate(_peer->id.value, user->id.value, date);
 		if (auto row = createRow(user, date)) {
 			delegate()->peerListAppendRow(std::move(row));
 			setDescriptionText(QString());
+			if (_massActions) {
+				_massActions->show();
+			}
 		}
 	}
 }
@@ -788,6 +807,11 @@ void RequestsBoxSearchController::searchOnServer() {
 
 bool RequestsBoxSearchController::isLoading() {
 	return _timer.isActive() || _requestId;
+}
+
+void RequestsBoxSearchController::clearCache() {
+	_cache.clear();
+	_dates.clear();
 }
 
 void RequestsBoxSearchController::removeFromCache(not_null<UserData*> user) {

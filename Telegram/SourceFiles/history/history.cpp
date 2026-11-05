@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/history.h"
+#include "makugram/makugram_details.h"
 
 #include "history/view/history_view_element.h"
 #include "history/view/history_view_item_preview.h"
@@ -1289,6 +1290,7 @@ void History::applyServiceChanges(
 				Data::PeerUpdate::Flag::Members);
 			owner().addNewMegagroupParticipant(megagroup, user);
 		}
+		MakuGram::RecordChatJoinDate(peer->id.value, user->id.value, item->date());
 		if (user->isBot()) {
 			mgInfo->bots.insert(user);
 			if (mgInfo->botStatus == Data::BotStatus::NoBots) {
