@@ -27,6 +27,8 @@ namespace {
 
 using namespace Builder;
 
+constexpr auto kBoxContentWidth = 420;
+
 class MakuGramSection : public Section<MakuGramSection> {
 public:
 	MakuGramSection(
@@ -51,7 +53,13 @@ void AddCheckboxRow(
 			std::move(title),
 			checked,
 			st::defaultBoxCheckbox),
-		st::boxRowPadding);
+		style::margins(
+			st::boxRowPadding.left(),
+			4,
+			st::boxRowPadding.right(),
+			about ? 0 : st::boxMediumSkip));
+	cb->setAllowTextLines(0);
+	cb->setCheckAlignment(style::al_top);
 	cb->checkedChanges(
 	) | rpl::on_next([=](bool checked) {
 		onChange(checked);
@@ -62,10 +70,10 @@ void AddCheckboxRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
 				std::move(about),
-				st::boxLabel),
+				st::boxDividerLabel),
 			style::margins(
-				st::boxRowPadding.left() + 28,
-				2,
+				st::boxRowPadding.left() + 30,
+				3,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
 	}
@@ -73,7 +81,7 @@ void AddCheckboxRow(
 
 void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
-		box->setWidth(st::boxWideWidth);
+		box->setWidth(kBoxContentWidth);
 		box->setTitle(QString::fromUtf8("Локальный спам-фильтр"));
 
 		box->addRow(
@@ -107,15 +115,17 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 				st::boxMediumSkip,
 				st::boxRowPadding.right(),
 				2));
+		excludeSearch->setAllowTextLines(0);
+		excludeSearch->setCheckAlignment(style::al_top);
 
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
 				QString::fromUtf8("Сообщения, содержащие нежелательные слова, не будут отображаться в результатах глобального поиска и поиска по чату."),
-				st::boxLabel),
+				st::boxDividerLabel),
 			style::margins(
-				st::boxRowPadding.left() + 28,
-				2,
+				st::boxRowPadding.left() + 30,
+				3,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
 
@@ -133,7 +143,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 
 void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
-		box->setWidth(st::boxWideWidth);
+		box->setWidth(kBoxContentWidth);
 		box->setTitle(tr::lng_settings_makugram_section_privacy());
 
 		AddCheckboxRow(
@@ -151,7 +161,7 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 			object_ptr<Ui::FlatLabel>(
 				box,
 				tr::lng_settings_makugram_fwd_no_author_hint(),
-				st::boxLabel),
+				st::boxDividerLabel),
 			st::boxRowPadding);
 
 		box->addButton(tr::lng_close(), [=] {
@@ -162,7 +172,7 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 
 void ShowModerationBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
-		box->setWidth(st::boxWideWidth);
+		box->setWidth(kBoxContentWidth);
 		box->setTitle(tr::lng_settings_makugram_section_moderation());
 
 		AddCheckboxRow(
@@ -216,15 +226,11 @@ void ShowModerationBox(not_null<Window::SessionController*> controller) {
 				tr::lng_settings_makugram_spam_setup(),
 				st::defaultBoxButton),
 			style::margins(
-				st::boxRowPadding.left() + 28,
-				st::boxMediumSkip,
+				st::boxRowPadding.left() + 30,
+				0,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
 		spamSetupBtn->setClickedCallback([=] {
-			ShowSpamFilterBox(controller);
-		});
-
-		box->addLeftButton(rpl::single(QString::fromUtf8("Стоп-слова")), [=] {
 			ShowSpamFilterBox(controller);
 		});
 
@@ -236,7 +242,7 @@ void ShowModerationBox(not_null<Window::SessionController*> controller) {
 
 void ShowProfileBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
-		box->setWidth(st::boxWideWidth);
+		box->setWidth(kBoxContentWidth);
 		box->setTitle(tr::lng_settings_makugram_section_profile());
 
 		AddCheckboxRow(
@@ -256,7 +262,7 @@ void ShowProfileBox(not_null<Window::SessionController*> controller) {
 
 void ShowMediaBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
-		box->setWidth(st::boxWideWidth);
+		box->setWidth(kBoxContentWidth);
 		box->setTitle(tr::lng_settings_makugram_section_media());
 
 		AddCheckboxRow(
@@ -285,7 +291,7 @@ void ShowMediaBox(not_null<Window::SessionController*> controller) {
 
 void ShowAboutBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
-		box->setWidth(st::boxWideWidth);
+		box->setWidth(kBoxContentWidth);
 		box->setTitle(QString::fromUtf8("О клиенте MakuGram"));
 
 		box->addRow(
@@ -306,7 +312,7 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 					"• Приватность: точное время сообщений с секундами, пересылка без автора.\n"
 					"• Медиа: открытие во весь экран, ускоренная параллельная загрузка файлов.\n\n"
 					"Версия клиента: MakuGram 6.3.0"),
-				st::boxLabel),
+				st::boxDividerLabel),
 			st::boxRowPadding);
 
 		box->addButton(tr::lng_close(), [=] {
@@ -327,7 +333,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 	builder.addButton({
 		.title = tr::lng_settings_makugram_section_privacy(),
 		.icon = { &st::menuIconLock },
-		.label = rpl::single(QString::fromUtf8("Точное время, пересылка")),
 		.onClick = [=] { ShowPrivacyBox(controller); },
 		.keywords = { u"time"_q, u"seconds"_q, u"exact"_q, u"forward"_q, u"время"_q, u"секунды"_q, u"пересылка"_q },
 	});
@@ -336,7 +341,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 	builder.addButton({
 		.title = tr::lng_settings_makugram_section_moderation(),
 		.icon = { &st::menuIconAdmin },
-		.label = rpl::single(QString::fromUtf8("Спам, бан, бейджи")),
 		.onClick = [=] { ShowModerationBox(controller); },
 		.keywords = { u"spam"_q, u"ban"_q, u"badge"_q, u"requests"_q, u"спам"_q, u"бан"_q, u"новичок"_q, u"заявки"_q },
 	});
@@ -345,7 +349,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 	builder.addButton({
 		.title = tr::lng_settings_makugram_section_profile(),
 		.icon = { &st::menuIconProfile },
-		.label = rpl::single(QString::fromUtf8("ID, дата регистрации")),
 		.onClick = [=] { ShowProfileBox(controller); },
 		.keywords = { u"id"_q, u"profile"_q, u"registration"_q, u"профиль"_q, u"возраст"_q, u"регистрация"_q },
 	});
@@ -354,7 +357,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 	builder.addButton({
 		.title = tr::lng_settings_makugram_section_media(),
 		.icon = { &st::menuIconPhoto },
-		.label = rpl::single(QString::fromUtf8("Полный экран, скорость")),
 		.onClick = [=] { ShowMediaBox(controller); },
 		.keywords = { u"media"_q, u"zoom"_q, u"download"_q, u"медиа"_q, u"масштаб"_q, u"скорость"_q, u"экран"_q },
 	});
@@ -363,7 +365,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 	builder.addButton({
 		.title = rpl::single(QString::fromUtf8("О клиенте")),
 		.icon = { &st::menuIconInfo },
-		.label = rpl::single(QString::fromUtf8("MakuGram 6.3.0")),
 		.onClick = [=] { ShowAboutBox(controller); },
 		.keywords = { u"about"_q, u"makugram"_q, u"версия"_q, u"информация"_q },
 	});
