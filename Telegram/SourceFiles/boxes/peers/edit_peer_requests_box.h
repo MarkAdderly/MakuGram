@@ -72,6 +72,8 @@ private:
 	void refreshDescription();
 	void processRequest(not_null<UserData*> user, bool approved);
 	void banUser(not_null<UserData*> user);
+	void setupMassActions();
+	void processAllRequests(bool approved);
 
 	void subscribeToMigration();
 	void migrate(not_null<ChatData*> chat, not_null<ChannelData*> channel);

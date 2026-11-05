@@ -9341,5 +9341,29 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_makugram_banned_toast" = "Пользователь {user} заблокирован(а).";
 "lng_settings_makugram_always_zoom" = "Всегда открывать медиа по размеру экрана";
 "lng_settings_makugram_always_zoom_about" = "Автоматически растягивать изображения и медиафайлы до границ окна по соотношению сторон при открытии (аналогично нажатию на колёсико мыши).";
+"lng_settings_makugram_section_privacy" = "Приватность и сообщения";
+"lng_settings_makugram_section_moderation" = "Модерация и безопасность";
+"lng_settings_makugram_section_profile" = "Профиль и информация";
+"lng_settings_makugram_section_media" = "Медиа и сеть";
+
+"lng_settings_makugram_exact_time" = "Точное время сообщений (с секундами)";
+"lng_settings_makugram_exact_time_about" = "Отображать время отправки сообщений с точностью до секунды (ЧЧ:ММ:СС).";
+
+"lng_settings_makugram_quick_delete_ban" = "«Удалить всё и забанить» в меню сообщения";
+"lng_settings_makugram_quick_delete_ban_about" = "Добавляет кнопку в контекстное меню сообщения участника для быстрого удаления всей истории и бана.";
+
+"lng_settings_makugram_newbie_badge" = "Бейдж «Новичок» в чатах";
+"lng_settings_makugram_newbie_badge_about" = "Отображать бейдж «Новичок» рядом с именем участников, состоящих в чате меньше 3 месяцев.";
+
+"lng_settings_makugram_profile_details" = "Показывать Telegram ID и дату регистрации";
+"lng_settings_makugram_profile_details_about" = "Отображать числовой ID и расчетный период регистрации в профиле пользователя.";
+
+"lng_settings_makugram_fast_download" = "Многопоточное ускорение скачивания";
+"lng_settings_makugram_fast_download_about" = "Увеличивает количество параллельных сессий загрузки для максимальной скорости скачивания файлов.";
+
+"lng_settings_makugram_spam_filter" = "Локальный спам-фильтр по ключевым словам";
+"lng_settings_makugram_spam_filter_about" = "Скрывать сообщения с нежелательными словами в чатах и в личных сообщениях.";
+"lng_settings_makugram_spam_setup" = "Настроить ключевые слова...";
+"lng_settings_makugram_fwd_no_author_hint" = "Кнопка «Переслать без автора» доступна в контекстном меню любого сообщения.";
 
 // Keys finished

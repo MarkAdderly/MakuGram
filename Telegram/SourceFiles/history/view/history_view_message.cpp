@@ -6,6 +6,8 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/history_view_message.h"
+#include "makugram/makugram_settings.h"
+#include "makugram/makugram_details.h"
 
 #include "api/api_suggest_post.h"
 #include "api/api_transcribes.h"
@@ -1157,6 +1159,11 @@ void Message::refreshRightBadge() {
 		const auto fromRank = item->fromRank();
 		if (!fromRank.isEmpty()) {
 			return { fromRank, BadgeRole::User, false };
+		}
+		if (MakuGram::Settings::instance().showNewbieBadge()) {
+			if (MakuGram::IsNewbieInChat(item->history()->peer, user)) {
+				return { QString::fromUtf8("Новичок"), BadgeRole::User, false };
+			}
 		}
 		return { QString(), BadgeRole::User, false };
 	}();

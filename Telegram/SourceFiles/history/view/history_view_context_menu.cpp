@@ -89,6 +89,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_stories.h"
 #include "data/data_groups.h"
 #include "data/data_channel.h"
+#include "api/api_chat_participants.h"
+#include "makugram/makugram_settings.h"
 #include "data/data_chat.h"
 #include "data/data_file_click_handler.h"
 #include "data/data_message_reactions.h"
@@ -578,6 +580,21 @@ bool AddForwardSelectedAction(
 			ExtractIdsList(request.selectedItems),
 			callback);
 	}, &st::menuIconForward);
+	menu->addAction(QString::fromUtf8("Переслать без автора"), [=] {
+		const auto weak = base::make_weak(list);
+		const auto callback = [=] {
+			if (const auto strong = weak.get()) {
+				strong->cancelSelection();
+			}
+		};
+		Window::ShowForwardMessagesBox(
+			request.navigation,
+			Data::ForwardDraft{
+				.ids = ExtractIdsList(request.selectedItems),
+				.options = Data::ForwardOptions::NoSenderNames,
+			},
+			callback);
+	}, &st::menuIconForward);
 	return true;
 }
 
@@ -610,6 +627,18 @@ bool AddForwardMessageAction(
 				(asGroup
 					? owner->itemOrItsGroup(item)
 					: MessageIdsList{ 1, itemId }));
+		}
+	}, &st::menuIconForward);
+	menu->addAction(QString::fromUtf8("Переслать без автора"), [=] {
+		if (const auto item = owner->message(itemId)) {
+			Window::ShowForwardMessagesBox(
+				request.navigation,
+				Data::ForwardDraft{
+					.ids = (asGroup
+						? owner->itemOrItsGroup(item)
+						: MessageIdsList{ 1, itemId }),
+					.options = Data::ForwardOptions::NoSenderNames,
+				});
 		}
 	}, &st::menuIconForward);
 	return true;
@@ -1188,6 +1217,20 @@ bool AddDeleteMessageAction(
 			callback,
 			&st::menuIconCancel);
 		return true;
+	}
+	if (MakuGram::Settings::instance().quickDeleteAndBan()) {
+		if (const auto channel = item->history()->peer->asChannel()) {
+			if (const auto from = item->from()) {
+				if (channel->canBanMembers() && channel->canRestrictParticipant(from)) {
+					menu->addAction(QString::fromUtf8("Удалить всё и забанить"), [=] {
+						auto &api = controller->session().api();
+						api.deleteAllFromParticipant(channel, from);
+						api.chatParticipants().kick(channel, from, ChatRestrictionsInfo());
+						controller->showToast(QString::fromUtf8("Пользователь заблокирован, все сообщения удалены"));
+					}, &st::menuIconDelete);
+				}
+			}
+		}
 	}
 	menu->addAction(Ui::DeleteMessageContextAction(
 		menu->menu(),

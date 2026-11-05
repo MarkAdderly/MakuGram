@@ -5,6 +5,7 @@ a custom Telegram Desktop client fork.
 #include "makugram/makugram_settings.h"
 
 #include <QtCore/QSettings>
+#include <QtCore/QStringList>
 
 namespace MakuGram {
 
@@ -18,6 +19,29 @@ Settings::Settings() {
 	_hideMessagesFromBlocked = s.value("hideMessagesFromBlocked", true).toBool();
 	_quickBanInRequests = s.value("quickBanInRequests", true).toBool();
 	_alwaysZoomMediaToScreen = s.value("alwaysZoomMediaToScreen", true).toBool();
+	_showExactTime = s.value("showExactTime", false).toBool();
+	_fastDownload = s.value("fastDownload", true).toBool();
+	_spamFilterEnabled = s.value("spamFilterEnabled", true).toBool();
+	_spamKeywords = s.value("spamKeywords", QString()).toString();
+	_showNewbieBadge = s.value("showNewbieBadge", true).toBool();
+	_showProfileDetails = s.value("showProfileDetails", true).toBool();
+	_quickDeleteAndBan = s.value("quickDeleteAndBan", true).toBool();
+
+	parseSpamKeywords();
+}
+
+void Settings::parseSpamKeywords() {
+	_spamKeywordsList.clear();
+	if (_spamKeywords.trimmed().isEmpty()) {
+		return;
+	}
+	const auto parts = _spamKeywords.split(',', Qt::SkipEmptyParts);
+	for (const auto &part : parts) {
+		const auto trimmed = part.trimmed().toLower();
+		if (!trimmed.isEmpty()) {
+			_spamKeywordsList.push_back(trimmed);
+		}
+	}
 }
 
 bool Settings::hideMessagesFromBlocked() const {
@@ -69,6 +93,130 @@ void Settings::setAlwaysZoomMediaToScreen(bool enabled) {
 
 rpl::producer<bool> Settings::alwaysZoomMediaToScreenChanges() const {
 	return _alwaysZoomMediaToScreenChanges.events();
+}
+
+bool Settings::showExactTime() const {
+	return _showExactTime;
+}
+
+void Settings::setShowExactTime(bool enabled) {
+	if (_showExactTime != enabled) {
+		_showExactTime = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("showExactTime", enabled);
+		_showExactTimeChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::showExactTimeChanges() const {
+	return _showExactTimeChanges.events();
+}
+
+bool Settings::fastDownload() const {
+	return _fastDownload;
+}
+
+void Settings::setFastDownload(bool enabled) {
+	if (_fastDownload != enabled) {
+		_fastDownload = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("fastDownload", enabled);
+		_fastDownloadChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::fastDownloadChanges() const {
+	return _fastDownloadChanges.events();
+}
+
+bool Settings::spamFilterEnabled() const {
+	return _spamFilterEnabled;
+}
+
+void Settings::setSpamFilterEnabled(bool enabled) {
+	if (_spamFilterEnabled != enabled) {
+		_spamFilterEnabled = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("spamFilterEnabled", enabled);
+		_spamFilterEnabledChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::spamFilterEnabledChanges() const {
+	return _spamFilterEnabledChanges.events();
+}
+
+QString Settings::spamKeywords() const {
+	return _spamKeywords;
+}
+
+void Settings::setSpamKeywords(const QString &keywords) {
+	if (_spamKeywords != keywords) {
+		_spamKeywords = keywords;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("spamKeywords", keywords);
+		parseSpamKeywords();
+		_spamKeywordsChanges.fire_copy(keywords);
+	}
+}
+
+rpl::producer<QString> Settings::spamKeywordsChanges() const {
+	return _spamKeywordsChanges.events();
+}
+
+const std::vector<QString> &Settings::spamKeywordsList() const {
+	return _spamKeywordsList;
+}
+
+bool Settings::showNewbieBadge() const {
+	return _showNewbieBadge;
+}
+
+void Settings::setShowNewbieBadge(bool enabled) {
+	if (_showNewbieBadge != enabled) {
+		_showNewbieBadge = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("showNewbieBadge", enabled);
+		_showNewbieBadgeChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::showNewbieBadgeChanges() const {
+	return _showNewbieBadgeChanges.events();
+}
+
+bool Settings::showProfileDetails() const {
+	return _showProfileDetails;
+}
+
+void Settings::setShowProfileDetails(bool enabled) {
+	if (_showProfileDetails != enabled) {
+		_showProfileDetails = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("showProfileDetails", enabled);
+		_showProfileDetailsChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::showProfileDetailsChanges() const {
+	return _showProfileDetailsChanges.events();
+}
+
+bool Settings::quickDeleteAndBan() const {
+	return _quickDeleteAndBan;
+}
+
+void Settings::setQuickDeleteAndBan(bool enabled) {
+	if (_quickDeleteAndBan != enabled) {
+		_quickDeleteAndBan = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("quickDeleteAndBan", enabled);
+		_quickDeleteAndBanChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::quickDeleteAndBanChanges() const {
+	return _quickDeleteAndBanChanges.events();
 }
 
 } // namespace MakuGram

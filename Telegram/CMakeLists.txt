@@ -1965,6 +1965,8 @@ PRIVATE
     settings/sections/settings_local_storage.h
     makugram/makugram_filter.cpp
     makugram/makugram_filter.h
+    makugram/makugram_details.cpp
+    makugram/makugram_details.h
     makugram/makugram_settings.cpp
     makugram/makugram_settings.h
     makugram/settings_makugram.cpp

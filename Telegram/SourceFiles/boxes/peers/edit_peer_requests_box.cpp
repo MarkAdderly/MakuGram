@@ -6,6 +6,8 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "boxes/peers/edit_peer_requests_box.h"
+#include "ui/widgets/buttons.h"
+#include "window/window_session_controller.h"
 
 #include "api/api_invite_links.h"
 #include "api/api_chat_participants.h"
@@ -413,7 +415,61 @@ void RequestsBoxController::prepare() {
 		: tr::lng_manage_peer_requests());
 	setDescriptionText(tr::lng_contacts_loading(tr::now));
 	setSearchNoResultsText(tr::lng_blocked_list_not_found(tr::now));
+	setupMassActions();
 	loadMoreRows();
+}
+
+void RequestsBoxController::setupMassActions() {
+	auto container = object_ptr<Ui::RpWidget>(nullptr);
+	const auto raw = container.data();
+	raw->resize(0, st::requestsAcceptButton.height + 14);
+
+	const auto acceptAll = Ui::CreateChild<Ui::RoundButton>(
+		raw,
+		rpl::single(QString::fromUtf8("Принять все")),
+		st::requestsAcceptButton);
+	const auto rejectAll = Ui::CreateChild<Ui::RoundButton>(
+		raw,
+		rpl::single(QString::fromUtf8("Отклонить все")),
+		st::requestsRejectButton);
+
+	raw->widthValue(
+	) | rpl::on_next([=](int width) {
+		if (width <= 0) return;
+		const auto padding = 12;
+		const auto buttonWidth = (width - padding * 3) / 2;
+		acceptAll->setGeometry(padding, 6, buttonWidth, st::requestsAcceptButton.height);
+		rejectAll->setGeometry(padding * 2 + buttonWidth, 6, buttonWidth, st::requestsRejectButton.height);
+	}, raw->lifetime());
+
+	acceptAll->setClickedCallback([=] {
+		processAllRequests(true);
+	});
+	rejectAll->setClickedCallback([=] {
+		processAllRequests(false);
+	});
+
+	delegate()->peerListSetAboveWidget(std::move(container));
+}
+
+void RequestsBoxController::processAllRequests(bool approved) {
+	using Flag = MTPmessages_HideAllChatJoinRequests::Flag;
+	_api.request(MTPmessages_HideAllChatJoinRequests(
+		MTP_flags(approved ? Flag::f_approved : Flag(0)),
+		_peer->input(),
+		MTPstring()
+	)).done([=] {
+		_dates.clear();
+		while (delegate()->peerListFullRowsCount() > 0) {
+			delegate()->peerListRemoveRow(delegate()->peerListRowAt(0));
+		}
+		delegate()->peerListRefreshRows();
+		if (const auto window = _navigation->parentController()) {
+			window->showToast(approved
+				? QString::fromUtf8("Все заявки одобрены")
+				: QString::fromUtf8("Все заявки отклонены"));
+		}
+	}).send();
 }
 
 void RequestsBoxController::loadMoreRows() {

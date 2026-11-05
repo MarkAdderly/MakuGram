@@ -44,4 +44,31 @@ bool IsBlockedMessageHidden(const HistoryItem *item) {
 	return false;
 }
 
+bool IsSpamKeywordMessageHidden(const HistoryItem *item) {
+	if (!item) {
+		return false;
+	}
+	const auto &settings = Settings::instance();
+	if (!settings.spamFilterEnabled()) {
+		return false;
+	}
+	const auto &keywords = settings.spamKeywordsList();
+	if (keywords.empty()) {
+		return false;
+	}
+	if (item->out()) {
+		return false;
+	}
+	const auto &text = item->originalText().text;
+	if (text.isEmpty()) {
+		return false;
+	}
+	for (const auto &kw : keywords) {
+		if (text.contains(kw, Qt::CaseInsensitive)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 } // namespace MakuGram
