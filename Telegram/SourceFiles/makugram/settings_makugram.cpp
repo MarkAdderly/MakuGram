@@ -27,9 +27,9 @@ namespace {
 
 using namespace Builder;
 
-constexpr auto kBoxContentWidth = 480;
+constexpr auto kBoxContentWidth = 540;
 
-[[nodiscard]] int CheckboxTextSkip() {
+[[nodiscard]] [[maybe_unused]] int CheckboxTextSkip() {
 	return st::defaultBoxCheckbox.checkPosition.x()
 		+ st::defaultCheck.diameter
 		+ st::defaultBoxCheckbox.textPosition.x();
@@ -78,7 +78,7 @@ void AddCheckboxRow(
 				std::move(about),
 				st::boxDividerLabel),
 			style::margins(
-				st::boxRowPadding.left() + CheckboxTextSkip(),
+				st::boxRowPadding.left(),
 				3,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
@@ -95,7 +95,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 				box,
 				QString::fromUtf8(
 					"Введите скрываемые слова через запятую или с новой строки.\n"
-					"Поддерживается звёздочка * (например: сборк* скроет «сборка», «сборки», «сборку» и т.д.):"),
+					"Поддерживается звёздочка * (например: кошк* скроет \"кошка\", \"кошку\", \"кошки\" и т.д.):"),
 				st::boxLabel),
 			st::boxRowPadding);
 
@@ -130,7 +130,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 				QString::fromUtf8("Сообщения, содержащие скрываемые слова, не будут отображаться в результатах глобального поиска и поиска по чату."),
 				st::boxDividerLabel),
 			style::margins(
-				st::boxRowPadding.left() + CheckboxTextSkip(),
+				st::boxRowPadding.left(),
 				3,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
@@ -176,7 +176,7 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 				tr::lng_settings_makugram_spam_setup(),
 				st::defaultBoxButton),
 			style::margins(
-				st::boxRowPadding.left() + CheckboxTextSkip(),
+				st::boxRowPadding.left(),
 				0,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
@@ -306,9 +306,9 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 				QString::fromUtf8(
 					"• Безлимитный мультиаккаунт (до 100 аккаунтов) активен по умолчанию.\n"
 					"• Приватность и сообщения: фильтр скрываемых слов со звёздочками (*), точное время с секундами, пересылка без автора.\n"
-					"• Модерация и безопасность: быстрый бан в заявках, удаление и бан из меню сообщений, бейдж [Новичок], скрытие сообщений заблокированных.\n"
+					"• Модерация и безопасность: быстрый бан в заявках, удаление и бан из меню сообщений, бейдж (Новичок), скрытие сообщений заблокированных.\n"
 					"• Медиа и сеть: открытие во весь экран, ускоренная параллельная загрузка файлов.\n\n"
-					"Версия клиента: MakuGram 6.3.0"),
+					"Версия клиента: MakuGram 7.4.0"),
 				st::boxDividerLabel),
 			st::boxRowPadding);
 

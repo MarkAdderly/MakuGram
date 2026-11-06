@@ -9337,10 +9337,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_in_dlg_widget" = "Widget";
 
 "lng_settings_makugram" = "Функции MakuGram";
-"lng_settings_makugram_about" = "MakuGram — форк Telegram с расширенными возможностями модерации и приватности.";
+"lng_settings_makugram_about" = "MakuGram - форк Telegram с расширенными возможностями модерации и приватности.";
 "lng_settings_makugram_hide_blocked" = "Скрывать сообщения от заблокированных";
 "lng_settings_makugram_hide_blocked_about" = "Не отображать сообщения заблокированных пользователей в общих чатах и группах.";
-"lng_settings_makugram_quick_ban" = "Кнопка «Забанить» в заявках";
+"lng_settings_makugram_quick_ban" = "Кнопка \"Забанить\" в заявках";
 "lng_settings_makugram_quick_ban_about" = "Добавляет кнопку быстрого бана прямо рядом с кнопками одобрения и отклонения заявок на вступление.";
 "lng_makugram_ban_button" = "Забанить";
 "lng_makugram_banned_toast" = "Пользователь {user} заблокирован(а).";
@@ -9354,11 +9354,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_settings_makugram_exact_time" = "Точное время сообщений (с секундами)";
 "lng_settings_makugram_exact_time_about" = "Отображать время отправки сообщений с точностью до секунды (ЧЧ:ММ:СС).";
 
-"lng_settings_makugram_quick_delete_ban" = "«Удалить всё и забанить» в меню сообщения";
+"lng_settings_makugram_quick_delete_ban" = "\"Удалить всё и забанить\" в меню сообщения";
 "lng_settings_makugram_quick_delete_ban_about" = "Добавляет кнопку в контекстное меню сообщения участника для быстрого удаления всей истории и бана.";
 
-"lng_settings_makugram_newbie_badge" = "Бейдж «Новичок» в чатах";
-"lng_settings_makugram_newbie_badge_about" = "Отображать бейдж «Новичок» рядом с именем участников, состоящих в чате меньше 3 месяцев.";
+"lng_settings_makugram_newbie_badge" = "Бейдж \"Новичок\" в чатах";
+"lng_settings_makugram_newbie_badge_about" = "Отображать бейдж \"Новичок\" рядом с именем участников, состоящих в чате меньше 3 месяцев.";
 
 "lng_settings_makugram_profile_details" = "Показывать Telegram ID и дату регистрации";
 "lng_settings_makugram_profile_details_about" = "Отображать числовой ID и расчетный период регистрации в профиле пользователя.";
@@ -9369,6 +9369,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_settings_makugram_spam_filter" = "Локальный спам-фильтр по ключевым словам";
 "lng_settings_makugram_spam_filter_about" = "Скрывать сообщения со скрываемыми словами в чатах и в личных сообщениях.";
 "lng_settings_makugram_spam_setup" = "Настроить скрываемые слова...";
-"lng_settings_makugram_fwd_no_author_hint" = "Кнопка «Переслать без автора» доступна в контекстном меню любого сообщения.";
+"lng_settings_makugram_fwd_no_author_hint" = "Кнопка \"Переслать без автора\" доступна в контекстном меню любого сообщения.";
 
 // Keys finished
