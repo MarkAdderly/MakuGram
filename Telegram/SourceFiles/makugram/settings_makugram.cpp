@@ -79,7 +79,7 @@ void AddCheckboxRow(
 				st::boxDividerLabel),
 			style::margins(
 				st::boxRowPadding.left(),
-				3,
+				9,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
 	}
@@ -131,7 +131,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 				st::boxDividerLabel),
 			style::margins(
 				st::boxRowPadding.left(),
-				3,
+				9,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
 
@@ -177,7 +177,7 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 				st::defaultBoxButton),
 			style::margins(
 				st::boxRowPadding.left(),
-				0,
+				6,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
 		spamSetupBtn->setClickedCallback([=] {
