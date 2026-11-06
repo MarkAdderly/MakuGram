@@ -392,6 +392,35 @@ InnerWidget::InnerWidget(
 
 	setupOnlineStatusCheck();
 
+	MakuGram::Settings::instance().compactChatListChanges(
+	) | rpl::on_next([=] {
+		const auto updateListHeights = [&](Dialogs::IndexedList *list) {
+			if (list) {
+				list->updateHeights(_narrowRatio);
+			}
+		};
+		updateListHeights(session().data().chatsList()->indexed());
+		if (const auto folder = session().data().folderLoaded(Data::Folder::kId)) {
+			updateListHeights(folder->chatsList()->indexed());
+		}
+		for (const auto &filter : session().data().chatsFilters().list()) {
+			if (const auto list = session().data().chatsFilters().chatsList(filter.id())) {
+				updateListHeights(list->indexed());
+			}
+		}
+		if (_shownList) {
+			_shownList->updateHeights(_narrowRatio);
+		}
+		if (MakuGram::Settings::instance().unreadOnlyActive()) {
+			refreshUnreadOnly();
+		} else {
+			_rowsScrollCache.clear();
+			_cachedRows.clear();
+			refresh(true);
+		}
+		update();
+	}, lifetime());
+
 	rpl::merge(
 		session().data().chatsListChanges(),
 		session().data().chatsListLoadedEvents()
@@ -5506,6 +5535,9 @@ void InnerWidget::refreshUnreadOnly() {
 }
 
 void InnerWidget::clearFilter() {
+	if (MakuGram::Settings::instance().unreadOnlyActive()) {
+		MakuGram::Settings::instance().setUnreadOnlyActive(false);
+	}
 	if (_state == WidgetState::Filtered
 		|| _searchState.inChat
 		|| archiveSearchActive()

@@ -494,7 +494,7 @@ void PaintRow(
 	}
 
 	const auto compact = MakuGram::Settings::instance().compactChatList();
-	const auto userpicLeft = compact ? 8 : context.st->padding.left();
+	const auto userpicLeft = compact ? 13 : context.st->padding.left();
 	const auto userpicTop = compact ? 5 : context.st->padding.top();
 	const auto userpicSize = compact ? 32 : context.st->photoSize;
 
@@ -555,7 +555,7 @@ void PaintRow(
 				&& !item->isEmpty()));
 	}
 
-	const auto nameleft = compact ? 48 : context.st->nameLeft;
+	const auto nameleft = compact ? 53 : context.st->nameLeft;
 	if (context.topicsExpanded > 0.) {
 		PaintExpandedTopicsBar(p, context.topicsExpanded);
 	}
@@ -619,15 +619,13 @@ void PaintRow(
 		if (!promoted) {
 			PaintDialogDate(p, entry, fakeRow, date, rectForName, context);
 		}
-		const auto displayPinnedIcon = entry->isPinnedDialog(context.filter)
-			&& (context.filter || !entry->fixedOnTopIndex());
 		PaintWideCounter(
 			p,
 			context,
 			badgesState,
 			nametop,
 			namewidth,
-			displayPinnedIcon);
+			false);
 	} else if (const auto folder = entry->asFolder()) {
 		const auto availableWidth = PaintWideCounter(
 			p,
@@ -1185,7 +1183,8 @@ void RowPainter::Paint(
 		const auto draftDate = cloudDraft ? cloudDraft->date : TimeId(0);
 		return std::max(itemDate, draftDate);
 	}();
-	const auto displayPinnedIcon = badgesState.empty()
+	const auto displayPinnedIcon = !MakuGram::Settings::instance().compactChatList()
+		&& badgesState.empty()
 		&& entry->isPinnedDialog(context.filter)
 		&& (context.filter || !entry->fixedOnTopIndex());
 

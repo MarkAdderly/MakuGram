@@ -82,11 +82,6 @@ public:
 	void setShowProfileDetails(bool enabled);
 	[[nodiscard]] rpl::producer<bool> showProfileDetailsChanges() const;
 
-	// 9. Quick Delete and Ban in context menu
-	[[nodiscard]] bool quickDeleteAndBan() const;
-	void setQuickDeleteAndBan(bool enabled);
-	[[nodiscard]] rpl::producer<bool> quickDeleteAndBanChanges() const;
-
 	// 10. Hide typing status
 	[[nodiscard]] bool hideTypingStatus() const;
 	void setHideTypingStatus(bool enabled);
@@ -147,7 +142,6 @@ private:
 	std::vector<SpamPattern> _spamPatterns;
 	bool _showNewbieBadge = true;
 	bool _showProfileDetails = true;
-	bool _quickDeleteAndBan = true;
 	bool _hideTypingStatus = false;
 	bool _bypassRestrictedContent = true;
 	bool _showUnreadFilterButton = true;
@@ -166,7 +160,6 @@ private:
 	rpl::event_stream<QString> _spamKeywordsChanges;
 	rpl::event_stream<bool> _showNewbieBadgeChanges;
 	rpl::event_stream<bool> _showProfileDetailsChanges;
-	rpl::event_stream<bool> _quickDeleteAndBanChanges;
 	rpl::event_stream<bool> _hideTypingStatusChanges;
 	rpl::event_stream<bool> _bypassRestrictedContentChanges;
 	rpl::event_stream<bool> _showUnreadFilterButtonChanges;

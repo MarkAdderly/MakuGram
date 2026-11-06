@@ -281,6 +281,99 @@ void PeerMenuAddMuteSubmenuAction(
 	}
 }
 
+void DeleteOwnChannelMessagesByDates(
+		not_null<Window::SessionController*> controller,
+		not_null<ChannelData*> channel,
+		QDate fromDate,
+		QDate toDate) {
+	const auto minDate = (fromDate == QDate(2013, 1, 1))
+		? 0
+		: (base::unixtime::serialize({ fromDate, QTime(0, 0) }) - 1);
+	const auto maxDate = base::unixtime::serialize({ toDate, QTime(23, 59, 59) }) + 1;
+	const auto session = &channel->session();
+	const auto user = session->user();
+
+	auto searchNext = std::make_shared<Fn<void(int)>>();
+	auto deletedCount = std::make_shared<int>(0);
+
+	*searchNext = [=](int offsetId) {
+		session->api().request(MTPmessages_Search(
+			MTP_flags(MTPmessages_Search::Flag::f_from_id),
+			channel->input(),
+			MTP_string(),
+			user->input(),
+			MTPInputPeer(),
+			MTPVector<MTPReaction>(),
+			MTP_int(0),
+			MTP_inputMessagesFilterEmpty(),
+			MTP_int(minDate),
+			MTP_int(maxDate),
+			MTP_int(offsetId),
+			MTP_int(0),
+			MTP_int(100),
+			MTP_int(0),
+			MTP_int(0),
+			MTP_long(0)
+		)).done([=](const MTPmessages_Messages &result) {
+			const auto &messages = result.match([](const MTPDmessages_messages &data) {
+				return data.vmessages().v;
+			}, [](const MTPDmessages_messagesSlice &data) {
+				return data.vmessages().v;
+			}, [](const MTPDmessages_channelMessages &data) {
+				return data.vmessages().v;
+			}, [](const auto &) {
+				return QVector<MTPMessage>();
+			});
+			if (messages.isEmpty()) {
+				if (*deletedCount > 0) {
+					controller->showToast(QString::fromUtf8("Удалено сообщений: %1").arg(*deletedCount));
+				} else {
+					controller->showToast(QString::fromUtf8("Сообщений за выбранный период не найдено"));
+				}
+				return;
+			}
+			auto ids = QVector<MTPint>();
+			ids.reserve(messages.size());
+			auto lastId = 0;
+			for (const auto &msg : messages) {
+				const auto id = msg.match([](const MTPDmessage &data) {
+					return data.vid().v;
+				}, [](const MTPDmessageService &data) {
+					return data.vid().v;
+				}, [](const auto &) {
+					return 0;
+				});
+				if (id > 0) {
+					ids.push_back(MTP_int(id));
+					lastId = id;
+					if (const auto item = session->data().message(channel->id, id)) {
+						item->destroy();
+					}
+				}
+			}
+			*deletedCount += ids.size();
+			session->data().sendHistoryChangeNotifications();
+
+			session->api().request(MTPchannels_DeleteMessages(
+				channel->inputChannel(),
+				MTP_vector<MTPint>(ids)
+			)).done([=](const MTPmessages_AffectedMessages &) {
+				if (messages.size() >= 100 && lastId > 0) {
+					(*searchNext)(lastId);
+				} else {
+					controller->showToast(QString::fromUtf8("Удалено сообщений: %1").arg(*deletedCount));
+				}
+			}).fail([=](const MTP::Error &error) {
+				controller->showToast(QString::fromUtf8("Ошибка удаления: ") + error.type());
+			}).send();
+		}).fail([=](const MTP::Error &error) {
+			controller->showToast(QString::fromUtf8("Ошибка поиска: ") + error.type());
+		}).send();
+	};
+
+	(*searchNext)(0);
+}
+
 class Filler {
 public:
 	Filler(
@@ -316,6 +409,7 @@ private:
 	void addToggleUnreadMark();
 	void addToggleArchive();
 	void addClearHistory();
+	void addMassDeleteMyMessages();
 	void addDeleteChat();
 	void addLeaveChat();
 	void addJoinChat();
@@ -879,41 +973,54 @@ void Filler::addClearHistory() {
 		tr::lng_profile_clear_history(tr::now),
 		ClearHistoryHandler(_controller, _peer),
 		&st::menuIconClear);
-	if (MakuGram::Settings::instance().quickMassDeleteMyMessages() && _peer->isUser()) {
-		_addAction(
-			QString::fromUtf8("Удалить историю за период..."),
-			[controller = _controller, peer = _peer] {
-				static const auto options = std::vector<QString>{
-					QString::fromUtf8("За сегодня"),
-					QString::fromUtf8("За последние 7 дней"),
-					QString::fromUtf8("За последний месяц"),
-					QString::fromUtf8("За всё время"),
-				};
-				controller->show(Box([=](not_null<Ui::GenericBox*> box) {
-					SingleChoiceBox(box, {
-						.title = rpl::single(QString::fromUtf8("Удаление сообщений за период")),
-						.options = options,
-						.initialSelection = -1,
-						.callback = [=](int index) {
-							const auto today = QDate::currentDate();
-							auto from = today;
-							auto to = today;
-							if (index == 0) {
-								from = today;
-							} else if (index == 1) {
-								from = today.addDays(-7);
-							} else if (index == 2) {
-								from = today.addDays(-30);
-							} else if (index == 3) {
-								from = QDate(2013, 1, 1);
-							}
-							controller->show(Box<DeleteMessagesBox>(peer, from, to));
-						},
-					});
-				}));
-			},
-			&st::menuIconTTL);
+}
+
+void Filler::addMassDeleteMyMessages() {
+	if (!MakuGram::Settings::instance().quickMassDeleteMyMessages() || _topic || _peer->isMonoforum()) {
+		return;
 	}
+	if (const auto channel = _peer->asChannel()) {
+		if (!channel->amIn()) {
+			return;
+		}
+	}
+	_addAction(
+		QString::fromUtf8("Удалить свои сообщения за период..."),
+		[controller = _controller, peer = _peer] {
+			static const auto options = std::vector<QString>{
+				QString::fromUtf8("За сегодня"),
+				QString::fromUtf8("За последние 7 дней"),
+				QString::fromUtf8("За последний месяц"),
+				QString::fromUtf8("За всё время"),
+			};
+			controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+				SingleChoiceBox(box, {
+					.title = rpl::single(QString::fromUtf8("Удаление сообщений за период")),
+					.options = options,
+					.initialSelection = -1,
+					.callback = [=](int index) {
+						const auto today = QDate::currentDate();
+						auto from = today;
+						auto to = today;
+						if (index == 0) {
+							from = today;
+						} else if (index == 1) {
+							from = today.addDays(-7);
+						} else if (index == 2) {
+							from = today.addDays(-30);
+						} else if (index == 3) {
+							from = QDate(2013, 1, 1);
+						}
+						if (const auto channel = peer->asChannel()) {
+							DeleteOwnChannelMessagesByDates(controller, channel, from, to);
+						} else {
+							controller->show(Box<DeleteMessagesBox>(peer, from, to));
+						}
+					},
+				});
+			}));
+		},
+		&st::menuIconTTL);
 }
 
 void Filler::addDeleteChat() {
@@ -1966,6 +2073,7 @@ void Filler::fillContextMenuActions() {
 	}
 	addBanFromChannel();
 	addClearHistory();
+	addMassDeleteMyMessages();
 	addDeleteChat();
 	addLeaveChat();
 	addDeleteTopic();
@@ -1990,6 +2098,7 @@ void Filler::fillHistoryActions() {
 	addTranslate();
 	addReport();
 	addClearHistory();
+	addMassDeleteMyMessages();
 	addDeleteChat();
 	addLeaveChat();
 }

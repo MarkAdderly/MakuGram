@@ -127,7 +127,6 @@ Settings::Settings() {
 	_spamKeywords = s.value("spamKeywords", QString()).toString();
 	_showNewbieBadge = s.value("showNewbieBadge", true).toBool();
 	_showProfileDetails = s.value("showProfileDetails", true).toBool();
-	_quickDeleteAndBan = s.value("quickDeleteAndBan", true).toBool();
 	_hideTypingStatus = s.value("hideTypingStatus", false).toBool();
 	_bypassRestrictedContent = s.value("bypassRestrictedContent", true).toBool();
 	_showUnreadFilterButton = s.value("showUnreadFilterButton", true).toBool();
@@ -358,23 +357,6 @@ void Settings::setShowProfileDetails(bool enabled) {
 
 rpl::producer<bool> Settings::showProfileDetailsChanges() const {
 	return _showProfileDetailsChanges.events();
-}
-
-bool Settings::quickDeleteAndBan() const {
-	return _quickDeleteAndBan;
-}
-
-void Settings::setQuickDeleteAndBan(bool enabled) {
-	if (_quickDeleteAndBan != enabled) {
-		_quickDeleteAndBan = enabled;
-		QSettings s("MakuGram", "MakuGram");
-		s.setValue("quickDeleteAndBan", enabled);
-		_quickDeleteAndBanChanges.fire_copy(enabled);
-	}
-}
-
-rpl::producer<bool> Settings::quickDeleteAndBanChanges() const {
-	return _quickDeleteAndBanChanges.events();
 }
 
 bool Settings::hideTypingStatus() const {

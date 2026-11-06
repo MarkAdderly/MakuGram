@@ -14,6 +14,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "dialogs/dialogs_entry.h"
 #include "dialogs/dialogs_key.h"
 #include "dialogs/ui/dialogs_message_view.h"
+#include "makugram/makugram_settings.h"
 
 class History;
 class HistoryItem;
@@ -96,6 +97,9 @@ public:
 		return _top;
 	}
 	[[nodiscard]] int height() const {
+		if (MakuGram::Settings::instance().compactChatList()) {
+			return 42;
+		}
 		Expects(_height != 0);
 
 		return _height;

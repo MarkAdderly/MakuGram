@@ -141,7 +141,7 @@ void PaintUserpic(
 		PeerUserpicView &view,
 		const Ui::PaintContext &context) {
 	const auto compact = MakuGram::Settings::instance().compactChatList();
-	const auto x = compact ? 8 : context.st->padding.left();
+	const auto x = compact ? 13 : context.st->padding.left();
 	const auto y = compact ? 5 : context.st->padding.top();
 	const auto size = compact ? 32 : context.st->photoSize;
 	if (peer) {

@@ -395,6 +395,9 @@ void BasicRow::paintUserpic(
 }
 
 Row::Row(Key key, int index, int top) : _id(key), _top(top), _index(index) {
+	if (MakuGram::Settings::instance().compactChatList()) {
+		_height = 42;
+	}
 	if (const auto history = key.history()) {
 		updateCornerBadgeShown(history->peer);
 	}

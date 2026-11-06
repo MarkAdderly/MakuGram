@@ -734,13 +734,27 @@ Widget::Widget(
 	});
 
 	if (_unreadToggle) {
-		_unreadToggle->setAccessibleName(QString::fromUtf8("Только непрочитанные"));
-		_unreadToggle->setIconOverride(&st::menuIconMarkUnread);
+		const auto updateToggleState = [=](bool active) {
+			_unreadToggle->setAccessibleName(active
+				? QString::fromUtf8("Показать все чаты")
+				: QString::fromUtf8("Только непрочитанные"));
+			_unreadToggle->setIconOverride(active
+				? &st::menuIconMarkRead
+				: &st::menuIconMarkUnread);
+		};
+		updateToggleState(MakuGram::Settings::instance().unreadOnlyActive());
+
 		_unreadToggle->setClickedCallback([=] {
 			const auto active = !MakuGram::Settings::instance().unreadOnlyActive();
 			MakuGram::Settings::instance().setUnreadOnlyActive(active);
 			_inner->refreshUnreadOnly();
 		});
+
+		MakuGram::Settings::instance().unreadOnlyActiveChanges(
+		) | rpl::on_next([=](bool active) {
+			updateToggleState(active);
+		}, lifetime());
+
 		MakuGram::Settings::instance().showUnreadFilterButtonChanges(
 		) | rpl::on_next([=] {
 			updateControlsGeometry();
@@ -1232,6 +1246,9 @@ void Widget::chosenRow(const ChosenRow &row) {
 		hideChildList();
 	}
 	if (row.filteredRow && !session().supportMode()) {
+		if (MakuGram::Settings::instance().unreadOnlyActive()) {
+			return;
+		}
 		if (_subsectionTopBar) {
 			_subsectionTopBar->toggleSearch(false, anim::type::instant);
 		} else {
@@ -5176,6 +5193,9 @@ void Widget::setSearchQuery(const QString &query, int cursorPosition) {
 
 bool Widget::cancelSearch(CancelSearchOptions options) {
 	_searchEngaged = false;
+	if (MakuGram::Settings::instance().unreadOnlyActive()) {
+		MakuGram::Settings::instance().setUnreadOnlyActive(false);
+	}
 	const auto clearingSuggestionsQuery = _suggestions
 		&& (_suggestions->consumeSearchQuery(QString())
 			|| _suggestions->tabsOnly());

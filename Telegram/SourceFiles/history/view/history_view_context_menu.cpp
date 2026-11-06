@@ -1220,20 +1220,6 @@ bool AddDeleteMessageAction(
 			&st::menuIconCancel);
 		return true;
 	}
-	if (MakuGram::Settings::instance().quickDeleteAndBan()) {
-		if (const auto channel = item->history()->peer->asChannel()) {
-			if (const auto from = item->from()) {
-				if (channel->canBanMembers() && channel->canRestrictParticipant(from)) {
-					menu->addAction(QString::fromUtf8("Удалить всё и забанить"), [=] {
-						auto &api = controller->session().api();
-						api.deleteAllFromParticipant(channel, from);
-						api.chatParticipants().kick(channel, from, ChatRestrictionsInfo());
-						controller->showToast(QString::fromUtf8("Пользователь заблокирован, все сообщения удалены"));
-					}, &st::menuIconDelete);
-				}
-			}
-		}
-	}
 	if (MakuGram::Settings::instance().searchUserMessagesInChat()) {
 		if (const auto from = item->from()) {
 			const auto chat = item->history()->peer;

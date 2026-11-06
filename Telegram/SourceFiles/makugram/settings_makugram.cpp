@@ -253,15 +253,6 @@ void ShowModerationBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
-			tr::lng_settings_makugram_quick_delete_ban(),
-			MakuGram::Settings::instance().quickDeleteAndBan(),
-			[=](bool checked) {
-				MakuGram::Settings::instance().setQuickDeleteAndBan(checked);
-			},
-			tr::lng_settings_makugram_quick_delete_ban_about());
-
-		AddCheckboxRow(
-			box,
 			rpl::single(QString::fromUtf8("Поиск сообщений пользователя в чате")),
 			MakuGram::Settings::instance().searchUserMessagesInChat(),
 			[=](bool checked) {
