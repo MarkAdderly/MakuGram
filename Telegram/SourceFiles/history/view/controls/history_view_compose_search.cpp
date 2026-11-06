@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/controls/history_view_compose_search.h"
 
+#include "makugram/makugram_filter.h"
+
 #include "api/api_messages_search_merged.h"
 #include "boxes/peer_list_box.h"
 #include "core/click_handler_types.h"
@@ -226,6 +228,9 @@ void ListController::addItems(const MessageIdsList &ids, bool clear) {
 	const auto key = Dialogs::Key{ _history };
 	for (const auto &id : ids) {
 		if (const auto item = owner.message(id)) {
+			if (MakuGram::IsSearchMessageHidden(item)) {
+				continue;
+			}
 			const auto shared = std::make_shared<Row*>(nullptr);
 			auto row = std::make_unique<Row>(
 				std::make_unique<Dialogs::FakeRow>(
@@ -1035,6 +1040,9 @@ ComposeSearch::Inner::Inner(
 		_pendingJump.data = {};
 		const auto item = _history->owner().message(messages[index]);
 		if (item) {
+			if (MakuGram::IsSearchMessageHidden(item)) {
+				return;
+			}
 			const auto weak = base::make_weak(_topBar.get());
 			_activations.fire_copy({ item, _apiSearch.request().query });
 			if (weak) {

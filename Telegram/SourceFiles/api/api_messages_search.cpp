@@ -118,13 +118,20 @@ void MessagesSearch::searchRequest() {
 		const auto from = _request.from;
 		const auto fromPeer = _history->peer->isUser() ? nullptr : from;
 		const auto savedPeer = _history->peer->isSelf() ? from : nullptr;
+		auto queryText = _request.query;
+		while (queryText.endsWith('*')) {
+			queryText.chop(1);
+		}
+		if (queryText.isEmpty()) {
+			queryText = _request.query;
+		}
 		_requestId = _history->session().api().request(MTPmessages_Search(
 			MTP_flags((fromPeer ? Flag::f_from_id : Flag())
 				| (savedPeer ? Flag::f_saved_peer_id : Flag())
 				| (_request.topMsgId ? Flag::f_top_msg_id : Flag())
 				| (_request.tags.empty() ? Flag() : Flag::f_saved_reaction)),
 			_history->peer->input(),
-			MTP_string(_request.query),
+			MTP_string(queryText),
 			(fromPeer ? fromPeer->input() : MTP_inputPeerEmpty()),
 			(savedPeer ? savedPeer->input() : MTP_inputPeerEmpty()),
 			MTP_vector_from_range(_request.tags | ranges::views::transform(

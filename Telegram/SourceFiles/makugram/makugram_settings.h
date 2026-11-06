@@ -12,9 +12,18 @@ a custom Telegram Desktop client fork.
 
 namespace MakuGram {
 
+enum class PatternType {
+	Exact,
+	Prefix,
+	Suffix,
+	Contains,
+	Regex,
+};
+
 struct SpamPattern {
 	QString raw;
-	bool isWildcard = false;
+	QString clean;
+	PatternType type = PatternType::Exact;
 	QRegularExpression regex;
 };
 

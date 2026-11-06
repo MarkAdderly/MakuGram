@@ -111,6 +111,14 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 namespace Dialogs {
 namespace {
 
+[[nodiscard]] QString CleanSearchQuery(const QString &query) {
+	auto result = query;
+	while (result.endsWith('*')) {
+		result.chop(1);
+	}
+	return result.isEmpty() ? query : result;
+}
+
 constexpr auto kSearchPerPage = 50;
 constexpr auto kStoriesExpandDuration = crl::time(200);
 constexpr auto kSearchRequestDelay = crl::time(900);
@@ -3309,7 +3317,7 @@ bool Widget::search(bool inCache, SearchRequestDelay delay) {
 								? Flag()
 								: Flag::f_saved_reaction)),
 						inPeer->input(),
-						MTP_string(_searchQuery),
+						MTP_string(CleanSearchQuery(_searchQuery)),
 						(fromPeer ? fromPeer->input() : MTP_inputPeerEmpty()),
 						(savedPeer ? savedPeer->input() : MTP_inputPeerEmpty()),
 						MTP_vector_from_range(
@@ -3691,7 +3699,7 @@ void Widget::requestMessages(bool fromStart) {
 			MTP_flags(flags),
 			MTP_int(folderId),
 			(community ? community->inputChannel() : MTPInputChannel()),
-			MTP_string(_searchQuery),
+			MTP_string(CleanSearchQuery(_searchQuery)),
 			MTP_inputMessagesFilterEmpty(),
 			MTP_int(0), // min_date
 			MTP_int(0), // max_date

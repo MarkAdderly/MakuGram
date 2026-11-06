@@ -59,29 +59,28 @@ void Settings::parseSpamKeywords() {
 
 		SpamPattern p;
 		p.raw = trimmed;
-		if (trimmed.contains('*') || trimmed.contains('?')) {
-			p.isWildcard = true;
-			const auto startsWithStar = trimmed.startsWith('*');
-			const auto endsWithStar = trimmed.endsWith('*');
-			auto clean = trimmed;
-			while (clean.startsWith('*')) clean.remove(0, 1);
-			while (clean.endsWith('*')) clean.chop(1);
-			const auto escaped = QRegularExpression::escape(clean);
-
-			QString pattern;
-			if (startsWithStar && endsWithStar) {
-				pattern = escaped;
-			} else if (startsWithStar) {
-				pattern = u"[\\p{L}\\p{N}_]*"_q + escaped + u"(?:$|[^\\p{L}\\p{N}_])"_q;
-			} else if (endsWithStar) {
-				pattern = u"(?:^|[^\\p{L}\\p{N}_])"_q + escaped + u"[\\p{L}\\p{N}_]*"_q;
-			} else {
-				pattern = escaped;
-			}
+		if (trimmed.startsWith('*') && trimmed.endsWith('*') && trimmed.size() > 2) {
+			p.clean = trimmed;
+			while (p.clean.startsWith('*')) p.clean.remove(0, 1);
+			while (p.clean.endsWith('*')) p.clean.chop(1);
+			p.type = PatternType::Contains;
+		} else if (trimmed.endsWith('*') && !trimmed.startsWith('*')) {
+			p.clean = trimmed;
+			while (p.clean.endsWith('*')) p.clean.chop(1);
+			p.type = PatternType::Prefix;
+		} else if (trimmed.startsWith('*') && !trimmed.endsWith('*')) {
+			p.clean = trimmed;
+			while (p.clean.startsWith('*')) p.clean.remove(0, 1);
+			p.type = PatternType::Suffix;
+		} else if (trimmed.contains('*') || trimmed.contains('?')) {
+			p.clean = trimmed;
+			p.type = PatternType::Regex;
 			p.regex = QRegularExpression(
-				pattern,
-				QRegularExpression::CaseInsensitiveOption
-				| QRegularExpression::UseUnicodePropertiesOption);
+				QRegularExpression::wildcardToRegularExpression(trimmed),
+				QRegularExpression::CaseInsensitiveOption);
+		} else {
+			p.clean = trimmed;
+			p.type = PatternType::Exact;
 		}
 		_spamPatterns.push_back(std::move(p));
 	}

@@ -9,8 +9,75 @@ a custom Telegram Desktop client fork.
 #include "history/history_item.h"
 #include "data/data_peer.h"
 #include "data/data_user.h"
+#include <QtCore/QStringView>
 
 namespace MakuGram {
+namespace {
+
+bool MatchesPattern(const QString &text, const SpamPattern &p) {
+	if (text.isEmpty()) {
+		return false;
+	}
+	if (!p.clean.isEmpty() && !text.contains(p.clean, Qt::CaseInsensitive)) {
+		return false;
+	}
+
+	if (p.type == PatternType::Contains) {
+		return true;
+	}
+
+	if (p.type == PatternType::Prefix) {
+		const int n = text.size();
+		for (int i = 0; i < n;) {
+			while (i < n && !text[i].isLetterOrNumber()) {
+				++i;
+			}
+			if (i >= n) break;
+			const int start = i;
+			while (i < n && text[i].isLetterOrNumber()) {
+				++i;
+			}
+			const auto word = QStringView(text).mid(start, i - start);
+			if (word.startsWith(p.clean, Qt::CaseInsensitive)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	if (p.type == PatternType::Suffix) {
+		const int n = text.size();
+		for (int i = 0; i < n;) {
+			while (i < n && !text[i].isLetterOrNumber()) {
+				++i;
+			}
+			if (i >= n) break;
+			const int start = i;
+			while (i < n && text[i].isLetterOrNumber()) {
+				++i;
+			}
+			const auto word = QStringView(text).mid(start, i - start);
+			if (word.endsWith(p.clean, Qt::CaseInsensitive)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	if (p.type == PatternType::Exact) {
+		return text.contains(p.clean, Qt::CaseInsensitive);
+	}
+
+	if (p.type == PatternType::Regex) {
+		if (p.regex.isValid()) {
+			return p.regex.match(text).hasMatch();
+		}
+	}
+
+	return false;
+}
+
+} // namespace
 
 bool IsBlockedMessageHidden(const HistoryItem *item) {
 	if (!item) {
@@ -64,14 +131,8 @@ bool IsSpamKeywordMessageHidden(const HistoryItem *item) {
 		return false;
 	}
 	for (const auto &p : patterns) {
-		if (p.isWildcard) {
-			if (p.regex.match(text).hasMatch()) {
-				return true;
-			}
-		} else {
-			if (text.contains(p.raw, Qt::CaseInsensitive)) {
-				return true;
-			}
+		if (MatchesPattern(text, p)) {
+			return true;
 		}
 	}
 	return false;
@@ -95,14 +156,8 @@ bool IsSearchMessageHidden(const HistoryItem *item) {
 			return false;
 		}
 		for (const auto &p : patterns) {
-			if (p.isWildcard) {
-				if (p.regex.match(text).hasMatch()) {
-					return true;
-				}
-			} else {
-				if (text.contains(p.raw, Qt::CaseInsensitive)) {
-					return true;
-				}
+			if (MatchesPattern(text, p)) {
+				return true;
 			}
 		}
 		return false;
@@ -112,6 +167,9 @@ bool IsSearchMessageHidden(const HistoryItem *item) {
 		return true;
 	}
 	if (checkText(item->notificationText().text)) {
+		return true;
+	}
+	if (checkText(item->translatedText().text)) {
 		return true;
 	}
 	return false;
