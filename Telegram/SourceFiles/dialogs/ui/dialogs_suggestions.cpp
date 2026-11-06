@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/ui/dialogs_suggestions.h"
 
+#include "makugram/makugram_filter.h"
+
 #include "api/api_chat_participants.h"
 #include "api/api_peer_search.h"
 #include "apiwrap.h"
@@ -2809,7 +2811,9 @@ void Suggestions::searchListReceived(
 	items.reserve(result.messageIds.size());
 	for (const auto &position : result.messageIds) {
 		if (const auto item = owner->message(position.fullId)) {
-			items.push_back(item);
+			if (!MakuGram::IsSearchMessageHidden(item)) {
+				items.push_back(item);
+			}
 		}
 	}
 	search->received += int(items.size());

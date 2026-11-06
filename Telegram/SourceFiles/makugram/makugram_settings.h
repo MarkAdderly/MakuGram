@@ -23,9 +23,15 @@ enum class PatternType {
 struct SpamPattern {
 	QString raw;
 	QString clean;
+	QString stem;
+	std::vector<QString> variants;
 	PatternType type = PatternType::Exact;
 	QRegularExpression regex;
 };
+
+[[nodiscard]] QString NormalizeRussianText(const QString &text);
+[[nodiscard]] QString RussianStem(const QString &word);
+[[nodiscard]] std::vector<QString> GenerateWordVariants(const QString &clean);
 
 class Settings final {
 public:

@@ -18,7 +18,21 @@ bool MatchesPattern(const QString &text, const SpamPattern &p) {
 	if (text.isEmpty()) {
 		return false;
 	}
-	if (!p.clean.isEmpty() && !text.contains(p.clean, Qt::CaseInsensitive)) {
+	if (p.type == PatternType::Regex) {
+		return p.regex.isValid() && p.regex.match(text).hasMatch();
+	}
+
+	const auto normText = NormalizeRussianText(text);
+
+	// Fast pre-check: at least one variant must be present in the normalized text
+	bool anySubstr = false;
+	for (const auto &v : p.variants) {
+		if (normText.contains(v)) {
+			anySubstr = true;
+			break;
+		}
+	}
+	if (!anySubstr) {
 		return false;
 	}
 
@@ -26,54 +40,35 @@ bool MatchesPattern(const QString &text, const SpamPattern &p) {
 		return true;
 	}
 
-	if (p.type == PatternType::Prefix) {
-		const int n = text.size();
-		for (int i = 0; i < n;) {
-			while (i < n && !text[i].isLetterOrNumber()) {
-				++i;
-			}
-			if (i >= n) break;
-			const int start = i;
-			while (i < n && text[i].isLetterOrNumber()) {
-				++i;
-			}
-			const auto word = QStringView(text).mid(start, i - start);
-			if (word.startsWith(p.clean, Qt::CaseInsensitive)) {
-				return true;
+	const int n = normText.size();
+	for (int i = 0; i < n;) {
+		while (i < n && !normText[i].isLetterOrNumber()) {
+			++i;
+		}
+		if (i >= n) break;
+		const int start = i;
+		while (i < n && normText[i].isLetterOrNumber()) {
+			++i;
+		}
+		const auto word = normText.mid(start, i - start);
+		const auto wordStem = RussianStem(word);
+
+		for (const auto &v : p.variants) {
+			if (p.type == PatternType::Prefix) {
+				if (word.startsWith(v) || wordStem.startsWith(v)) {
+					return true;
+				}
+			} else if (p.type == PatternType::Suffix) {
+				if (word.endsWith(v) || wordStem.endsWith(v)) {
+					return true;
+				}
+			} else if (p.type == PatternType::Exact) {
+				if (word == v || wordStem == v || word == p.clean) {
+					return true;
+				}
 			}
 		}
-		return false;
 	}
-
-	if (p.type == PatternType::Suffix) {
-		const int n = text.size();
-		for (int i = 0; i < n;) {
-			while (i < n && !text[i].isLetterOrNumber()) {
-				++i;
-			}
-			if (i >= n) break;
-			const int start = i;
-			while (i < n && text[i].isLetterOrNumber()) {
-				++i;
-			}
-			const auto word = QStringView(text).mid(start, i - start);
-			if (word.endsWith(p.clean, Qt::CaseInsensitive)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	if (p.type == PatternType::Exact) {
-		return text.contains(p.clean, Qt::CaseInsensitive);
-	}
-
-	if (p.type == PatternType::Regex) {
-		if (p.regex.isValid()) {
-			return p.regex.match(text).hasMatch();
-		}
-	}
-
 	return false;
 }
 

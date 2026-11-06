@@ -9,6 +9,108 @@ a custom Telegram Desktop client fork.
 
 namespace MakuGram {
 
+namespace {
+
+bool IsRussianConsonant(QChar c) {
+	const auto u = c.unicode();
+	switch (u) {
+	case 0x0431: // б
+	case 0x0432: // в
+	case 0x0433: // г
+	case 0x0434: // д
+	case 0x0436: // ж
+	case 0x0437: // з
+	case 0x043A: // к
+	case 0x043B: // л
+	case 0x043C: // м
+	case 0x043D: // н
+	case 0x043F: // п
+	case 0x0440: // р
+	case 0x0441: // с
+	case 0x0442: // т
+	case 0x0444: // ф
+	case 0x0445: // х
+	case 0x0446: // ц
+	case 0x0447: // ч
+	case 0x0448: // ш
+	case 0x0449: // щ
+		return true;
+	default:
+		return false;
+	}
+}
+
+} // namespace
+
+QString NormalizeRussianText(const QString &text) {
+	auto res = text.toLower();
+	for (auto &ch : res) {
+		if (ch == QChar(0x0451) || ch == QChar(0x0401)) { // ё or Ё
+			ch = QChar(0x0435); // е
+		}
+	}
+	return res;
+}
+
+QString RussianStem(const QString &word) {
+	auto res = NormalizeRussianText(word);
+	static const QString endings[] = {
+		u"ами"_q, u"ями"_q, u"ою"_q, u"ею"_q, u"ейте"_q, u"уйте"_q, u"иями"_q, u"ьями"_q,
+		u"ого"_q, u"его"_q, u"ому"_q, u"ему"_q, u"ыми"_q, u"ими"_q, u"ишь"_q, u"ешь"_q, u"ете"_q, u"ите"_q,
+		u"ыла"_q, u"ила"_q, u"ыли"_q, u"или"_q, u"ыло"_q, u"ило"_q, u"ных"_q, u"ной"_q, u"ные"_q,
+		u"ой"_q, u"ей"_q, u"ем"_q, u"им"_q, u"ом"_q, u"ым"_q, u"ам"_q, u"ям"_q, u"ах"_q, u"ях"_q, u"ов"_q, u"ев"_q,
+		u"ая"_q, u"яя"_q, u"ое"_q, u"ее"_q, u"ые"_q, u"ие"_q, u"ый"_q, u"ий"_q, u"ую"_q, u"юю"_q,
+		u"ся"_q, u"сь"_q, u"ть"_q, u"ти"_q, u"ла"_q, u"ло"_q, u"ли"_q,
+		u"а"_q, u"е"_q, u"и"_q, u"о"_q, u"у"_q, u"ы"_q, u"э"_q, u"ю"_q, u"я"_q
+	};
+	for (const auto &end : endings) {
+		if (res.size() >= end.size() + 3 && res.endsWith(end)) {
+			res.chop(end.size());
+			break;
+		}
+	}
+	// Fugitive vowel: ...[consonant]ок or ...[consonant]ек -> ...[consonant]к
+	if (res.size() >= 4 && res.endsWith(u'к')) {
+		const auto vowel = res[res.size() - 2];
+		if (vowel == u'о' || vowel == u'е') {
+			const auto c = res[res.size() - 3];
+			if (IsRussianConsonant(c)) {
+				res.remove(res.size() - 2, 1);
+			}
+		}
+	}
+	return res;
+}
+
+std::vector<QString> GenerateWordVariants(const QString &clean) {
+	auto norm = NormalizeRussianText(clean);
+	auto stem = RussianStem(norm);
+	std::vector<QString> list;
+	const auto addUnique = [&](const QString &s) {
+		if (!s.isEmpty() && std::find(list.begin(), list.end(), s) == list.end()) {
+			list.push_back(s);
+		}
+	};
+	addUnique(norm);
+	addUnique(stem);
+
+	for (const auto &baseWord : { norm, stem }) {
+		if (baseWord.size() >= 3 && baseWord.endsWith(u'к') && IsRussianConsonant(baseWord[baseWord.size() - 2])) {
+			const auto base = baseWord.left(baseWord.size() - 1);
+			addUnique(base + u"ок"_q);
+			addUnique(base + u"ек"_q);
+			addUnique(base); // e.g. сбор
+		} else if (baseWord.size() >= 4 && baseWord.endsWith(u'к')
+				&& (baseWord[baseWord.size() - 2] == u'о' || baseWord[baseWord.size() - 2] == u'е')
+				&& IsRussianConsonant(baseWord[baseWord.size() - 3])) {
+			const auto base = baseWord.left(baseWord.size() - 2);
+			addUnique(base + u"к"_q);
+			addUnique(base);
+		}
+	}
+	return list;
+}
+
 Settings &Settings::instance() {
 	static Settings instance;
 	return instance;
@@ -82,6 +184,9 @@ void Settings::parseSpamKeywords() {
 			p.clean = trimmed;
 			p.type = PatternType::Exact;
 		}
+		p.clean = NormalizeRussianText(p.clean);
+		p.stem = RussianStem(p.clean);
+		p.variants = GenerateWordVariants(p.clean);
 		_spamPatterns.push_back(std::move(p));
 	}
 }
