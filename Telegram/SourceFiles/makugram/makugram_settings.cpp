@@ -122,7 +122,6 @@ Settings::Settings() {
 	_quickBanInRequests = s.value("quickBanInRequests", true).toBool();
 	_alwaysZoomMediaToScreen = s.value("alwaysZoomMediaToScreen", true).toBool();
 	_showExactTime = s.value("showExactTime", false).toBool();
-	_fastDownload = s.value("fastDownload", true).toBool();
 	_spamFilterEnabled = s.value("spamFilterEnabled", true).toBool();
 	_filterSpamInSearch = s.value("filterSpamInSearch", true).toBool();
 	_spamKeywords = s.value("spamKeywords", QString()).toString();
@@ -257,23 +256,6 @@ void Settings::setShowExactTime(bool enabled) {
 
 rpl::producer<bool> Settings::showExactTimeChanges() const {
 	return _showExactTimeChanges.events();
-}
-
-bool Settings::fastDownload() const {
-	return _fastDownload;
-}
-
-void Settings::setFastDownload(bool enabled) {
-	if (_fastDownload != enabled) {
-		_fastDownload = enabled;
-		QSettings s("MakuGram", "MakuGram");
-		s.setValue("fastDownload", enabled);
-		_fastDownloadChanges.fire_copy(enabled);
-	}
-}
-
-rpl::producer<bool> Settings::fastDownloadChanges() const {
-	return _fastDownloadChanges.events();
 }
 
 bool Settings::spamFilterEnabled() const {

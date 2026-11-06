@@ -57,11 +57,6 @@ public:
 	void setShowExactTime(bool enabled);
 	[[nodiscard]] rpl::producer<bool> showExactTimeChanges() const;
 
-	// 5. Multi-threaded fast download
-	[[nodiscard]] bool fastDownload() const;
-	void setFastDownload(bool enabled);
-	[[nodiscard]] rpl::producer<bool> fastDownloadChanges() const;
-
 	// 6. Local keyword spam filter
 	[[nodiscard]] bool spamFilterEnabled() const;
 	void setSpamFilterEnabled(bool enabled);
@@ -105,7 +100,6 @@ private:
 	bool _quickBanInRequests = true;
 	bool _alwaysZoomMediaToScreen = true;
 	bool _showExactTime = false;
-	bool _fastDownload = true;
 	bool _spamFilterEnabled = true;
 	bool _filterSpamInSearch = true;
 	QString _spamKeywords;
@@ -119,7 +113,6 @@ private:
 	rpl::event_stream<bool> _quickBanInRequestsChanges;
 	rpl::event_stream<bool> _alwaysZoomMediaToScreenChanges;
 	rpl::event_stream<bool> _showExactTimeChanges;
-	rpl::event_stream<bool> _fastDownloadChanges;
 	rpl::event_stream<bool> _spamFilterEnabledChanges;
 	rpl::event_stream<bool> _filterSpamInSearchChanges;
 	rpl::event_stream<QString> _spamKeywordsChanges;

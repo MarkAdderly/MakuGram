@@ -52,7 +52,8 @@ void AddCheckboxRow(
 		rpl::producer<QString> title,
 		bool checked,
 		Fn<void(bool)> onChange,
-		rpl::producer<QString> about = nullptr) {
+		rpl::producer<QString> about = nullptr,
+		int bottomSkip = -1) {
 	const auto cb = box->addRow(
 		object_ptr<Ui::Checkbox>(
 			box,
@@ -63,7 +64,7 @@ void AddCheckboxRow(
 			st::boxRowPadding.left(),
 			4,
 			st::boxRowPadding.right(),
-			about ? 0 : st::boxMediumSkip));
+			about ? 0 : (bottomSkip >= 0 ? bottomSkip : st::boxMediumSkip)));
 	cb->setAllowTextLines(0);
 	cb->setCheckAlignment(style::al_topleft);
 	cb->checkedChanges(
@@ -81,7 +82,7 @@ void AddCheckboxRow(
 				st::boxRowPadding.left(),
 				9,
 				st::boxRowPadding.right(),
-				st::boxMediumSkip));
+				bottomSkip >= 0 ? bottomSkip : st::boxMediumSkip));
 	}
 }
 
@@ -163,12 +164,22 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
+			tr::lng_settings_makugram_hide_blocked(),
+			MakuGram::Settings::instance().hideMessagesFromBlocked(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setHideMessagesFromBlocked(checked);
+			},
+			tr::lng_settings_makugram_hide_blocked_about());
+
+		AddCheckboxRow(
+			box,
 			tr::lng_settings_makugram_spam_filter(),
 			MakuGram::Settings::instance().spamFilterEnabled(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setSpamFilterEnabled(checked);
 			},
-			tr::lng_settings_makugram_spam_filter_about());
+			tr::lng_settings_makugram_spam_filter_about(),
+			/* bottomSkip = */ 0);
 
 		const auto spamSetupBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
@@ -177,7 +188,7 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 				st::defaultBoxButton),
 			style::margins(
 				st::boxRowPadding.left(),
-				6,
+				9,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
 		spamSetupBtn->setClickedCallback([=] {
@@ -194,15 +205,6 @@ void ShowModerationBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
 		box->setTitle(tr::lng_settings_makugram_section_moderation());
-
-		AddCheckboxRow(
-			box,
-			tr::lng_settings_makugram_hide_blocked(),
-			MakuGram::Settings::instance().hideMessagesFromBlocked(),
-			[=](bool checked) {
-				MakuGram::Settings::instance().setHideMessagesFromBlocked(checked);
-			},
-			tr::lng_settings_makugram_hide_blocked_about());
 
 		AddCheckboxRow(
 			box,
@@ -271,15 +273,6 @@ void ShowMediaBox(not_null<Window::SessionController*> controller) {
 			},
 			tr::lng_settings_makugram_always_zoom_about());
 
-		AddCheckboxRow(
-			box,
-			tr::lng_settings_makugram_fast_download(),
-			MakuGram::Settings::instance().fastDownload(),
-			[=](bool checked) {
-				MakuGram::Settings::instance().setFastDownload(checked);
-			},
-			tr::lng_settings_makugram_fast_download_about());
-
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
 		});
@@ -307,7 +300,7 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 					"• Безлимитный мультиаккаунт (до 100 аккаунтов) активен по умолчанию.\n"
 					"• Приватность и сообщения: фильтр скрываемых слов со звёздочками (*), точное время с секундами, пересылка без автора.\n"
 					"• Модерация и безопасность: быстрый бан в заявках, удаление и бан из меню сообщений, бейдж (Новичок), скрытие сообщений заблокированных.\n"
-					"• Медиа и сеть: открытие во весь экран, ускоренная параллельная загрузка файлов.\n\n"
+					"• Медиа: открытие во весь экран.\n\n"
 					"Версия клиента: MakuGram 7.4.0"),
 				st::boxDividerLabel),
 			st::boxRowPadding);
@@ -355,7 +348,7 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.title = tr::lng_settings_makugram_section_media(),
 		.icon = { &st::menuIconPhoto },
 		.onClick = [=] { ShowMediaBox(controller); },
-		.keywords = { u"media"_q, u"zoom"_q, u"download"_q, u"медиа"_q, u"масштаб"_q, u"скорость"_q, u"экран"_q },
+		.keywords = { u"media"_q, u"zoom"_q, u"медиа"_q, u"масштаб"_q, u"экран"_q },
 	});
 
 	// 5. О клиенте
