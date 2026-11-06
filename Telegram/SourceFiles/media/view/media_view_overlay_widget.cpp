@@ -6154,6 +6154,9 @@ void OverlayWidget::setSystemMediaControls(
 }
 
 bool OverlayWidget::contentNeedsScreenshotProtection() const {
+	if (MakuGram::Settings::instance().bypassRestrictedContent()) {
+		return false;
+	}
 	if (const auto story = _stories ? _stories->story() : nullptr) {
 		return story->forbidsForward();
 	}

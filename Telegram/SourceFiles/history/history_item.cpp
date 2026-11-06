@@ -37,6 +37,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_session_settings.h"
 #include "menu/menu_ttl_validator.h"
 #include "apiwrap.h"
+#include "makugram/makugram_settings.h"
 #include "media/audio/media_audio.h"
 #include "core/application.h"
 #include "wallet/wallet_address.h"
@@ -3515,10 +3516,16 @@ bool HistoryItem::canStopPoll() const {
 }
 
 bool HistoryItem::forbidsForward() const {
+	if (MakuGram::Settings::instance().bypassRestrictedContent()) {
+		return false;
+	}
 	return (_flags & MessageFlag::NoForwards);
 }
 
 bool HistoryItem::forbidsSaving() const {
+	if (MakuGram::Settings::instance().bypassRestrictedContent()) {
+		return false;
+	}
 	if (forbidsForward()) {
 		return true;
 	} else if (_media && _media->ttlSeconds()) {

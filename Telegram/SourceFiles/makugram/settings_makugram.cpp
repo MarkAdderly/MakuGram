@@ -164,6 +164,42 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
+			rpl::single(QString::fromUtf8("Не передавать статус набора текста")),
+			MakuGram::Settings::instance().hideTypingStatus(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setHideTypingStatus(checked);
+			},
+			rpl::single(QString::fromUtf8("Собеседники не будут видеть, когда вы печатаете текст или записываете голосовое/видеосообщение.")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Разрешить копирование и сохранение контента")),
+			MakuGram::Settings::instance().bypassRestrictedContent(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setBypassRestrictedContent(checked);
+			},
+			rpl::single(QString::fromUtf8("Снимает ограничения на сохранение медиа, копирование текста и скриншоты в защищённых каналах и группах.")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Кнопка \"Только непрочитанные\" над чатами")),
+			MakuGram::Settings::instance().showUnreadFilterButton(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setShowUnreadFilterButton(checked);
+			},
+			rpl::single(QString::fromUtf8("Отображает кнопку над списком чатов для быстрого показа только непрочитанных диалогов в один клик.")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Массовое удаление сообщений за период")),
+			MakuGram::Settings::instance().quickMassDeleteMyMessages(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setQuickMassDeleteMyMessages(checked);
+			},
+			rpl::single(QString::fromUtf8("Добавляет в меню диалога пункт для быстрого удаления сообщений за сегодня, неделю, месяц или всё время.")));
+
+		AddCheckboxRow(
+			box,
 			tr::lng_settings_makugram_hide_blocked(),
 			MakuGram::Settings::instance().hideMessagesFromBlocked(),
 			[=](bool checked) {
@@ -226,6 +262,15 @@ void ShowModerationBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
+			rpl::single(QString::fromUtf8("Поиск сообщений пользователя в чате")),
+			MakuGram::Settings::instance().searchUserMessagesInChat(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setSearchUserMessagesInChat(checked);
+			},
+			rpl::single(QString::fromUtf8("Добавляет пункт в контекстное меню сообщения для быстрого поиска всех сообщений автора в текущей группе.")));
+
+		AddCheckboxRow(
+			box,
 			tr::lng_settings_makugram_newbie_badge(),
 			MakuGram::Settings::instance().showNewbieBadge(),
 			[=](bool checked) {
@@ -246,12 +291,12 @@ void ShowProfileBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
-			tr::lng_settings_makugram_profile_details(),
+			rpl::single(QString::fromUtf8("Показывать ID и дату регистрации аккаунта")),
 			MakuGram::Settings::instance().showProfileDetails(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setShowProfileDetails(checked);
 			},
-			tr::lng_settings_makugram_profile_details_about());
+			rpl::single(QString::fromUtf8("Отображать числовой ID (с копированием в буфер по клику) и расчетный период регистрации в профиле пользователя.")));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -272,6 +317,35 @@ void ShowMediaBox(not_null<Window::SessionController*> controller) {
 				MakuGram::Settings::instance().setAlwaysZoomMediaToScreen(checked);
 			},
 			tr::lng_settings_makugram_always_zoom_about());
+
+		box->addButton(tr::lng_close(), [=] {
+			box->closeBox();
+		});
+	}));
+}
+
+void ShowAppearanceBox(not_null<Window::SessionController*> controller) {
+	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+		box->setWidth(kBoxContentWidth);
+		box->setTitle(QString::fromUtf8("Внешний вид"));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Компактный список чатов")),
+			MakuGram::Settings::instance().compactChatList(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setCompactChatList(checked);
+			},
+			rpl::single(QString::fromUtf8("Скрывает строку предпросмотра последнего сообщения и уменьшает высоту строк чатов, умещая в два раза больше диалогов на экране.")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Отключить анимацию реакций и конфетти")),
+			MakuGram::Settings::instance().disableReactionAnimations(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setDisableReactionAnimations(checked);
+			},
+			rpl::single(QString::fromUtf8("Отключает летающие большие эмодзи, эффекты и конфетти при установке реакций для максимальной плавности.")));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -343,7 +417,15 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.keywords = { u"id"_q, u"profile"_q, u"registration"_q, u"профиль"_q, u"возраст"_q, u"регистрация"_q },
 	});
 
-	// 4. Медиа и сеть
+	// 4. Внешний вид
+	builder.addButton({
+		.title = rpl::single(QString::fromUtf8("Внешний вид")),
+		.icon = { &st::menuIconChangeColors },
+		.onClick = [=] { ShowAppearanceBox(controller); },
+		.keywords = { u"appearance"_q, u"compact"_q, u"reactions"_q, u"вид"_q, u"компактный"_q, u"реакции"_q },
+	});
+
+	// 5. Медиа
 	builder.addButton({
 		.title = tr::lng_settings_makugram_section_media(),
 		.icon = { &st::menuIconPhoto },
@@ -351,7 +433,7 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.keywords = { u"media"_q, u"zoom"_q, u"медиа"_q, u"масштаб"_q, u"экран"_q },
 	});
 
-	// 5. О клиенте
+	// 6. О клиенте
 	builder.addButton({
 		.title = rpl::single(QString::fromUtf8("О клиенте")),
 		.icon = { &st::menuIconInfo },

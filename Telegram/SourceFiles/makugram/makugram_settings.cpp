@@ -128,6 +128,14 @@ Settings::Settings() {
 	_showNewbieBadge = s.value("showNewbieBadge", true).toBool();
 	_showProfileDetails = s.value("showProfileDetails", true).toBool();
 	_quickDeleteAndBan = s.value("quickDeleteAndBan", true).toBool();
+	_hideTypingStatus = s.value("hideTypingStatus", false).toBool();
+	_bypassRestrictedContent = s.value("bypassRestrictedContent", true).toBool();
+	_showUnreadFilterButton = s.value("showUnreadFilterButton", true).toBool();
+	_unreadOnlyActive = false; // runtime state
+	_quickMassDeleteMyMessages = s.value("quickMassDeleteMyMessages", true).toBool();
+	_searchUserMessagesInChat = s.value("searchUserMessagesInChat", true).toBool();
+	_compactChatList = s.value("compactChatList", false).toBool();
+	_disableReactionAnimations = s.value("disableReactionAnimations", false).toBool();
 
 	parseSpamKeywords();
 }
@@ -367,6 +375,140 @@ void Settings::setQuickDeleteAndBan(bool enabled) {
 
 rpl::producer<bool> Settings::quickDeleteAndBanChanges() const {
 	return _quickDeleteAndBanChanges.events();
+}
+
+bool Settings::hideTypingStatus() const {
+	return _hideTypingStatus;
+}
+
+void Settings::setHideTypingStatus(bool enabled) {
+	if (_hideTypingStatus != enabled) {
+		_hideTypingStatus = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("hideTypingStatus", enabled);
+		_hideTypingStatusChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::hideTypingStatusChanges() const {
+	return _hideTypingStatusChanges.events();
+}
+
+bool Settings::bypassRestrictedContent() const {
+	return _bypassRestrictedContent;
+}
+
+void Settings::setBypassRestrictedContent(bool enabled) {
+	if (_bypassRestrictedContent != enabled) {
+		_bypassRestrictedContent = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("bypassRestrictedContent", enabled);
+		_bypassRestrictedContentChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::bypassRestrictedContentChanges() const {
+	return _bypassRestrictedContentChanges.events();
+}
+
+bool Settings::showUnreadFilterButton() const {
+	return _showUnreadFilterButton;
+}
+
+void Settings::setShowUnreadFilterButton(bool enabled) {
+	if (_showUnreadFilterButton != enabled) {
+		_showUnreadFilterButton = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("showUnreadFilterButton", enabled);
+		_showUnreadFilterButtonChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::showUnreadFilterButtonChanges() const {
+	return _showUnreadFilterButtonChanges.events();
+}
+
+bool Settings::unreadOnlyActive() const {
+	return _unreadOnlyActive;
+}
+
+void Settings::setUnreadOnlyActive(bool active) {
+	if (_unreadOnlyActive != active) {
+		_unreadOnlyActive = active;
+		_unreadOnlyActiveChanges.fire_copy(active);
+	}
+}
+
+rpl::producer<bool> Settings::unreadOnlyActiveChanges() const {
+	return _unreadOnlyActiveChanges.events();
+}
+
+bool Settings::quickMassDeleteMyMessages() const {
+	return _quickMassDeleteMyMessages;
+}
+
+void Settings::setQuickMassDeleteMyMessages(bool enabled) {
+	if (_quickMassDeleteMyMessages != enabled) {
+		_quickMassDeleteMyMessages = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("quickMassDeleteMyMessages", enabled);
+		_quickMassDeleteMyMessagesChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::quickMassDeleteMyMessagesChanges() const {
+	return _quickMassDeleteMyMessagesChanges.events();
+}
+
+bool Settings::searchUserMessagesInChat() const {
+	return _searchUserMessagesInChat;
+}
+
+void Settings::setSearchUserMessagesInChat(bool enabled) {
+	if (_searchUserMessagesInChat != enabled) {
+		_searchUserMessagesInChat = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("searchUserMessagesInChat", enabled);
+		_searchUserMessagesInChatChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::searchUserMessagesInChatChanges() const {
+	return _searchUserMessagesInChatChanges.events();
+}
+
+bool Settings::compactChatList() const {
+	return _compactChatList;
+}
+
+void Settings::setCompactChatList(bool enabled) {
+	if (_compactChatList != enabled) {
+		_compactChatList = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("compactChatList", enabled);
+		_compactChatListChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::compactChatListChanges() const {
+	return _compactChatListChanges.events();
+}
+
+bool Settings::disableReactionAnimations() const {
+	return _disableReactionAnimations;
+}
+
+void Settings::setDisableReactionAnimations(bool enabled) {
+	if (_disableReactionAnimations != enabled) {
+		_disableReactionAnimations = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("disableReactionAnimations", enabled);
+		_disableReactionAnimationsChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::disableReactionAnimationsChanges() const {
+	return _disableReactionAnimationsChanges.events();
 }
 
 } // namespace MakuGram

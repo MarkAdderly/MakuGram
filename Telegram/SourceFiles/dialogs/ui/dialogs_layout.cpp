@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/ui/dialogs_layout.h"
+#include "makugram/makugram_settings.h"
 
 #include "base/options.h"
 #include "base/unixtime.h"
@@ -492,41 +493,46 @@ void PaintRow(
 		row->paintRipple(p, 0, 0, context.width, &ripple->c);
 	}
 
+	const auto compact = MakuGram::Settings::instance().compactChatList();
+	const auto userpicLeft = compact ? 8 : context.st->padding.left();
+	const auto userpicTop = compact ? 5 : context.st->padding.top();
+	const auto userpicSize = compact ? 32 : context.st->photoSize;
+
 	if (flags & Flag::SavedMessages) {
 		EmptyUserpic::PaintSavedMessages(
 			p,
-			context.st->padding.left(),
-			context.st->padding.top(),
+			userpicLeft,
+			userpicTop,
 			context.width,
-			context.st->photoSize);
+			userpicSize);
 	} else if (flags & Flag::RepliesMessages) {
 		EmptyUserpic::PaintRepliesMessages(
 			p,
-			context.st->padding.left(),
-			context.st->padding.top(),
+			userpicLeft,
+			userpicTop,
 			context.width,
-			context.st->photoSize);
+			userpicSize);
 	} else if (flags & Flag::HiddenAuthor) {
 		EmptyUserpic::PaintHiddenAuthor(
 			p,
-			context.st->padding.left(),
-			context.st->padding.top(),
+			userpicLeft,
+			userpicTop,
 			context.width,
-			context.st->photoSize);
+			userpicSize);
 	} else if (flags & Flag::MyNotes) {
 		EmptyUserpic::PaintMyNotes(
 			p,
-			context.st->padding.left(),
-			context.st->padding.top(),
+			userpicLeft,
+			userpicTop,
 			context.width,
-			context.st->photoSize);
+			userpicSize);
 	} else if (!from && hiddenSenderInfo) {
 		hiddenSenderInfo->emptyUserpic.paintCircle(
 			p,
-			context.st->padding.left(),
-			context.st->padding.top(),
+			userpicLeft,
+			userpicTop,
 			context.width,
-			context.st->photoSize);
+			userpicSize);
 	} else if (!(flags & Flag::AllowUserOnline)) {
 		PaintUserpic(
 			p,
@@ -549,7 +555,7 @@ void PaintRow(
 				&& !item->isEmpty()));
 	}
 
-	const auto nameleft = context.st->nameLeft;
+	const auto nameleft = compact ? 48 : context.st->nameLeft;
 	if (context.topicsExpanded > 0.) {
 		PaintExpandedTopicsBar(p, context.topicsExpanded);
 	}
@@ -560,10 +566,13 @@ void PaintRow(
 		return;
 	}
 
+	const auto nametop = compact
+		? (42 - st::semiboldFont->height) / 2
+		: context.st->nameTop;
 	auto namewidth = context.width - nameleft - context.st->padding.right();
 	auto rectForName = QRect(
 		nameleft,
-		context.st->nameTop,
+		nametop,
 		namewidth,
 		st::semiboldFont->height);
 
@@ -606,7 +615,20 @@ void PaintRow(
 		}
 	}
 	auto texttop = context.st->textTop;
-	if (const auto folder = entry->asFolder()) {
+	if (compact) {
+		if (!promoted) {
+			PaintDialogDate(p, entry, fakeRow, date, rectForName, context);
+		}
+		const auto displayPinnedIcon = entry->isPinnedDialog(context.filter)
+			&& (context.filter || !entry->fixedOnTopIndex());
+		PaintWideCounter(
+			p,
+			context,
+			badgesState,
+			nametop,
+			namewidth,
+			displayPinnedIcon);
+	} else if (const auto folder = entry->asFolder()) {
 		const auto availableWidth = PaintWideCounter(
 			p,
 			context,

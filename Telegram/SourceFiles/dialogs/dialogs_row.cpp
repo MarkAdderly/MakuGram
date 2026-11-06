@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/dialogs_row.h"
+#include "makugram/makugram_settings.h"
 
 #include "ui/chat/chat_theme.h" // CountAverageColor.
 #include "ui/color_contrast.h"
@@ -422,6 +423,10 @@ const style::DialogRow &Row::ComputeSt(
 }
 
 void Row::recountHeight(float64 narrowRatio, FilterId filterId) {
+	if (MakuGram::Settings::instance().compactChatList()) {
+		_height = 42;
+		return;
+	}
 	const auto &st = ComputeSt(_id.entry(), filterId);
 	_height = ((&st == &st::defaultDialogRow) || !_id.history())
 		? st::defaultDialogRow.height

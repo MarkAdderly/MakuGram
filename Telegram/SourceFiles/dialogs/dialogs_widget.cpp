@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/dialogs_widget.h"
+#include "makugram/makugram_settings.h"
 
 #include "base/call_delayed.h"
 #include "base/qt/qt_key_modifiers.h"
@@ -101,6 +102,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_dialogs_widget.h"
 #include "styles/style_info.h"
 #include "styles/style_window.h"
+#include "styles/style_menu_icons.h"
 #include "base/qt/qt_common_adapters.h"
 
 #include <QtCore/QMimeData>
@@ -462,6 +464,7 @@ Widget::Widget(
 , _lockUnlock(
 	_searchControls,
 	object_ptr<Ui::IconButton>(this, st::dialogsLock))
+, _unreadToggle(_searchControls, st::dialogsCalendar)
 , _scroll(this)
 , _scrollToTop(_scroll, st::dialogsToUp)
 , _stories((_layout != Layout::Child)
@@ -729,6 +732,20 @@ Widget::Widget(
 		Core::App().maybeLockByPasscode();
 		lockUnlock->setIconOverride(nullptr);
 	});
+
+	if (_unreadToggle) {
+		_unreadToggle->setAccessibleName(QString::fromUtf8("Только непрочитанные"));
+		_unreadToggle->setIconOverride(&st::menuIconMarkUnread);
+		_unreadToggle->setClickedCallback([=] {
+			const auto active = !MakuGram::Settings::instance().unreadOnlyActive();
+			MakuGram::Settings::instance().setUnreadOnlyActive(active);
+			_inner->refreshUnreadOnly();
+		});
+		MakuGram::Settings::instance().showUnreadFilterButtonChanges(
+		) | rpl::on_next([=] {
+			updateControlsGeometry();
+		}, lifetime());
+	}
 
 	setupMainMenuToggle();
 	setupShortcuts();
@@ -4670,10 +4687,13 @@ void Widget::updateControlsGeometry() {
 		? ((smallw - ratiow) / float64(smallw - _narrowWidth))
 		: 0.;
 
+	const auto showUnreadBtn = MakuGram::Settings::instance().showUnreadFilterButton();
+	const auto unreadWidth = (showUnreadBtn && _unreadToggle) ? _unreadToggle->width() : 0;
 	auto filterLeft = (controller()->filtersWidth()
 		? st::dialogsFilterSkip
 		: (st::dialogsFilterPadding.x() + _mainMenu.toggle->width()))
-		+ st::dialogsFilterPadding.x();
+		+ st::dialogsFilterPadding.x()
+		+ unreadWidth;
 	const auto filterRight = st::dialogsFilterSkip
 		+ st::dialogsFilterPadding.x();
 	const auto filterWidth = std::max(ratiow, smallw)
@@ -4715,6 +4735,16 @@ void Widget::updateControlsGeometry() {
 	_searchForNarrowLayout->moveToLeft(
 		searchLeft,
 		st::dialogsFilterPadding.y());
+
+	if (_unreadToggle) {
+		const auto unreadVisible = showUnreadBtn && (narrowRatio < 0.5);
+		_unreadToggle->setVisible(unreadVisible);
+		if (unreadVisible) {
+			_unreadToggle->moveToLeft(
+				filterLeft - unreadWidth,
+				st::dialogsFilterPadding.y());
+		}
+	}
 
 	auto right = filterLeft + filterWidth;
 	_cancelSearch->moveToLeft(right - _cancelSearch->width(), _search->y());

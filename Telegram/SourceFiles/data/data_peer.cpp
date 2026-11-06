@@ -28,6 +28,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/crc32hash.h"
 #include "lang/lang_keys.h"
 #include "apiwrap.h"
+#include "makugram/makugram_settings.h"
 #include "api/api_chat_participants.h"
 #include "ui/boxes/confirm_box.h"
 #include "main/main_session.h"
@@ -1735,6 +1736,9 @@ void PeerData::processTopics(const MTPVector<MTPForumTopic> &topics) {
 }
 
 bool PeerData::allowsForwarding() const {
+	if (MakuGram::Settings::instance().bypassRestrictedContent()) {
+		return true;
+	}
 	if (const auto user = asUser()) {
 		return user->allowsForwarding();
 	} else if (const auto channel = asChannel()) {

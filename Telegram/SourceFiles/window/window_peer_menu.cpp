@@ -59,6 +59,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/popup_menu.h"
 #include "ui/widgets/menu/menu_add_action_callback_factory.h"
 #include "ui/layers/generic_box.h"
+#include "ui/boxes/single_choice_box.h"
+#include "makugram/makugram_settings.h"
 #include "ui/delayed_activation.h"
 #include "ui/vertical_list.h"
 #include "ui/controls/feature_list.h"
@@ -877,6 +879,41 @@ void Filler::addClearHistory() {
 		tr::lng_profile_clear_history(tr::now),
 		ClearHistoryHandler(_controller, _peer),
 		&st::menuIconClear);
+	if (MakuGram::Settings::instance().quickMassDeleteMyMessages() && _peer->isUser()) {
+		_addAction(
+			QString::fromUtf8("Удалить историю за период..."),
+			[controller = _controller, peer = _peer] {
+				static const auto options = std::vector<QString>{
+					QString::fromUtf8("За сегодня"),
+					QString::fromUtf8("За последние 7 дней"),
+					QString::fromUtf8("За последний месяц"),
+					QString::fromUtf8("За всё время"),
+				};
+				controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+					SingleChoiceBox(box, {
+						.title = rpl::single(QString::fromUtf8("Удаление сообщений за период")),
+						.options = options,
+						.initialSelection = -1,
+						.callback = [=](int index) {
+							const auto today = QDate::currentDate();
+							auto from = today;
+							auto to = today;
+							if (index == 0) {
+								from = today;
+							} else if (index == 1) {
+								from = today.addDays(-7);
+							} else if (index == 2) {
+								from = today.addDays(-30);
+							} else if (index == 3) {
+								from = QDate(2013, 1, 1);
+							}
+							controller->show(Box<DeleteMessagesBox>(peer, from, to));
+						},
+					});
+				}));
+			},
+			&st::menuIconTTL);
+	}
 }
 
 void Filler::addDeleteChat() {

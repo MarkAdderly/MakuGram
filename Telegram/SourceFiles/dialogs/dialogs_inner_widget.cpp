@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/dialogs_inner_widget.h"
+#include "makugram/makugram_settings.h"
 
 #include "dialogs/dialogs_three_state_icon.h"
 #include "dialogs/ui/chat_search_empty.h"
@@ -5466,6 +5467,42 @@ bool InnerWidget::computeSearchWithPostsPreview() const {
 	return 	(_searchHashOrCashtag != HashOrCashtag::None)
 		&& (_searchState.tab == ChatSearchTab::MyMessages)
 		&& !_searchState.inChat;
+}
+
+void InnerWidget::refreshUnreadOnly() {
+	if (!MakuGram::Settings::instance().unreadOnlyActive()) {
+		clearFilter();
+		return;
+	}
+	setState(WidgetState::Filtered);
+	_filterResults.clear();
+	_filterResultsGlobal.clear();
+	_searchResults.clear();
+	_previewResults.clear();
+	_hashtagResults.clear();
+	clearPeerSearchResults();
+	auto top = 0;
+	const auto addUnreadFromList = [&](not_null<IndexedList*> list) {
+		for (const auto &row : list->all()) {
+			const auto entry = row->entry();
+			const auto badges = entry->chatListBadgesState();
+			const auto history = entry->asHistory();
+			const auto isUnread = badges.unread || badges.mention || (history && history->fakeUnreadWhileOpened());
+			if (isUnread) {
+				_filterResults.emplace_back(row.get());
+				_filterResults.back().top = top;
+				_filterResults.back().row->recountHeight(_narrowRatio, _filterId);
+				top += row->height();
+			}
+		}
+	};
+	const auto owner = &session().data();
+	addUnreadFromList(owner->chatsList()->indexed());
+	if (const auto add = owner->folderLoaded(Data::Folder::kId)) {
+		addUnreadFromList(add->chatsList()->indexed());
+	}
+	refresh(true);
+	clearMouseSelection(true);
 }
 
 void InnerWidget::clearFilter() {

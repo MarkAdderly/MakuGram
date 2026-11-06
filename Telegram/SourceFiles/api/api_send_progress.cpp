@@ -14,6 +14,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/unixtime.h"
 #include "data/data_peer_values.h"
 #include "apiwrap.h"
+#include "makugram/makugram_settings.h"
 
 namespace Api {
 namespace {
@@ -64,6 +65,11 @@ void SendProgressManager::update(
 		MsgId topMsgId,
 		SendProgressType type,
 		int progress) {
+	if (MakuGram::Settings::instance().hideTypingStatus()) {
+		if (type != SendProgressType::Speaking) {
+			return;
+		}
+	}
 	const auto peer = history->peer;
 	if (peer->isSelf()
 		|| (peer->isChannel()

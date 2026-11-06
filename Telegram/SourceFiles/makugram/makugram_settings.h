@@ -87,6 +87,46 @@ public:
 	void setQuickDeleteAndBan(bool enabled);
 	[[nodiscard]] rpl::producer<bool> quickDeleteAndBanChanges() const;
 
+	// 10. Hide typing status
+	[[nodiscard]] bool hideTypingStatus() const;
+	void setHideTypingStatus(bool enabled);
+	[[nodiscard]] rpl::producer<bool> hideTypingStatusChanges() const;
+
+	// 11. Bypass restricted content
+	[[nodiscard]] bool bypassRestrictedContent() const;
+	void setBypassRestrictedContent(bool enabled);
+	[[nodiscard]] rpl::producer<bool> bypassRestrictedContentChanges() const;
+
+	// 12. Show unread filter button
+	[[nodiscard]] bool showUnreadFilterButton() const;
+	void setShowUnreadFilterButton(bool enabled);
+	[[nodiscard]] rpl::producer<bool> showUnreadFilterButtonChanges() const;
+
+	// Unread only mode (active state)
+	[[nodiscard]] bool unreadOnlyActive() const;
+	void setUnreadOnlyActive(bool active);
+	[[nodiscard]] rpl::producer<bool> unreadOnlyActiveChanges() const;
+
+	// 13. Mass delete my messages
+	[[nodiscard]] bool quickMassDeleteMyMessages() const;
+	void setQuickMassDeleteMyMessages(bool enabled);
+	[[nodiscard]] rpl::producer<bool> quickMassDeleteMyMessagesChanges() const;
+
+	// 14. Search user messages in chat
+	[[nodiscard]] bool searchUserMessagesInChat() const;
+	void setSearchUserMessagesInChat(bool enabled);
+	[[nodiscard]] rpl::producer<bool> searchUserMessagesInChatChanges() const;
+
+	// 15. Compact chat list
+	[[nodiscard]] bool compactChatList() const;
+	void setCompactChatList(bool enabled);
+	[[nodiscard]] rpl::producer<bool> compactChatListChanges() const;
+
+	// 16. Disable reaction animations
+	[[nodiscard]] bool disableReactionAnimations() const;
+	void setDisableReactionAnimations(bool enabled);
+	[[nodiscard]] rpl::producer<bool> disableReactionAnimationsChanges() const;
+
 private:
 	Settings();
 	~Settings() = default;
@@ -108,6 +148,14 @@ private:
 	bool _showNewbieBadge = true;
 	bool _showProfileDetails = true;
 	bool _quickDeleteAndBan = true;
+	bool _hideTypingStatus = false;
+	bool _bypassRestrictedContent = true;
+	bool _showUnreadFilterButton = true;
+	bool _unreadOnlyActive = false;
+	bool _quickMassDeleteMyMessages = true;
+	bool _searchUserMessagesInChat = true;
+	bool _compactChatList = false;
+	bool _disableReactionAnimations = false;
 
 	rpl::event_stream<bool> _hideMessagesFromBlockedChanges;
 	rpl::event_stream<bool> _quickBanInRequestsChanges;
@@ -119,6 +167,14 @@ private:
 	rpl::event_stream<bool> _showNewbieBadgeChanges;
 	rpl::event_stream<bool> _showProfileDetailsChanges;
 	rpl::event_stream<bool> _quickDeleteAndBanChanges;
+	rpl::event_stream<bool> _hideTypingStatusChanges;
+	rpl::event_stream<bool> _bypassRestrictedContentChanges;
+	rpl::event_stream<bool> _showUnreadFilterButtonChanges;
+	rpl::event_stream<bool> _unreadOnlyActiveChanges;
+	rpl::event_stream<bool> _quickMassDeleteMyMessagesChanges;
+	rpl::event_stream<bool> _searchUserMessagesInChatChanges;
+	rpl::event_stream<bool> _compactChatListChanges;
+	rpl::event_stream<bool> _disableReactionAnimationsChanges;
 };
 
 } // namespace MakuGram

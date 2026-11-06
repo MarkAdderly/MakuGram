@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/effects/reaction_fly_animation.h"
+#include "makugram/makugram_settings.h"
 
 #include "ui/text/text_custom_emoji.h"
 #include "ui/animated_icon.h"
@@ -136,6 +137,9 @@ ReactionFlyAnimation::ReactionFlyAnimation(
 	} else if (!_custom && !resolve(_center, centerIcon, centerSize)) {
 		return;
 	}
+	if (MakuGram::Settings::instance().disableReactionAnimations()) {
+		return;
+	}
 	resolve(_effect, aroundAnimation, size * 2);
 	if (!args.flyIcon.isNull()) {
 		_flyIcon = std::move(args.flyIcon);
@@ -157,6 +161,9 @@ QRect ReactionFlyAnimation::paintGetArea(
 		const QColor &colored,
 		QRect clip,
 		crl::time now) const {
+	if (!_valid || MakuGram::Settings::instance().disableReactionAnimations()) {
+		return QRect();
+	}
 	const auto scale = [&] {
 		if (!_scaleOutDuration
 			|| (!_effect && !_noEffectScaleStarted)) {
@@ -426,6 +433,9 @@ float64 ReactionFlyAnimation::flyingProgress() const {
 }
 
 bool ReactionFlyAnimation::finished() const {
+	if (MakuGram::Settings::instance().disableReactionAnimations()) {
+		return true;
+	}
 	return !_valid
 		|| (_flyIcon.isNull()
 			&& (!_center || !_center->animating())

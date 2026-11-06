@@ -1234,6 +1234,16 @@ bool AddDeleteMessageAction(
 			}
 		}
 	}
+	if (MakuGram::Settings::instance().searchUserMessagesInChat()) {
+		if (const auto from = item->from()) {
+			const auto chat = item->history()->peer;
+			if (chat && (chat->isChat() || chat->isMegagroup() || chat->isChannel())) {
+				menu->addAction(QString::fromUtf8("Найти сообщения этого автора"), [=] {
+					controller->searchInChat(item->history(), from);
+				}, &st::menuIconSearch);
+			}
+		}
+	}
 	menu->addAction(Ui::DeleteMessageContextAction(
 		menu->menu(),
 		callback,

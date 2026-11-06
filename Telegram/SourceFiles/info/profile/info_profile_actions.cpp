@@ -245,7 +245,7 @@ base::options::toggle ShowChannelJoinedBelowAbout({
 			value.append(Italic(u"id: "_q));
 			const auto raw = peer->id.value & PeerId::kChatTypeMask;
 			value.append(Link(
-				Italic(Lang::FormatCountDecimal(raw)),
+				Italic(QString::number(raw)),
 				kPeerIdLinkIndex));
 			if (peer->isUser()) {
 				const auto reg = MakuGram::EstimatedRegistrationDate(raw);
@@ -285,18 +285,34 @@ base::options::toggle ShowChannelJoinedBelowAbout({
 void SetupAboutPeerIdDrag(
 		not_null<Ui::FlatLabel*> label,
 		not_null<PeerData*> peer) {
-	if (!ShowPeerIdBelowAbout.value()) {
+	if (!ShowPeerIdBelowAbout.value() && !MakuGram::Settings::instance().showProfileDetails()) {
 		return;
 	}
 	const auto id = QString::number(peer->id.value & PeerId::kChatTypeMask);
 	AboutValue(
 		peer
 	) | rpl::on_next([=] {
+		class CopyIdClickHandler final : public ClickHandler {
+		public:
+			CopyIdClickHandler(QString id)
+			: _id(std::move(id)) {
+			}
+			void onClick(ClickContext context) const override {
+				QGuiApplication::clipboard()->setText(_id);
+				Ui::Toast::Show(QString::fromUtf8("ID скопирован: ") + _id);
+			}
+			QString dragText() const override {
+				return _id;
+			}
+			QString copyToClipboardText() const override {
+				return _id;
+			}
+		private:
+			QString _id;
+		};
 		label->setLink(
 			kPeerIdLinkIndex,
-			std::make_shared<DraggableUrlClickHandler>(
-				u"internal:~peer_id~:copy:"_q + id,
-				id));
+			std::make_shared<CopyIdClickHandler>(id));
 	}, label->lifetime());
 }
 

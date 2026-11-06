@@ -164,6 +164,7 @@ public:
 	void setNarrowRatio(float64 narrowRatio);
 
 	void clearFilter();
+	void refreshUnreadOnly();
 	void refresh(bool toTop = false);
 	void refreshEmpty();
 	void resizeEmpty();

@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/ui/dialogs_video_userpic.h"
+#include "makugram/makugram_settings.h"
 
 #include "core/file_location.h"
 #include "data/data_peer.h"
@@ -139,16 +140,20 @@ void PaintUserpic(
 		VideoUserpic *videoUserpic,
 		PeerUserpicView &view,
 		const Ui::PaintContext &context) {
+	const auto compact = MakuGram::Settings::instance().compactChatList();
+	const auto x = compact ? 8 : context.st->padding.left();
+	const auto y = compact ? 5 : context.st->padding.top();
+	const auto size = compact ? 32 : context.st->photoSize;
 	if (peer) {
 		PaintUserpic(
 			p,
 			peer,
 			videoUserpic,
 			view,
-			context.st->padding.left(),
-			context.st->padding.top(),
+			x,
+			y,
 			context.width,
-			context.st->photoSize,
+			size,
 			context.paused);
 	} else {
 		entry->paintUserpic(p, view, context);
