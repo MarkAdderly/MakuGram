@@ -14,6 +14,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_chat.h"
 #include "styles/style_boxes.h"
 #include "styles/style_layers.h"
+#include "makugram/makugram_settings.h"
 
 #include <QtWidgets/QApplication>
 
@@ -159,7 +160,7 @@ auto AlbumPreview::generateOrderedLayout() const
 -> std::vector<GroupMediaLayout> {
 	auto layout = LayoutMediaGroup(
 		_itemsShownDimensions,
-		st::sendMediaPreviewSize,
+		contentWidth(),
 		st::historyGroupWidthMin / 2,
 		st::historyGroupSkip / 2);
 	Assert(layout.size() == _order.size());
@@ -221,14 +222,33 @@ void AlbumPreview::prepareThumbs(gsl::span<Ui::PreparedFile> items) {
 	}), 0) + (count - 1) * st::sendMediaRowSkip;
 }
 
+int AlbumPreview::contentWidth() const {
+	const auto w = (width() > 0)
+		? width()
+		: (MakuGram::Settings::instance().expandMediaSendDialog()
+			? 728
+			: st::boxWideWidth);
+	return w - st::boxPhotoPadding.left() - st::boxPhotoPadding.right();
+}
+
 int AlbumPreview::contentLeft() const {
-	return (width() > 0)
-		? ((width() - st::sendMediaPreviewSize) / 2)
-		: ((st::boxWideWidth - st::sendMediaPreviewSize) / 2);
+	return st::boxPhotoPadding.left();
 }
 
 int AlbumPreview::contentTop() const {
 	return 0;
+}
+
+void AlbumPreview::resizeEvent(QResizeEvent *e) {
+	RpWidget::resizeEvent(e);
+	if (!_thumbs.empty()) {
+		const auto layout = generateOrderedLayout();
+		for (auto i = 0, count = int(_order.size()); i != count; ++i) {
+			_thumbs[_order[i]]->moveToLayout(layout[i]);
+		}
+		_thumbsHeight = countLayoutHeight(layout);
+		updateSize();
+	}
 }
 
 AlbumThumbnail *AlbumPreview::findThumb(QPoint position) const {

@@ -63,6 +63,7 @@ public:
 
 protected:
 	void paintEvent(QPaintEvent *e) override;
+	void resizeEvent(QResizeEvent *e) override;
 	void mousePressEvent(QMouseEvent *e) override;
 	void mouseMoveEvent(QMouseEvent *e) override;
 	void mouseReleaseEvent(QMouseEvent *e) override;
@@ -94,6 +95,7 @@ private:
 	void paintFiles(Painter &p, QRect clip) const;
 
 	void applyCursor(style::cursor cursor);
+	int contentWidth() const;
 	int contentLeft() const;
 	int contentTop() const;
 	AlbumThumbnail *findThumb(QPoint position) const;

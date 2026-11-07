@@ -108,8 +108,8 @@ QImage AbstractSingleMediaPreview::generatePriceTagBackground() const {
 
 void AbstractSingleMediaPreview::preparePreview(QImage preview) {
 	const auto expanded = MakuGram::Settings::instance().expandMediaSendDialog();
-	const auto previewBaseWidth = expanded ? 480 : st::sendMediaPreviewSize;
-	const auto previewMaxThumbHeight = expanded ? 450 : st::confirmMaxHeight;
+	const auto previewBaseWidth = expanded ? 672 : st::sendMediaPreviewSize;
+	const auto previewMaxThumbHeight = expanded ? 500 : st::confirmMaxHeight;
 	auto maxW = 0;
 	auto maxH = 0;
 	if (_animated && drawBackground()) {
