@@ -144,31 +144,31 @@ private:
 
 	void parseSpamKeywords();
 
-	bool _hideMessagesFromBlocked = true;
-	bool _quickBanInRequests = true;
+	bool _hideMessagesFromBlocked = false;
+	bool _quickBanInRequests = false;
 	bool _alwaysZoomMediaToScreen = true;
 	bool _showExactTime = false;
-	bool _spamFilterEnabled = true;
-	bool _filterSpamInSearch = true;
+	bool _spamFilterEnabled = false;
+	bool _filterSpamInSearch = false;
 	QString _spamKeywords;
 	std::vector<QString> _spamKeywordsList;
 	std::vector<SpamPattern> _spamPatterns;
-	bool _showNewbieBadge = true;
+	bool _showNewbieBadge = false;
 	bool _showProfileDetails = true;
 	bool _hideTypingStatus = false;
-	bool _bypassRestrictedContent = true;
+	bool _bypassRestrictedContent = false;
 	bool _showUnreadFilterButton = true;
 	bool _unreadOnlyActive = false;
-	bool _quickMassDeleteMyMessages = true;
+	bool _quickMassDeleteMyMessages = false;
 	bool _searchUserMessagesInChat = true;
 	bool _compactChatList = false;
 	bool _disableReactionAnimations = false;
 	bool _disableStories = false;
 	bool _hidePhoneNumberInSettings = false;
 	bool _forwardWithoutAuthor = true;
-	bool _showMediaResolution = true;
-	bool _fullscreenMediaSelection = true;
-	bool _expandMediaSendDialog = true;
+	bool _showMediaResolution = false;
+	bool _fullscreenMediaSelection = false;
+	bool _expandMediaSendDialog = false;
 	bool _increaseMessageSelectLimit = true;
 
 	rpl::event_stream<bool> _hideMessagesFromBlockedChanges;

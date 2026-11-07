@@ -118,29 +118,29 @@ Settings &Settings::instance() {
 
 Settings::Settings() {
 	QSettings s("MakuGram", "MakuGram");
-	_hideMessagesFromBlocked = s.value("hideMessagesFromBlocked", true).toBool();
-	_quickBanInRequests = s.value("quickBanInRequests", true).toBool();
+	_hideMessagesFromBlocked = s.value("hideMessagesFromBlocked", false).toBool();
+	_quickBanInRequests = s.value("quickBanInRequests", false).toBool();
 	_alwaysZoomMediaToScreen = s.value("alwaysZoomMediaToScreen", true).toBool();
 	_showExactTime = s.value("showExactTime", false).toBool();
-	_spamFilterEnabled = s.value("spamFilterEnabled", true).toBool();
-	_filterSpamInSearch = s.value("filterSpamInSearch", true).toBool();
+	_spamFilterEnabled = s.value("spamFilterEnabled", false).toBool();
+	_filterSpamInSearch = s.value("filterSpamInSearch", false).toBool();
 	_spamKeywords = s.value("spamKeywords", QString()).toString();
-	_showNewbieBadge = s.value("showNewbieBadge", true).toBool();
+	_showNewbieBadge = s.value("showNewbieBadge", false).toBool();
 	_showProfileDetails = s.value("showProfileDetails", true).toBool();
 	_hideTypingStatus = s.value("hideTypingStatus", false).toBool();
-	_bypassRestrictedContent = s.value("bypassRestrictedContent", true).toBool();
+	_bypassRestrictedContent = s.value("bypassRestrictedContent", false).toBool();
 	_showUnreadFilterButton = s.value("showUnreadFilterButton", true).toBool();
 	_unreadOnlyActive = false;
-	_quickMassDeleteMyMessages = s.value("quickMassDeleteMyMessages", true).toBool();
+	_quickMassDeleteMyMessages = s.value("quickMassDeleteMyMessages", false).toBool();
 	_searchUserMessagesInChat = s.value("searchUserMessagesInChat", true).toBool();
 	_compactChatList = s.value("compactChatList", false).toBool();
 	_disableReactionAnimations = s.value("disableReactionAnimations", false).toBool();
 	_disableStories = s.value("disableStories", false).toBool();
 	_hidePhoneNumberInSettings = s.value("hidePhoneNumberInSettings", false).toBool();
 	_forwardWithoutAuthor = s.value("forwardWithoutAuthor", true).toBool();
-	_showMediaResolution = s.value("showMediaResolution", true).toBool();
-	_fullscreenMediaSelection = s.value("fullscreenMediaSelection", true).toBool();
-	_expandMediaSendDialog = s.value("expandMediaSendDialog", true).toBool();
+	_showMediaResolution = s.value("showMediaResolution", false).toBool();
+	_fullscreenMediaSelection = s.value("fullscreenMediaSelection", false).toBool();
+	_expandMediaSendDialog = s.value("expandMediaSendDialog", false).toBool();
 	_increaseMessageSelectLimit = s.value("increaseMessageSelectLimit", true).toBool();
 
 	parseSpamKeywords();

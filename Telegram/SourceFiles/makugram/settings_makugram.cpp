@@ -232,15 +232,6 @@ void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
-			tr::lng_settings_makugram_exact_time(),
-			MakuGram::Settings::instance().showExactTime(),
-			[=](bool checked) {
-				MakuGram::Settings::instance().setShowExactTime(checked);
-			},
-			tr::lng_settings_makugram_exact_time_about());
-
-		AddCheckboxRow(
-			box,
 			rpl::single(QString::fromUtf8("Кнопка \"Только непрочитанные\" над чатами")),
 			MakuGram::Settings::instance().showUnreadFilterButton(),
 			[=](bool checked) {
@@ -265,6 +256,15 @@ void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 				MakuGram::Settings::instance().setIncreaseMessageSelectLimit(checked);
 			},
 			rpl::single(QString::fromUtf8("Позволяет одновременно выделять до 1000 сообщений в чатах и медиа для их пересылки или удаления.")));
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_exact_time(),
+			MakuGram::Settings::instance().showExactTime(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setShowExactTime(checked);
+			},
+			tr::lng_settings_makugram_exact_time_about());
 
 		AddCheckboxRow(
 			box,
@@ -361,21 +361,21 @@ void ShowModerationBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
-			tr::lng_settings_makugram_quick_ban(),
-			MakuGram::Settings::instance().quickBanInRequests(),
-			[=](bool checked) {
-				MakuGram::Settings::instance().setQuickBanInRequests(checked);
-			},
-			tr::lng_settings_makugram_quick_ban_about());
-
-		AddCheckboxRow(
-			box,
 			rpl::single(QString::fromUtf8("Поиск сообщений пользователя в чате")),
 			MakuGram::Settings::instance().searchUserMessagesInChat(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setSearchUserMessagesInChat(checked);
 			},
 			rpl::single(QString::fromUtf8("Добавляет пункт в контекстное меню сообщения для быстрого поиска всех сообщений автора в текущей группе.")));
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_quick_ban(),
+			MakuGram::Settings::instance().quickBanInRequests(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setQuickBanInRequests(checked);
+			},
+			tr::lng_settings_makugram_quick_ban_about());
 
 		AddCheckboxRow(
 			box,
