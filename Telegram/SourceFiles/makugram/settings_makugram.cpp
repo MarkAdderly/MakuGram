@@ -41,19 +41,11 @@ constexpr auto kBoxMaxHeight = 635;
 }
 
 [[nodiscard]] const style::RoundButton &TelegramButtonStyle() {
-	static auto tgBg = style::complex_color([] { return QColor(42, 142, 230); });
-	static auto tgBgOver = style::complex_color([] { return QColor(36, 126, 206); });
-	static auto ripple = style::complex_color([] { return QColor(255, 255, 255, 50); });
 	static auto result = [] {
 		auto st = st::defaultActiveButton;
-		st.height = 36;
-		st.textTop = 8;
+		st.height = 46;
+		st.textTop = 13;
 		st.style = st::semiboldTextStyle;
-		st.textFg = st::activeButtonFg;
-		st.textFgOver = st::activeButtonFg;
-		st.textBg = tgBg.color();
-		st.textBgOver = tgBgOver.color();
-		st.ripple.color = ripple.color();
 		return st;
 	}();
 	return result;
@@ -65,8 +57,8 @@ constexpr auto kBoxMaxHeight = 635;
 	static auto ripple = style::complex_color([] { return QColor(255, 255, 255, 50); });
 	static auto result = [] {
 		auto st = st::defaultActiveButton;
-		st.height = 36;
-		st.textTop = 8;
+		st.height = 46;
+		st.textTop = 13;
 		st.style = st::semiboldTextStyle;
 		st.textFg = st::activeButtonFg;
 		st.textFgOver = st::activeButtonFg;
@@ -84,8 +76,8 @@ constexpr auto kBoxMaxHeight = 635;
 	static auto ripple = style::complex_color([] { return QColor(255, 255, 255, 50); });
 	static auto result = [] {
 		auto st = st::defaultActiveButton;
-		st.height = 36;
-		st.textTop = 8;
+		st.height = 46;
+		st.textTop = 13;
 		st.style = st::semiboldTextStyle;
 		st.textFg = st::activeButtonFg;
 		st.textFgOver = st::activeButtonFg;
