@@ -872,7 +872,7 @@ auto SendFilesBox::prepareSendMenuCallback()
 
 int SendFilesBox::boxWidth() const {
 	return MakuGram::Settings::instance().expandMediaSendDialog()
-		? 560
+		? 728
 		: st::boxWideWidth;
 }
 
@@ -2345,8 +2345,8 @@ void SendFilesBox::setupCaption() {
 	}, _caption->lifetime());
 
 	if (MakuGram::Settings::instance().expandMediaSendDialog()) {
-		_caption->setMinHeight(72);
-		_caption->setMaxHeight(320);
+		_caption->setMinHeight(160);
+		_caption->setMaxHeight(640);
 	}
 	_caption->submits(
 	) | rpl::on_next([=](Qt::KeyboardModifiers modifiers) {

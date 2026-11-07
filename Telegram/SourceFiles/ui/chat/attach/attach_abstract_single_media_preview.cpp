@@ -20,6 +20,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_chat_helpers.h"
 #include "styles/style_chat_style.h"
 #include "styles/style_layers.h"
+#include "makugram/makugram_settings.h"
 
 namespace Ui {
 namespace {
@@ -106,11 +107,14 @@ QImage AbstractSingleMediaPreview::generatePriceTagBackground() const {
 }
 
 void AbstractSingleMediaPreview::preparePreview(QImage preview) {
+	const auto expanded = MakuGram::Settings::instance().expandMediaSendDialog();
+	const auto previewBaseWidth = expanded ? 480 : st::sendMediaPreviewSize;
+	const auto previewMaxThumbHeight = expanded ? 450 : st::confirmMaxHeight;
 	auto maxW = 0;
 	auto maxH = 0;
 	if (_animated && drawBackground()) {
-		auto limitW = st::sendMediaPreviewSize;
-		auto limitH = st::confirmMaxHeight;
+		auto limitW = previewBaseWidth;
+		auto limitH = previewMaxThumbHeight;
 		maxW = std::max(preview.width(), 1);
 		maxH = std::max(preview.height(), 1);
 		if (maxW * limitH > maxH * limitW) {
@@ -135,13 +139,13 @@ void AbstractSingleMediaPreview::preparePreview(QImage preview) {
 	if (!originalWidth || !originalHeight) {
 		originalWidth = originalHeight = 1;
 	}
-	_previewWidth = st::sendMediaPreviewSize;
+	_previewWidth = previewBaseWidth;
 	if (preview.width() < _previewWidth) {
 		_previewWidth = std::max(preview.width(), kMinPreviewWidth);
 	}
 	auto maxthumbh = std::min(
 		int(base::SafeRound(1.5 * _previewWidth)),
-		st::confirmMaxHeight);
+		previewMaxThumbHeight);
 	_previewHeight = int(base::SafeRound(originalHeight
 		* float64(_previewWidth)
 		/ originalWidth));

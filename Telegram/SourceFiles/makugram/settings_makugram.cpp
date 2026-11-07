@@ -5,6 +5,7 @@ a custom Telegram Desktop client fork.
 #include "makugram/settings_makugram.h"
 
 #include "makugram/makugram_settings.h"
+#include "base/event_filter.h"
 #include "core/click_handler_types.h"
 #include "lang/lang_keys.h"
 #include "settings/sections/settings_main.h"
@@ -116,7 +117,9 @@ void AddCheckboxRow(
 			st::boxRowPadding.left(),
 			4,
 			st::boxRowPadding.right(),
-			about ? 0 : (bottomSkip >= 0 ? bottomSkip : st::boxMediumSkip)));
+			about ? 0 : (bottomSkip >= 0 ? bottomSkip : st::boxMediumSkip)),
+		style::al_justify);
+	cb->setCursor(style::cur_pointer);
 	cb->setAllowTextLines(0);
 	cb->setCheckAlignment(style::al_topleft);
 	cb->checkedChanges(
@@ -125,7 +128,7 @@ void AddCheckboxRow(
 	}, cb->lifetime());
 
 	if (about) {
-		box->addRow(
+		const auto label = box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
 				std::move(about),
@@ -134,7 +137,16 @@ void AddCheckboxRow(
 				st::boxRowPadding.left(),
 				9,
 				st::boxRowPadding.right(),
-				bottomSkip >= 0 ? bottomSkip : st::boxMediumSkip));
+				bottomSkip >= 0 ? bottomSkip : st::boxMediumSkip),
+			style::al_justify);
+		label->setCursor(style::cur_pointer);
+		base::install_event_filter(label, [=](not_null<QEvent*> e) {
+			if (e->type() == QEvent::MouseButtonPress) {
+				cb->setChecked(!cb->checked());
+				return base::EventFilterResult::Cancel;
+			}
+			return base::EventFilterResult::Continue;
+		});
 	}
 }
 
@@ -174,11 +186,13 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 				st::boxRowPadding.left(),
 				st::boxMediumSkip,
 				st::boxRowPadding.right(),
-				2));
+				2),
+			style::al_justify);
+		excludeSearch->setCursor(style::cur_pointer);
 		excludeSearch->setAllowTextLines(0);
 		excludeSearch->setCheckAlignment(style::al_topleft);
 
-		box->addRow(
+		const auto excludeAbout = box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
 				QString::fromUtf8("Сообщения, содержащие скрываемые слова, не будут отображаться в результатах глобального поиска и поиска по чату."),
@@ -187,7 +201,16 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 				st::boxRowPadding.left(),
 				9,
 				st::boxRowPadding.right(),
-				st::boxMediumSkip));
+				st::boxMediumSkip),
+			style::al_justify);
+		excludeAbout->setCursor(style::cur_pointer);
+		base::install_event_filter(excludeAbout, [=](not_null<QEvent*> e) {
+			if (e->type() == QEvent::MouseButtonPress) {
+				excludeSearch->setChecked(!excludeSearch->checked());
+				return base::EventFilterResult::Cancel;
+			}
+			return base::EventFilterResult::Continue;
+		});
 
 		box->addButton(tr::lng_settings_save(), [=] {
 			MakuGram::Settings::instance().setSpamKeywords(field->getLastText());

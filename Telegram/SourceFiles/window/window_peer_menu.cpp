@@ -1104,7 +1104,7 @@ void Filler::addMassDeleteMyMessages() {
 					st::boxOptionListPadding.top() + st::autolockButton.margin.top()));
 
 				for (auto i = 0; i != options.size(); ++i) {
-					layout->add(
+					const auto radio = layout->add(
 						object_ptr<Ui::Radiobutton>(
 							layout,
 							group,
@@ -1117,6 +1117,7 @@ void Filler::addMassDeleteMyMessages() {
 							0,
 							st::boxPadding.right(),
 							st::boxOptionListSkip));
+					radio->setCursor(style::cur_pointer);
 				}
 
 				layout->add(object_ptr<Ui::FixedHeightWidget>(
@@ -1134,6 +1135,7 @@ void Filler::addMassDeleteMyMessages() {
 						0,
 						st::boxPadding.right(),
 						st::boxOptionListSkip));
+				onlyMediaCheck->setCursor(style::cur_pointer);
 
 				group->setChangedCallback([=](int index) {
 					const auto onlyMedia = onlyMediaCheck->checked();

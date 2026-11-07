@@ -534,7 +534,7 @@ void EditCaptionBox::rebuildPreview() {
 		rpl::mappers::_1 + rpl::mappers::_2 + rpl::mappers::_3
 	) | rpl::on_next([=](int height) {
 		const auto boxWidth = MakuGram::Settings::instance().expandMediaSendDialog()
-			? 560
+			? 728
 			: st::boxWideWidth;
 		setDimensions(
 			boxWidth,
@@ -602,8 +602,8 @@ void EditCaptionBox::setupField() {
 	_field->setSubmitSettings(
 		Core::App().settings().sendSubmitWay());
 	if (MakuGram::Settings::instance().expandMediaSendDialog()) {
-		_field->setMinHeight(72);
-		_field->setMaxHeight(320);
+		_field->setMinHeight(160);
+		_field->setMaxHeight(640);
 	} else {
 		_field->setMaxHeight(st::defaultComposeFiles.caption.heightMax);
 	}
@@ -754,7 +754,7 @@ void EditCaptionBox::setupControls() {
 	}, _controls->lifetime());
 
 	const auto cWidth = MakuGram::Settings::instance().expandMediaSendDialog()
-		? (560 - st::boxPhotoPadding.left() - st::boxPhotoPadding.right())
+		? (728 - st::boxPhotoPadding.left() - st::boxPhotoPadding.right())
 		: st::sendMediaPreviewSize;
 	_controls->resizeToWidth(cWidth);
 }
@@ -1241,7 +1241,10 @@ void EditCaptionBox::resizeEvent(QResizeEvent *e) {
 	}
 
 	bottom -= errorHeight;
-	_field->resize(st::sendMediaPreviewSize, _field->height());
+	const auto cWidth = MakuGram::Settings::instance().expandMediaSendDialog()
+		? (width() - st::boxPhotoPadding.left() - st::boxPhotoPadding.right())
+		: st::sendMediaPreviewSize;
+	_field->resize(cWidth, _field->height());
 	_field->moveToLeft(
 		st::boxPhotoPadding.left(),
 		bottom - _field->height());
@@ -1249,7 +1252,7 @@ void EditCaptionBox::resizeEvent(QResizeEvent *e) {
 
 	_emojiToggle->moveToLeft(
 		(st::boxPhotoPadding.left()
-			+ st::sendMediaPreviewSize
+			+ cWidth
 			- _emojiToggle->width()),
 		_field->y() + st::boxAttachEmojiTop);
 	_emojiToggle->update();
