@@ -8,12 +8,14 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #pragma once
 
 #include "data/data_file_origin.h"
+#include "data/data_types.h"
 
 #include <QtCore/QString>
 
 #include <vector>
 
 class History;
+class HistoryItem;
 class PhotoData;
 class DocumentData;
 struct FilePrepareResult;
@@ -35,6 +37,11 @@ void SendExistingDocument(
 	MessageToSend &&message,
 	not_null<DocumentData*> document,
 	std::optional<MsgId> localMessageId = std::nullopt);
+void SendExistingDocument(
+	MessageToSend &&message,
+	not_null<DocumentData*> document,
+	Data::FileOrigin origin,
+	std::optional<MsgId> localMessageId = std::nullopt);
 
 void SendMusicSelection(
 	MessageToSend &&message,
@@ -44,6 +51,18 @@ void SendExistingPhoto(
 	MessageToSend &&message,
 	not_null<PhotoData*> photo,
 	std::optional<MsgId> localMessageId = std::nullopt);
+void SendExistingPhoto(
+	MessageToSend &&message,
+	not_null<PhotoData*> photo,
+	Data::FileOrigin origin,
+	std::optional<MsgId> localMessageId = std::nullopt);
+
+[[nodiscard]] bool ItemForbidsForwardRaw(not_null<const HistoryItem*> item);
+
+void SendCopiedMessages(
+	SendAction action,
+	const std::vector<not_null<HistoryItem*>> &items,
+	Data::ForwardOptions forwardOptions);
 
 bool SendDice(MessageToSend &message);
 

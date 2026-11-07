@@ -318,7 +318,7 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 			[=](bool checked) {
 				MakuGram::Settings::instance().setBypassRestrictedContent(checked);
 			},
-			rpl::single(QString::fromUtf8("Снимает ограничения на сохранение медиа, копирование текста и скриншоты в защищённых каналах и группах.")));
+			rpl::single(QString::fromUtf8("Снимает ограничения на пересылку, сохранение медиа, копирование текста и скриншоты в защищённых каналах и группах (при пересылке защищённых сообщений они копируются с сохранением текста, медиа и указанием автора в конце).")));
 
 		AddCheckboxRow(
 			box,

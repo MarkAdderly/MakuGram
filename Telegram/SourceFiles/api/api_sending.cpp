@@ -15,6 +15,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_photo.h"
 #include "data/data_channel.h" // ChannelData::addsSignature.
 #include "data/data_user.h" // UserData::name
+#include "data/data_chat.h"
+#include "data/data_premium_limits.h"
+#include "history/history_item_components.h"
+#include "data/data_messages.h"
 #include "data/data_session.h"
 #include "data/data_file_origin.h"
 #include "data/data_forum.h"
@@ -693,11 +697,24 @@ void SendExistingDocument(
 		MessageToSend &&message,
 		not_null<DocumentData*> document,
 		std::optional<MsgId> localMessageId) {
+	SendExistingDocument(
+		std::move(message),
+		document,
+		document->stickerOrGifOrigin(),
+		std::move(localMessageId));
+}
+
+void SendExistingDocument(
+		MessageToSend &&message,
+		not_null<DocumentData*> document,
+		Data::FileOrigin origin,
+		std::optional<MsgId> localMessageId) {
 	const auto inputMedia = [=] {
+		using Flag = MTPDinputMediaDocument::Flag;
 		return MTP_inputMediaDocument(
 			MTP_flags(message.action.options.mediaSpoiler
-				? MTPDinputMediaDocument::Flag::f_spoiler
-				: MTPDinputMediaDocument::Flags(0)),
+				? Flag::f_spoiler
+				: Flag(0)),
 			document->mtpInput(),
 			MTPInputPhoto(), // video_cover
 			MTPint(), // ttl_seconds
@@ -708,7 +725,7 @@ void SendExistingDocument(
 		std::move(message),
 		document,
 		inputMedia,
-		document->stickerOrGifOrigin(),
+		origin ? origin : document->stickerOrGifOrigin(),
 		std::move(localMessageId));
 
 	if (document->sticker()) {
@@ -775,9 +792,24 @@ void SendExistingPhoto(
 		MessageToSend &&message,
 		not_null<PhotoData*> photo,
 		std::optional<MsgId> localMessageId) {
+	SendExistingPhoto(
+		std::move(message),
+		photo,
+		Data::FileOrigin(),
+		std::move(localMessageId));
+}
+
+void SendExistingPhoto(
+		MessageToSend &&message,
+		not_null<PhotoData*> photo,
+		Data::FileOrigin origin,
+		std::optional<MsgId> localMessageId) {
 	const auto inputMedia = [=] {
+		using Flag = MTPDinputMediaPhoto::Flag;
 		return MTP_inputMediaPhoto(
-			MTP_flags(0),
+			MTP_flags(message.action.options.mediaSpoiler
+				? Flag::f_spoiler
+				: Flag(0)),
 			photo->mtpInput(),
 			MTPint(), // ttl_seconds
 			MTPInputDocument()); // video
@@ -786,8 +818,160 @@ void SendExistingPhoto(
 		std::move(message),
 		photo,
 		inputMedia,
-		Data::FileOrigin(),
+		origin,
 		std::move(localMessageId));
+}
+
+bool ItemForbidsForwardRaw(not_null<const HistoryItem*> item) {
+	if (item->forbidsForwardRaw()) {
+		return true;
+	}
+	const auto peer = item->history()->peer;
+	if (const auto channel = peer->asChannel()) {
+		if (channel->flags() & ChannelData::Flag::NoForwards) {
+			return true;
+		}
+	} else if (const auto chat = peer->asChat()) {
+		if (chat->flags() & ChatData::Flag::NoForwards) {
+			return true;
+		}
+	} else if (const auto user = peer->asUser()) {
+		if (!user->allowsForwarding()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+namespace {
+
+QString ExtractItemAuthorName(not_null<const HistoryItem*> item) {
+	QString authorName;
+	if (const auto forwarded = item->Get<HistoryMessageForwarded>()) {
+		if (forwarded->originalSender) {
+			authorName = forwarded->originalSender->name();
+			if (!forwarded->originalSender->username().isEmpty()) {
+				authorName += u" (@"_q + forwarded->originalSender->username() + u")"_q;
+			}
+		} else if (forwarded->originalHiddenSenderInfo) {
+			authorName = forwarded->originalHiddenSenderInfo->name;
+		} else if (!forwarded->originalPostAuthor.isEmpty()) {
+			authorName = forwarded->originalPostAuthor;
+		}
+	}
+	if (authorName.isEmpty()) {
+		if (const auto sender = item->originalSender()) {
+			authorName = sender->name();
+			if (!sender->username().isEmpty()) {
+				authorName += u" (@"_q + sender->username() + u")"_q;
+			}
+		} else if (const auto hidden = item->originalHiddenSenderInfo()) {
+			authorName = hidden->name;
+		} else if (item->from()) {
+			authorName = item->from()->name();
+			if (!item->from()->username().isEmpty()) {
+				authorName += u" (@"_q + item->from()->username() + u")"_q;
+			}
+		} else if (item->history() && item->history()->peer) {
+			authorName = item->history()->peer->name();
+			if (!item->history()->peer->username().isEmpty()) {
+				authorName += u" (@"_q + item->history()->peer->username() + u")"_q;
+			}
+		}
+	}
+	return authorName;
+}
+
+} // namespace
+
+void SendCopiedMessages(
+		SendAction action,
+		const std::vector<not_null<HistoryItem*>> &items,
+		Data::ForwardOptions forwardOptions) {
+	if (items.empty()) {
+		return;
+	}
+	auto ordered = items;
+	ranges::sort(ordered, ranges::less(), &HistoryItem::position);
+
+	const auto session = &action.history->session();
+	const auto captionLimit = Data::PremiumLimits(session).captionLengthCurrent();
+
+	for (const auto &item : ordered) {
+		auto itemAction = action;
+		itemAction.clearDraft = false;
+		itemAction.generateLocal = true;
+		if (const auto media = item->media()) {
+			itemAction.options.mediaSpoiler = media->hasSpoiler();
+		}
+		itemAction.options.invertCaption = item->invertMedia();
+
+		auto caption = (forwardOptions != Data::ForwardOptions::NoNamesAndCaptions)
+			? item->originalText()
+			: TextWithEntities();
+
+		if (forwardOptions == Data::ForwardOptions::PreserveInfo) {
+			const auto authorName = ExtractItemAuthorName(item);
+			if (!authorName.isEmpty()) {
+				const auto prefix = caption.text.isEmpty() ? QString() : QString("\n\n");
+				const auto authorLine = u"\u0410\u0432\u0442\u043e\u0440: "_q + authorName;
+				const auto neededLength = prefix.size() + authorLine.size();
+
+				const auto hasMedia = item->media()
+					&& (item->media()->photo() || item->media()->document());
+				if (hasMedia && (caption.text.size() + neededLength > captionLimit)) {
+					const auto maxOrigLength = std::max(0, int(captionLimit - neededLength));
+					caption.text.truncate(maxOrigLength);
+					for (auto it = caption.entities.begin(); it != caption.entities.end();) {
+						if (it->offset() >= maxOrigLength) {
+							it = caption.entities.erase(it);
+						} else {
+							if (it->offset() + it->length() > maxOrigLength) {
+								*it = EntityInText(
+									it->type(),
+									it->offset(),
+									maxOrigLength - it->offset(),
+									it->data());
+							}
+							++it;
+						}
+					}
+				}
+
+				const auto actualPrefix = caption.text.isEmpty() ? QString() : prefix;
+				const auto start = caption.text.size() + actualPrefix.size();
+				caption.text += actualPrefix + authorLine;
+				caption.entities.push_back(EntityInText(
+					EntityType::Italic,
+					start,
+					authorLine.size()));
+			}
+		}
+
+		auto message = MessageToSend(itemAction);
+		message.textWithTags = {
+			caption.text,
+			TextUtilities::ConvertEntitiesToTextTags(caption.entities),
+		};
+
+		const auto media = item->media();
+		const auto photo = media ? media->photo() : nullptr;
+		const auto document = media ? media->document() : nullptr;
+
+		if (photo) {
+			SendExistingPhoto(
+				std::move(message),
+				photo,
+				Data::FileOrigin(item->fullId()));
+		} else if (document) {
+			SendExistingDocument(
+				std::move(message),
+				document,
+				Data::FileOrigin(item->fullId()));
+		} else {
+			action.history->session().api().sendMessage(std::move(message));
+		}
+	}
 }
 
 bool SendDice(MessageToSend &message) {

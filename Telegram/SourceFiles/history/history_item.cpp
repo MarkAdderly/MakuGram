@@ -3522,6 +3522,10 @@ bool HistoryItem::forbidsForward() const {
 	return (_flags & MessageFlag::NoForwards);
 }
 
+bool HistoryItem::forbidsForwardRaw() const {
+	return (_flags & MessageFlag::NoForwards);
+}
+
 bool HistoryItem::forbidsSaving() const {
 	if (MakuGram::Settings::instance().bypassRestrictedContent()) {
 		return false;

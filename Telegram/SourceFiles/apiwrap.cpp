@@ -3925,16 +3925,30 @@ void ApiWrap::forwardMessages(
 		FnMut<void()> &&successCallback) {
 	Expects(!draft.items.empty());
 
+	ranges::sort(draft.items, ranges::less(), &HistoryItem::position);
+
+	draft.options = HistoryView::Controls::NormalizeForwardOptions(
+		_session,
+		draft.items,
+		draft.options);
+
 	auto &histories = _session->data().histories();
 
+	auto copiedItems = std::vector<not_null<HistoryItem*>>();
 	for (auto i = begin(draft.items); i != end(draft.items);) {
 		const auto item = *i;
 		if (item->isSavedMusicItem()) {
 			SendExistingDocument(MessageToSend(action), item->media()->document());
 			i = draft.items.erase(i);
+		} else if (Api::ItemForbidsForwardRaw(item)) {
+			copiedItems.push_back(item);
+			i = draft.items.erase(i);
 		} else {
 			++i;
 		}
+	}
+	if (!copiedItems.empty()) {
+		Api::SendCopiedMessages(action, copiedItems, draft.options);
 	}
 	if (draft.items.empty()) {
 		if (successCallback) {

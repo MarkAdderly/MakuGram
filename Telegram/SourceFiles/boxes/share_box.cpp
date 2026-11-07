@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "boxes/share_box.h"
 
+#include "api/api_sending.h"
+
 #include "api/api_premium.h"
 #include "base/call_delayed.h"
 #include "base/random.h"
@@ -1860,6 +1862,54 @@ ShareBox::SubmitCallback ShareBox::DefaultForwardCallback(
 			show->showBox(MakeSendErrorBox(error, result.size() > 1));
 			return;
 		} else if (!checkPaid()) {
+			return;
+		}
+
+		const auto hasRestricted = ranges::any_of(
+			items,
+			Api::ItemForbidsForwardRaw);
+		if (hasRestricted) {
+			auto &api = history->session().api();
+			const auto donePhraseArgs = CreateForwardedMessagePhraseArgs(
+				result,
+				msgIds);
+			for (const auto &thread : result) {
+				const auto peer = thread->peer();
+				const auto threadHistory = thread->owningHistory();
+				const auto forum = threadHistory->asForum();
+				const auto needNewTopic = forum
+					&& forum->bot()
+					&& Data::IsBotUserCreatesTopics(peer)
+					&& !thread->asTopic();
+				const auto effectiveThread = [&]() -> not_null<Data::Thread*> {
+					if (needNewTopic) {
+						const auto topic = forum->reserveNewBotTopic();
+						Assert(topic != nullptr);
+						return topic;
+					}
+					return thread;
+				}();
+
+				if (!comment.text.isEmpty()) {
+					auto message = Api::MessageToSend(
+						Api::SendAction(effectiveThread, options));
+					message.textWithTags = comment;
+					message.action.clearDraft = false;
+					api.sendMessage(std::move(message));
+				}
+
+				auto sendAction = Api::SendAction(effectiveThread, options);
+				sendAction.clearDraft = false;
+				sendAction.generateLocal = true;
+				Api::SendCopiedMessages(sendAction, items, forwardOptions);
+			}
+			if (show->valid()) {
+				show->hideLayer();
+				ShowForwardedMessageToast(
+					show,
+					&history->session(),
+					donePhraseArgs);
+			}
 			return;
 		}
 
