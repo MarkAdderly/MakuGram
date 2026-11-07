@@ -612,7 +612,7 @@ void Domain::scheduleWriteAccounts() {
 }
 
 int Domain::maxAccounts() const {
-	return 100; // Unlimited accounts in MakuGram
+	return 100;
 }
 
 rpl::producer<int> Domain::maxAccountsChanges() const {

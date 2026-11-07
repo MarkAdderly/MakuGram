@@ -50,13 +50,12 @@ bool IsNewbieInChat(const PeerData *peer, const UserData *user) {
 
 	const auto it = gJoinDates.find({peerId, userId});
 	const auto now = base::unixtime::now();
-	constexpr auto kThreeMonths = 90 * 86400; // 90 days in seconds
+	constexpr auto kThreeMonths = 90 * 86400;
 
 	if (it != gJoinDates.end()) {
 		return (now - it->second) < kThreeMonths;
 	}
 
-	// Fallback: If user account itself was created recently (ID > 3.9 billion)
 	const auto rawUserId = userId & 0xFFFFFFFFULL;
 	if (rawUserId > 3'900'000'000ULL) {
 		return true;

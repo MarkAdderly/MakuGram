@@ -30,8 +30,6 @@ namespace {
 using namespace Builder;
 
 constexpr auto kBoxContentWidth = 540;
-// Content height cap of 635px results in total box height of ~735-740px (with title and buttons),
-// which comfortably fits up to 4 checkboxes before enabling scrolling.
 constexpr auto kBoxMaxHeight = 660;
 
 [[nodiscard]] [[maybe_unused]] int CheckboxTextSkip() {
@@ -235,7 +233,7 @@ void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 				MakuGram::Settings::instance().setSpamFilterEnabled(checked);
 			},
 			tr::lng_settings_makugram_spam_filter_about(),
-			/* bottomSkip = */ 0);
+			 0);
 
 		const auto spamSetupBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
@@ -462,7 +460,6 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 			- st::boxRowPadding.left()
 			- st::boxRowPadding.right();
 
-		// 1. Telegram канал автора (синяя)
 		const auto tgBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
 				box,
@@ -483,7 +480,6 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 				}));
 		});
 
-		// 2. YouTube канал автора (красная)
 		const auto ytBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
 				box,
@@ -500,7 +496,6 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 			UrlClickHandler::Open(u"https://youtube.com/@makuadarii"_q);
 		});
 
-		// 3. Поддержать разработку (оранжевая)
 		const auto boostyBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
 				box,
@@ -531,7 +526,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 
 	builder.addSubsectionTitle(rpl::single(QString::fromUtf8("Категории настроек")));
 
-	// 1. Сообщения
 	builder.addButton({
 		.title = rpl::single(QString::fromUtf8("Сообщения")),
 		.icon = { &st::menuIconChats },
@@ -539,7 +533,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.keywords = { u"time"_q, u"seconds"_q, u"unread"_q, u"spam"_q, u"words"_q, u"время"_q, u"секунды"_q, u"непрочитанные"_q, u"спам"_q, u"слова"_q, u"сообщения"_q },
 	});
 
-	// 2. Приватность и безопасность
 	builder.addButton({
 		.title = rpl::single(QString::fromUtf8("Приватность и безопасность")),
 		.icon = { &st::menuIconLock },
@@ -547,7 +540,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.keywords = { u"privacy"_q, u"typing"_q, u"copy"_q, u"delete"_q, u"phone"_q, u"blocked"_q, u"приватность"_q, u"тайпинг"_q, u"копирование"_q, u"удаление"_q, u"телефон"_q, u"номер"_q, u"блок"_q },
 	});
 
-	// 3. Модерация чатов
 	builder.addButton({
 		.title = rpl::single(QString::fromUtf8("Модерация чатов")),
 		.icon = { &st::menuIconAdmin },
@@ -555,7 +547,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.keywords = { u"ban"_q, u"badge"_q, u"requests"_q, u"search"_q, u"бан"_q, u"новичок"_q, u"заявки"_q, u"модерация"_q, u"поиск"_q },
 	});
 
-	// 4. Профиль и информация
 	builder.addButton({
 		.title = tr::lng_settings_makugram_section_profile(),
 		.icon = { &st::menuIconProfile },
@@ -563,7 +554,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.keywords = { u"id"_q, u"profile"_q, u"registration"_q, u"stories"_q, u"профиль"_q, u"возраст"_q, u"регистрация"_q, u"сторис"_q, u"истории"_q },
 	});
 
-	// 5. Внешний вид
 	builder.addButton({
 		.title = rpl::single(QString::fromUtf8("Внешний вид")),
 		.icon = { &st::menuIconChangeColors },
@@ -571,7 +561,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.keywords = { u"appearance"_q, u"compact"_q, u"reactions"_q, u"вид"_q, u"компактный"_q, u"реакции"_q },
 	});
 
-	// 6. Медиа
 	builder.addButton({
 		.title = tr::lng_settings_makugram_section_media(),
 		.icon = { &st::menuIconPhoto },
@@ -579,7 +568,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.keywords = { u"media"_q, u"zoom"_q, u"медиа"_q, u"масштаб"_q, u"экран"_q },
 	});
 
-	// 7. О клиенте
 	builder.addButton({
 		.title = rpl::single(QString::fromUtf8("О клиенте")),
 		.icon = { &st::menuIconInfo },

@@ -37,27 +37,22 @@ class Settings final {
 public:
 	static Settings &instance();
 
-	// 1. Blocked messages filter
 	[[nodiscard]] bool hideMessagesFromBlocked() const;
 	void setHideMessagesFromBlocked(bool hide);
 	[[nodiscard]] rpl::producer<bool> hideMessagesFromBlockedChanges() const;
 
-	// 2. Quick ban in join requests
 	[[nodiscard]] bool quickBanInRequests() const;
 	void setQuickBanInRequests(bool enabled);
 	[[nodiscard]] rpl::producer<bool> quickBanInRequestsChanges() const;
 
-	// 3. Always fit media to screen
 	[[nodiscard]] bool alwaysZoomMediaToScreen() const;
 	void setAlwaysZoomMediaToScreen(bool enabled);
 	[[nodiscard]] rpl::producer<bool> alwaysZoomMediaToScreenChanges() const;
 
-	// 4. Exact message time (with seconds)
 	[[nodiscard]] bool showExactTime() const;
 	void setShowExactTime(bool enabled);
 	[[nodiscard]] rpl::producer<bool> showExactTimeChanges() const;
 
-	// 6. Local keyword spam filter
 	[[nodiscard]] bool spamFilterEnabled() const;
 	void setSpamFilterEnabled(bool enabled);
 	[[nodiscard]] rpl::producer<bool> spamFilterEnabledChanges() const;
@@ -72,62 +67,50 @@ public:
 	[[nodiscard]] const std::vector<QString> &spamKeywordsList() const;
 	[[nodiscard]] const std::vector<SpamPattern> &spamPatterns() const;
 
-	// 7. Newbie chat badge (< 3 months)
 	[[nodiscard]] bool showNewbieBadge() const;
 	void setShowNewbieBadge(bool enabled);
 	[[nodiscard]] rpl::producer<bool> showNewbieBadgeChanges() const;
 
-	// 8. Telegram ID & Registration date in profile
 	[[nodiscard]] bool showProfileDetails() const;
 	void setShowProfileDetails(bool enabled);
 	[[nodiscard]] rpl::producer<bool> showProfileDetailsChanges() const;
 
-	// 10. Hide typing status
 	[[nodiscard]] bool hideTypingStatus() const;
 	void setHideTypingStatus(bool enabled);
 	[[nodiscard]] rpl::producer<bool> hideTypingStatusChanges() const;
 
-	// 11. Bypass restricted content
 	[[nodiscard]] bool bypassRestrictedContent() const;
 	void setBypassRestrictedContent(bool enabled);
 	[[nodiscard]] rpl::producer<bool> bypassRestrictedContentChanges() const;
 
-	// 12. Show unread filter button
 	[[nodiscard]] bool showUnreadFilterButton() const;
 	void setShowUnreadFilterButton(bool enabled);
 	[[nodiscard]] rpl::producer<bool> showUnreadFilterButtonChanges() const;
 
-	// Unread only mode (active state)
 	[[nodiscard]] bool unreadOnlyActive() const;
 	void setUnreadOnlyActive(bool active);
 	[[nodiscard]] rpl::producer<bool> unreadOnlyActiveChanges() const;
 
-	// 13. Mass delete my messages
 	[[nodiscard]] bool quickMassDeleteMyMessages() const;
 	void setQuickMassDeleteMyMessages(bool enabled);
 	[[nodiscard]] rpl::producer<bool> quickMassDeleteMyMessagesChanges() const;
 
-	// 14. Search user messages in chat
 	[[nodiscard]] bool searchUserMessagesInChat() const;
 	void setSearchUserMessagesInChat(bool enabled);
 	[[nodiscard]] rpl::producer<bool> searchUserMessagesInChatChanges() const;
 
-	// 15. Compact chat list
 	[[nodiscard]] bool compactChatList() const;
 	void setCompactChatList(bool enabled);
 	[[nodiscard]] rpl::producer<bool> compactChatListChanges() const;
 
-	// 16. Disable reaction animations
 	[[nodiscard]] bool disableReactionAnimations() const;
 	void setDisableReactionAnimations(bool enabled);
 	[[nodiscard]] rpl::producer<bool> disableReactionAnimationsChanges() const;
 
-	// 17. Disable stories
 	[[nodiscard]] bool disableStories() const;
 	void setDisableStories(bool enabled);
 	[[nodiscard]] rpl::producer<bool> disableStoriesChanges() const;
 
-	// 18. Hide phone number in settings
 	[[nodiscard]] bool hidePhoneNumberInSettings() const;
 	void setHidePhoneNumberInSettings(bool enabled);
 	[[nodiscard]] rpl::producer<bool> hidePhoneNumberInSettingsChanges() const;

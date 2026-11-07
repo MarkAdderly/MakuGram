@@ -14,26 +14,26 @@ namespace {
 bool IsRussianConsonant(QChar c) {
 	const auto u = c.unicode();
 	switch (u) {
-	case 0x0431: // б
-	case 0x0432: // в
-	case 0x0433: // г
-	case 0x0434: // д
-	case 0x0436: // ж
-	case 0x0437: // з
-	case 0x043A: // к
-	case 0x043B: // л
-	case 0x043C: // м
-	case 0x043D: // н
-	case 0x043F: // п
-	case 0x0440: // р
-	case 0x0441: // с
-	case 0x0442: // т
-	case 0x0444: // ф
-	case 0x0445: // х
-	case 0x0446: // ц
-	case 0x0447: // ч
-	case 0x0448: // ш
-	case 0x0449: // щ
+	case 0x0431:
+	case 0x0432:
+	case 0x0433:
+	case 0x0434:
+	case 0x0436:
+	case 0x0437:
+	case 0x043A:
+	case 0x043B:
+	case 0x043C:
+	case 0x043D:
+	case 0x043F:
+	case 0x0440:
+	case 0x0441:
+	case 0x0442:
+	case 0x0444:
+	case 0x0445:
+	case 0x0446:
+	case 0x0447:
+	case 0x0448:
+	case 0x0449:
 		return true;
 	default:
 		return false;
@@ -45,8 +45,8 @@ bool IsRussianConsonant(QChar c) {
 QString NormalizeRussianText(const QString &text) {
 	auto res = text.toLower();
 	for (auto &ch : res) {
-		if (ch == QChar(0x0451) || ch == QChar(0x0401)) { // ё or Ё
-			ch = QChar(0x0435); // е
+		if (ch == QChar(0x0451) || ch == QChar(0x0401)) {
+			ch = QChar(0x0435);
 		}
 	}
 	return res;
@@ -69,7 +69,6 @@ QString RussianStem(const QString &word) {
 			break;
 		}
 	}
-	// Fugitive vowel: ...[consonant]ок or ...[consonant]ек -> ...[consonant]к
 	if (res.size() >= 4 && res.endsWith(u'к')) {
 		const auto vowel = res[res.size() - 2];
 		if (vowel == u'о' || vowel == u'е') {
@@ -99,7 +98,7 @@ std::vector<QString> GenerateWordVariants(const QString &clean) {
 			const auto base = baseWord.left(baseWord.size() - 1);
 			addUnique(base + u"ок"_q);
 			addUnique(base + u"ек"_q);
-			addUnique(base); // e.g. сбор
+			addUnique(base);
 		} else if (baseWord.size() >= 4 && baseWord.endsWith(u'к')
 				&& (baseWord[baseWord.size() - 2] == u'о' || baseWord[baseWord.size() - 2] == u'е')
 				&& IsRussianConsonant(baseWord[baseWord.size() - 3])) {
@@ -130,7 +129,7 @@ Settings::Settings() {
 	_hideTypingStatus = s.value("hideTypingStatus", false).toBool();
 	_bypassRestrictedContent = s.value("bypassRestrictedContent", true).toBool();
 	_showUnreadFilterButton = s.value("showUnreadFilterButton", true).toBool();
-	_unreadOnlyActive = false; // runtime state
+	_unreadOnlyActive = false;
 	_quickMassDeleteMyMessages = s.value("quickMassDeleteMyMessages", true).toBool();
 	_searchUserMessagesInChat = s.value("searchUserMessagesInChat", true).toBool();
 	_compactChatList = s.value("compactChatList", false).toBool();

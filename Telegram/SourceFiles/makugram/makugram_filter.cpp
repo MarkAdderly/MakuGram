@@ -24,7 +24,6 @@ bool MatchesPattern(const QString &text, const SpamPattern &p) {
 
 	const auto normText = NormalizeRussianText(text);
 
-	// Fast pre-check: at least one variant must be present in the normalized text
 	bool anySubstr = false;
 	for (const auto &v : p.variants) {
 		if (normText.contains(v)) {
@@ -90,7 +89,6 @@ bool IsBlockedMessageHidden(const HistoryItem *item) {
 	}
 	const auto peer = history->peer;
 	if (!peer || peer->isUser()) {
-		// Do not hide messages in direct 1-to-1 PM with the blocked user
 		return false;
 	}
 
