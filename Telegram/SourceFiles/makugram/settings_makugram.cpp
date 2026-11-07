@@ -32,7 +32,7 @@ using namespace Builder;
 constexpr auto kBoxContentWidth = 540;
 // Content height cap of 635px results in total box height of ~735-740px (with title and buttons),
 // which comfortably fits up to 4 checkboxes before enabling scrolling.
-constexpr auto kBoxMaxHeight = 635;
+constexpr auto kBoxMaxHeight = 660;
 
 [[nodiscard]] [[maybe_unused]] int CheckboxTextSkip() {
 	return st::defaultBoxCheckbox.checkPosition.x()
