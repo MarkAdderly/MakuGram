@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "data/data_folder.h"
+#include "makugram/makugram_settings.h"
 
 #include "data/data_session.h"
 #include "data/data_channel.h"
@@ -237,11 +238,15 @@ void Folder::paintUserpic(
 		Painter &p,
 		Ui::PeerUserpicView &view,
 		const Dialogs::Ui::PaintContext &context) const {
+	const auto compact = !context.search && MakuGram::Settings::instance().compactChatList();
+	const auto x = compact ? 13 : context.st->padding.left();
+	const auto y = compact ? 5 : context.st->padding.top();
+	const auto size = compact ? 32 : context.st->photoSize;
 	paintUserpic(
 		p,
-		context.st->padding.left(),
-		context.st->padding.top(),
-		context.st->photoSize);
+		x,
+		y,
+		size);
 }
 
 void Folder::paintUserpic(Painter &p, int x, int y, int size) const {

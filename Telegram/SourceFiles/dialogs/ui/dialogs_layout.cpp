@@ -493,7 +493,7 @@ void PaintRow(
 		row->paintRipple(p, 0, 0, context.width, &ripple->c);
 	}
 
-	const auto compact = MakuGram::Settings::instance().compactChatList();
+	const auto compact = !fakeRow && !context.search && MakuGram::Settings::instance().compactChatList();
 	const auto userpicLeft = compact ? 13 : context.st->padding.left();
 	const auto userpicTop = compact ? 5 : context.st->padding.top();
 	const auto userpicSize = compact ? 32 : context.st->photoSize;
@@ -616,16 +616,20 @@ void PaintRow(
 	}
 	auto texttop = context.st->textTop;
 	if (compact) {
-		if (!promoted) {
-			PaintDialogDate(p, entry, fakeRow, date, rectForName, context);
-		}
-		PaintWideCounter(
+		const auto availableAfterBadges = PaintWideCounter(
 			p,
 			context,
 			badgesState,
 			nametop,
 			namewidth,
 			false);
+		const auto badgesUsed = namewidth - availableAfterBadges;
+		if (badgesUsed > 0) {
+			rectForName.setWidth(rectForName.width() - badgesUsed);
+		}
+		if (!promoted) {
+			PaintDialogDate(p, entry, fakeRow, date, rectForName, context);
+		}
 	} else if (const auto folder = entry->asFolder()) {
 		const auto availableWidth = PaintWideCounter(
 			p,
@@ -1183,7 +1187,7 @@ void RowPainter::Paint(
 		const auto draftDate = cloudDraft ? cloudDraft->date : TimeId(0);
 		return std::max(itemDate, draftDate);
 	}();
-	const auto displayPinnedIcon = !MakuGram::Settings::instance().compactChatList()
+	const auto displayPinnedIcon = (context.search || !MakuGram::Settings::instance().compactChatList())
 		&& badgesState.empty()
 		&& entry->isPinnedDialog(context.filter)
 		&& (context.filter || !entry->fixedOnTopIndex());

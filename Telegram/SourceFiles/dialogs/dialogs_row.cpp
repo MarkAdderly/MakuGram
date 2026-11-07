@@ -524,7 +524,10 @@ void Row::PaintCornerBadgeFrame(
 	Painter q(&data->frame);
 	q.translate(framePadding, framePadding);
 	auto hq = std::optional<PainterHighQualityEnabler>();
-	const auto photoSize = context.st->photoSize;
+	const auto compact = !context.search && MakuGram::Settings::instance().compactChatList();
+	const auto photoSize = compact ? 32 : context.st->photoSize;
+	const auto userpicLeft = compact ? 13 : context.st->padding.left();
+	const auto userpicTop = compact ? 5 : context.st->padding.top();
 	const auto storiesCount = data->storiesCount;
 	if (storiesCount) {
 		hq.emplace(q);
@@ -537,7 +540,7 @@ void Row::PaintCornerBadgeFrame(
 		q.scale(scale, scale);
 		q.translate(-center, -center);
 	}
-	q.translate(-context.st->padding.left(), -context.st->padding.top());
+	q.translate(-userpicLeft, -userpicTop);
 	PaintUserpic(
 		q,
 		entry,
@@ -545,7 +548,7 @@ void Row::PaintCornerBadgeFrame(
 		videoUserpic,
 		view,
 		context);
-	q.translate(context.st->padding.left(), context.st->padding.top());
+	q.translate(userpicLeft, userpicTop);
 	if (storiesCount) {
 		q.restore();
 
@@ -711,6 +714,10 @@ void Row::paintUserpic(
 		Ui::VideoUserpic *videoUserpic,
 		const Ui::PaintContext &context,
 		bool hasUnreadBadgesAbove) const {
+	const auto compact = !context.search && MakuGram::Settings::instance().compactChatList();
+	const auto userpicLeft = compact ? 13 : context.st->padding.left();
+	const auto userpicTop = compact ? 5 : context.st->padding.top();
+	const auto userpicSize = compact ? 32 : context.st->photoSize;
 	const auto communityChannel = peer ? peer->asChannel() : nullptr;
 	if (communityChannel && communityChannel->isCommunity()) {
 		if (!_communityUserpicEffect) {
@@ -720,9 +727,9 @@ void Row::paintUserpic(
 		Ui::PaintCommunityUserpicEffect(
 			p,
 			*_communityUserpicEffect,
-			context.st->padding.left(),
-			context.st->padding.top(),
-			context.st->photoSize,
+			userpicLeft,
+			userpicTop,
+			userpicSize,
 			st::windowSubTextFg->c);
 	} else if (_communityUserpicEffect) {
 		_communityUserpicEffect = nullptr;
@@ -765,7 +772,7 @@ void Row::paintUserpic(
 		-st::dialogsCallBadgeSkip.x(),
 		-st::dialogsCallBadgeSkip.y(),
 		st::lineWidth * 2 });
-	const auto frameSide = (2 * framePadding + context.st->photoSize)
+	const auto frameSide = (2 * framePadding + userpicSize)
 		* ratio;
 	const auto frameSize = QSize(frameSide, frameSide);
 	const auto storiesSource = (storiesHas && storiesPeer)
@@ -856,8 +863,8 @@ void Row::paintUserpic(
 			hidden);
 	}
 	p.drawImage(
-		context.st->padding.left() - framePadding,
-		context.st->padding.top() - framePadding,
+		userpicLeft - framePadding,
+		userpicTop - framePadding,
 		_cornerBadgeUserpic->frame);
 	const auto history = _id.history();
 	if (!history
@@ -876,15 +883,15 @@ void Row::paintUserpic(
 	const auto skip = st::dialogsCallBadgeSkip;
 	p.setOpacity(
 		_cornerBadgeUserpic->layersManager.progressForLayer(kTopLayer));
-	p.translate(context.st->padding.left(), context.st->padding.top());
+	p.translate(userpicLeft, userpicTop);
 	actionPainter->paintSpeaking(
 		p,
-		context.st->photoSize - skip.x() - size,
-		context.st->photoSize - skip.y() - size,
+		userpicSize - skip.x() - size,
+		userpicSize - skip.y() - size,
 		context.width,
 		bg,
 		context.now);
-	p.translate(-context.st->padding.left(), -context.st->padding.top());
+	p.translate(-userpicLeft, -userpicTop);
 	p.setOpacity(1.);
 }
 
