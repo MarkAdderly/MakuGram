@@ -1383,11 +1383,11 @@ std::unique_ptr<Ui::RpWidget> Widget::setupBottomBar() {
 		st::requestsSectionBottomMargin);
 	const auto declineAll = Ui::CreateChild<Ui::RoundButton>(
 		row,
-		tr::lng_community_requests_decline_all(),
+		rpl::single(QString::fromUtf8("Отклонить всех")),
 		st::requestsDeclineAllButton);
 	const auto addAll = Ui::CreateChild<Ui::RoundButton>(
 		row,
-		tr::lng_community_requests_add_all(),
+		rpl::single(QString::fromUtf8("Принять всех")),
 		st::requestsAddAllButton);
 	declineAll->setClickedCallback([=] { processAll(true); });
 	addAll->setClickedCallback([=] { processAll(false); });

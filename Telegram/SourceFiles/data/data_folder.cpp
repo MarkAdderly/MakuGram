@@ -341,10 +341,16 @@ void Folder::updateStoriesCount(int count, int unread) {
 }
 
 int Folder::storiesCount() const {
+	if (MakuGram::Settings::instance().disableStories()) {
+		return 0;
+	}
 	return _storiesCount;
 }
 
 int Folder::storiesUnreadCount() const {
+	if (MakuGram::Settings::instance().disableStories()) {
+		return 0;
+	}
 	return _storiesUnreadCount;
 }
 
@@ -380,7 +386,7 @@ int Folder::fixedOnTopIndex() const {
 }
 
 bool Folder::shouldBeInChatList() const {
-	return !_chatsList.empty() || (_storiesCount > 0);
+	return !_chatsList.empty() || (storiesCount() > 0);
 }
 
 Dialogs::UnreadState Folder::chatListUnreadState() const {

@@ -148,10 +148,10 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 	}));
 }
 
-void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
+void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
-		box->setTitle(tr::lng_settings_makugram_section_privacy());
+		box->setTitle(rpl::single(QString::fromUtf8("Сообщения")));
 
 		AddCheckboxRow(
 			box,
@@ -164,48 +164,12 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Не передавать статус набора текста")),
-			MakuGram::Settings::instance().hideTypingStatus(),
-			[=](bool checked) {
-				MakuGram::Settings::instance().setHideTypingStatus(checked);
-			},
-			rpl::single(QString::fromUtf8("Собеседники не будут видеть, когда вы печатаете текст или записываете голосовое/видеосообщение.")));
-
-		AddCheckboxRow(
-			box,
-			rpl::single(QString::fromUtf8("Разрешить копирование и сохранение контента")),
-			MakuGram::Settings::instance().bypassRestrictedContent(),
-			[=](bool checked) {
-				MakuGram::Settings::instance().setBypassRestrictedContent(checked);
-			},
-			rpl::single(QString::fromUtf8("Снимает ограничения на сохранение медиа, копирование текста и скриншоты в защищённых каналах и группах.")));
-
-		AddCheckboxRow(
-			box,
 			rpl::single(QString::fromUtf8("Кнопка \"Только непрочитанные\" над чатами")),
 			MakuGram::Settings::instance().showUnreadFilterButton(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setShowUnreadFilterButton(checked);
 			},
 			rpl::single(QString::fromUtf8("Отображает кнопку над списком чатов для быстрого показа только непрочитанных диалогов в один клик.")));
-
-		AddCheckboxRow(
-			box,
-			rpl::single(QString::fromUtf8("Массовое удаление сообщений за период")),
-			MakuGram::Settings::instance().quickMassDeleteMyMessages(),
-			[=](bool checked) {
-				MakuGram::Settings::instance().setQuickMassDeleteMyMessages(checked);
-			},
-			rpl::single(QString::fromUtf8("Добавляет в меню диалога пункт для быстрого удаления сообщений за сегодня, неделю, месяц или всё время.")));
-
-		AddCheckboxRow(
-			box,
-			tr::lng_settings_makugram_hide_blocked(),
-			MakuGram::Settings::instance().hideMessagesFromBlocked(),
-			[=](bool checked) {
-				MakuGram::Settings::instance().setHideMessagesFromBlocked(checked);
-			},
-			tr::lng_settings_makugram_hide_blocked_about());
 
 		AddCheckboxRow(
 			box,
@@ -237,10 +201,66 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 	}));
 }
 
+void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
+	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+		box->setWidth(kBoxContentWidth);
+		box->setTitle(rpl::single(QString::fromUtf8("Приватность и безопасность")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Не передавать статус набора текста")),
+			MakuGram::Settings::instance().hideTypingStatus(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setHideTypingStatus(checked);
+			},
+			rpl::single(QString::fromUtf8("Собеседники не будут видеть, когда вы печатаете текст или записываете голосовое/видеосообщение.")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Разрешить копирование и сохранение контента")),
+			MakuGram::Settings::instance().bypassRestrictedContent(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setBypassRestrictedContent(checked);
+			},
+			rpl::single(QString::fromUtf8("Снимает ограничения на сохранение медиа, копирование текста и скриншоты в защищённых каналах и группах.")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Массовое удаление сообщений за период")),
+			MakuGram::Settings::instance().quickMassDeleteMyMessages(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setQuickMassDeleteMyMessages(checked);
+			},
+			rpl::single(QString::fromUtf8("Добавляет в меню диалога пункт для быстрого удаления сообщений за сегодня, неделю, месяц или всё время.")));
+
+		AddCheckboxRow(
+			box,
+			tr::lng_settings_makugram_hide_blocked(),
+			MakuGram::Settings::instance().hideMessagesFromBlocked(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setHideMessagesFromBlocked(checked);
+			},
+			tr::lng_settings_makugram_hide_blocked_about());
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Спрятать номер телефона из настроек")),
+			MakuGram::Settings::instance().hidePhoneNumberInSettings(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setHidePhoneNumberInSettings(checked);
+			},
+			rpl::single(QString::fromUtf8("Скрывает номер телефона в шапке настроек и в меню редактирования профиля для защиты от случайной демонстрации.")));
+
+		box->addButton(tr::lng_close(), [=] {
+			box->closeBox();
+		});
+	}));
+}
+
 void ShowModerationBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
-		box->setTitle(tr::lng_settings_makugram_section_moderation());
+		box->setTitle(rpl::single(QString::fromUtf8("Модерация чатов")));
 
 		AddCheckboxRow(
 			box,
@@ -288,6 +308,15 @@ void ShowProfileBox(not_null<Window::SessionController*> controller) {
 				MakuGram::Settings::instance().setShowProfileDetails(checked);
 			},
 			rpl::single(QString::fromUtf8("Отображать числовой ID (с копированием в буфер по клику) и расчетный период регистрации в профиле пользователя.")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Отключить сторис")),
+			MakuGram::Settings::instance().disableStories(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setDisableStories(checked);
+			},
+			rpl::single(QString::fromUtf8("Полностью скрывает истории пользователей и каналов: ободки на аватарках, верхнюю панель историй, раздел в профиле и в архиве.")));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -363,8 +392,11 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 				box,
 				QString::fromUtf8(
 					"• Безлимитный мультиаккаунт (до 100 аккаунтов) активен по умолчанию.\n"
-					"• Приватность и сообщения: фильтр скрываемых слов со звёздочками (*), точное время с секундами, пересылка без автора.\n"
-					"• Модерация и безопасность: быстрый бан в заявках, удаление и бан из меню сообщений, бейдж (Новичок), скрытие сообщений заблокированных.\n"
+					"• Сообщения: точное время отправки в секундах, кнопка непрочитанных чатов, локальный спам-фильтр.\n"
+					"• Приватность и безопасность: скрытие статуса набора текста, снятие ограничений на сохранение контента, массовое удаление сообщений, скрытие заблокированных, сокрытие номера телефона.\n"
+					"• Модерация чатов: быстрый бан в заявках, поиск сообщений автора в группе, бейдж \"Новичок\".\n"
+					"• Профиль: ID и дата регистрации, полное отключение сторис.\n"
+					"• Внешний вид: компактный список чатов, отключение эффектов реакций.\n"
 					"• Медиа: открытие во весь экран.\n\n"
 					"Версия клиента: MakuGram 7.4.0"),
 				st::boxDividerLabel),
@@ -384,31 +416,39 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 
 	builder.addSubsectionTitle(rpl::single(QString::fromUtf8("Категории настроек")));
 
-	// 1. Приватность и сообщения
+	// 1. Сообщения
 	builder.addButton({
-		.title = tr::lng_settings_makugram_section_privacy(),
+		.title = rpl::single(QString::fromUtf8("Сообщения")),
+		.icon = { &st::menuIconChats },
+		.onClick = [=] { ShowMessagesBox(controller); },
+		.keywords = { u"time"_q, u"seconds"_q, u"unread"_q, u"spam"_q, u"words"_q, u"время"_q, u"секунды"_q, u"непрочитанные"_q, u"спам"_q, u"слова"_q, u"сообщения"_q },
+	});
+
+	// 2. Приватность и безопасность
+	builder.addButton({
+		.title = rpl::single(QString::fromUtf8("Приватность и безопасность")),
 		.icon = { &st::menuIconLock },
 		.onClick = [=] { ShowPrivacyBox(controller); },
-		.keywords = { u"time"_q, u"seconds"_q, u"exact"_q, u"forward"_q, u"spam"_q, u"words"_q, u"время"_q, u"секунды"_q, u"пересылка"_q, u"спам"_q, u"слова"_q, u"скрыть"_q },
+		.keywords = { u"privacy"_q, u"typing"_q, u"copy"_q, u"delete"_q, u"phone"_q, u"blocked"_q, u"приватность"_q, u"тайпинг"_q, u"копирование"_q, u"удаление"_q, u"телефон"_q, u"номер"_q, u"блок"_q },
 	});
 
-	// 2. Модерация и безопасность
+	// 3. Модерация чатов
 	builder.addButton({
-		.title = tr::lng_settings_makugram_section_moderation(),
+		.title = rpl::single(QString::fromUtf8("Модерация чатов")),
 		.icon = { &st::menuIconAdmin },
 		.onClick = [=] { ShowModerationBox(controller); },
-		.keywords = { u"ban"_q, u"badge"_q, u"requests"_q, u"бан"_q, u"новичок"_q, u"заявки"_q, u"блок"_q },
+		.keywords = { u"ban"_q, u"badge"_q, u"requests"_q, u"search"_q, u"бан"_q, u"новичок"_q, u"заявки"_q, u"модерация"_q, u"поиск"_q },
 	});
 
-	// 3. Профиль и информация
+	// 4. Профиль и информация
 	builder.addButton({
 		.title = tr::lng_settings_makugram_section_profile(),
 		.icon = { &st::menuIconProfile },
 		.onClick = [=] { ShowProfileBox(controller); },
-		.keywords = { u"id"_q, u"profile"_q, u"registration"_q, u"профиль"_q, u"возраст"_q, u"регистрация"_q },
+		.keywords = { u"id"_q, u"profile"_q, u"registration"_q, u"stories"_q, u"профиль"_q, u"возраст"_q, u"регистрация"_q, u"сторис"_q, u"истории"_q },
 	});
 
-	// 4. Внешний вид
+	// 5. Внешний вид
 	builder.addButton({
 		.title = rpl::single(QString::fromUtf8("Внешний вид")),
 		.icon = { &st::menuIconChangeColors },
@@ -416,7 +456,7 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.keywords = { u"appearance"_q, u"compact"_q, u"reactions"_q, u"вид"_q, u"компактный"_q, u"реакции"_q },
 	});
 
-	// 5. Медиа
+	// 6. Медиа
 	builder.addButton({
 		.title = tr::lng_settings_makugram_section_media(),
 		.icon = { &st::menuIconPhoto },
@@ -424,7 +464,7 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.keywords = { u"media"_q, u"zoom"_q, u"медиа"_q, u"масштаб"_q, u"экран"_q },
 	});
 
-	// 6. О клиенте
+	// 7. О клиенте
 	builder.addButton({
 		.title = rpl::single(QString::fromUtf8("О клиенте")),
 		.icon = { &st::menuIconInfo },

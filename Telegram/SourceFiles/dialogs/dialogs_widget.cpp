@@ -1821,6 +1821,15 @@ void Widget::setupStories() {
 		return _openedFolder ? List::Hidden : List::NotHidden;
 	};
 
+	MakuGram::Settings::instance().disableStoriesChanges(
+	) | rpl::on_next([=] {
+		_storiesContents.fire(Stories::ContentForSession(
+			&controller()->session(),
+			currentSource()));
+		storiesExplicitCollapse();
+		updateStoriesVisibility();
+	}, _stories->lifetime());
+
 	rpl::combine(
 		_scroll->positionValue(),
 		_scroll->movementValue(),
@@ -2982,7 +2991,8 @@ void Widget::updateStoriesVisibility() {
 			&& _subsectionTopBar->searchMode());
 	const auto pulledDown = _scroll->position().overscroll
 		< -st::dialogsFilterSkip;
-	const auto hiddenInstant = _showAnimation
+	const auto hiddenInstant = MakuGram::Settings::instance().disableStories()
+		|| _showAnimation
 		|| _openedForum
 		|| _openedCommunity
 		|| (widthAnimation && !suggestionsAnimation)

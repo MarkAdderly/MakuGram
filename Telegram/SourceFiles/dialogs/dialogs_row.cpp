@@ -754,11 +754,11 @@ void Row::paintUserpic(
 		? ((peer->isUser() || peer->isChannel()) ? peer : nullptr)
 		: nullptr;
 	const auto storiesFolder = peer ? nullptr : _id.folder();
-	const auto storiesHas = storiesPeer
+	const auto storiesHas = !MakuGram::Settings::instance().disableStories() && (storiesPeer
 		? storiesPeer->hasActiveStories()
 		: storiesFolder
 		? (storiesFolder->storiesCount() > 0)
-		: false;
+		: false);
 	if (!cornerBadgeShown && !storiesHas) {
 		BasicRow::paintUserpic(p, entry, peer, videoUserpic, context, false);
 		if (!peer || !_cornerBadgeShown) {

@@ -122,6 +122,16 @@ public:
 	void setDisableReactionAnimations(bool enabled);
 	[[nodiscard]] rpl::producer<bool> disableReactionAnimationsChanges() const;
 
+	// 17. Disable stories
+	[[nodiscard]] bool disableStories() const;
+	void setDisableStories(bool enabled);
+	[[nodiscard]] rpl::producer<bool> disableStoriesChanges() const;
+
+	// 18. Hide phone number in settings
+	[[nodiscard]] bool hidePhoneNumberInSettings() const;
+	void setHidePhoneNumberInSettings(bool enabled);
+	[[nodiscard]] rpl::producer<bool> hidePhoneNumberInSettingsChanges() const;
+
 private:
 	Settings();
 	~Settings() = default;
@@ -150,6 +160,8 @@ private:
 	bool _searchUserMessagesInChat = true;
 	bool _compactChatList = false;
 	bool _disableReactionAnimations = false;
+	bool _disableStories = false;
+	bool _hidePhoneNumberInSettings = false;
 
 	rpl::event_stream<bool> _hideMessagesFromBlockedChanges;
 	rpl::event_stream<bool> _quickBanInRequestsChanges;
@@ -168,6 +180,8 @@ private:
 	rpl::event_stream<bool> _searchUserMessagesInChatChanges;
 	rpl::event_stream<bool> _compactChatListChanges;
 	rpl::event_stream<bool> _disableReactionAnimationsChanges;
+	rpl::event_stream<bool> _disableStoriesChanges;
+	rpl::event_stream<bool> _hidePhoneNumberInSettingsChanges;
 };
 
 } // namespace MakuGram

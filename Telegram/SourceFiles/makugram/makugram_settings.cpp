@@ -135,6 +135,8 @@ Settings::Settings() {
 	_searchUserMessagesInChat = s.value("searchUserMessagesInChat", true).toBool();
 	_compactChatList = s.value("compactChatList", false).toBool();
 	_disableReactionAnimations = s.value("disableReactionAnimations", false).toBool();
+	_disableStories = s.value("disableStories", false).toBool();
+	_hidePhoneNumberInSettings = s.value("hidePhoneNumberInSettings", false).toBool();
 
 	parseSpamKeywords();
 }
@@ -491,6 +493,40 @@ void Settings::setDisableReactionAnimations(bool enabled) {
 
 rpl::producer<bool> Settings::disableReactionAnimationsChanges() const {
 	return _disableReactionAnimationsChanges.events();
+}
+
+bool Settings::disableStories() const {
+	return _disableStories;
+}
+
+void Settings::setDisableStories(bool enabled) {
+	if (_disableStories != enabled) {
+		_disableStories = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("disableStories", enabled);
+		_disableStoriesChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::disableStoriesChanges() const {
+	return _disableStoriesChanges.events();
+}
+
+bool Settings::hidePhoneNumberInSettings() const {
+	return _hidePhoneNumberInSettings;
+}
+
+void Settings::setHidePhoneNumberInSettings(bool enabled) {
+	if (_hidePhoneNumberInSettings != enabled) {
+		_hidePhoneNumberInSettings = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("hidePhoneNumberInSettings", enabled);
+		_hidePhoneNumberInSettingsChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::hidePhoneNumberInSettingsChanges() const {
+	return _hidePhoneNumberInSettingsChanges.events();
 }
 
 } // namespace MakuGram

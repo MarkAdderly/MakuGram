@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/ui/dialogs_stories_content.h"
+#include "makugram/makugram_settings.h"
 
 #include "base/unixtime.h"
 #include "data/data_changes.h"
@@ -56,6 +57,9 @@ State::State(not_null<Data::Stories*> data, Data::StorySourcesList list)
 }
 
 Content State::next() {
+	if (MakuGram::Settings::instance().disableStories()) {
+		return Content();
+	}
 	const auto &sources = _data->sources(_list);
 	auto result = Content{ .total = int(sources.size()) };
 	result.elements.reserve(sources.size());
@@ -110,6 +114,9 @@ rpl::producer<Content> ContentForSession(
 }
 
 rpl::producer<Content> LastForPeer(not_null<PeerData*> peer) {
+	if (MakuGram::Settings::instance().disableStories()) {
+		return rpl::single(Content());
+	}
 	using namespace rpl::mappers;
 
 	const auto stories = &peer->owner().stories();

@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "data/data_user.h"
+#include "makugram/makugram_settings.h"
 
 #include "api/api_credits.h"
 #include "api/api_global_privacy.h"
@@ -270,10 +271,16 @@ void UserData::setWalletCard(std::optional<Data::WalletCard> card) {
 }
 
 bool UserData::hasActiveStories() const {
+	if (MakuGram::Settings::instance().disableStories()) {
+		return false;
+	}
 	return flags() & Flag::HasActiveStories;
 }
 
 bool UserData::hasUnreadStories() const {
+	if (MakuGram::Settings::instance().disableStories()) {
+		return false;
+	}
 	return flags() & Flag::HasUnreadStories;
 }
 

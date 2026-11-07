@@ -445,11 +445,11 @@ void RequestsBoxController::setupMassActions() {
 
 	const auto acceptAll = Ui::CreateChild<Ui::RoundButton>(
 		raw,
-		tr::lng_community_requests_add_all(),
+		rpl::single(QString::fromUtf8("Принять всех")),
 		st::requestsAddAllButton);
 	const auto rejectAll = Ui::CreateChild<Ui::RoundButton>(
 		raw,
-		tr::lng_community_requests_decline_all(),
+		rpl::single(QString::fromUtf8("Отклонить всех")),
 		st::requestsDeclineAllButton);
 	acceptAll->setFullRadius(true);
 	rejectAll->setFullRadius(true);

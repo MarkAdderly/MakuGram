@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "info/profile/tabs/adapters/info_profile_tab_stories.h"
+#include "makugram/makugram_settings.h"
 
 #include "data/data_peer.h"
 #include "data/data_stories.h"
@@ -23,6 +24,9 @@ namespace {
 
 [[nodiscard]] rpl::producer<int> StoriesCountValue(
 		not_null<PeerData*> peer) {
+	if (MakuGram::Settings::instance().disableStories()) {
+		return rpl::single(0);
+	}
 	return rpl::single(0) | rpl::then(Data::AlbumStoriesIds(
 		peer,
 		Data::kStoriesAlbumIdSaved,
@@ -157,7 +161,9 @@ MediaTabDescriptor MakeStoriesTabDescriptor(not_null<PeerData*> peer) {
 		.title = (peer->isChannel()
 			? tr::lng_media_type_posts(tr::marked)
 			: tr::lng_media_type_stories(tr::marked)),
-		.shown = StoriesCountValue(peer) | rpl::map(_1 > 0),
+		.shown = MakuGram::Settings::instance().disableStories()
+			? (rpl::single(false) | rpl::type_erased)
+			: (StoriesCountValue(peer) | rpl::map(_1 > 0) | rpl::type_erased),
 		.factory = [](MediaTabContext context) {
 			return std::make_unique<StoriesTabAdapter>(std::move(context));
 		},

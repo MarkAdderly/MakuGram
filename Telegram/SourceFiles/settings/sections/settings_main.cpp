@@ -8,6 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "settings/sections/settings_main.h"
 
 #include "makugram/settings_makugram.h"
+#include "makugram/makugram_settings.h"
 
 #include "settings/settings_common_session.h"
 
@@ -275,6 +276,12 @@ void Cover::initViewers() {
 		updatePhoneText();
 	}, lifetime());
 
+	MakuGram::Settings::instance().hidePhoneNumberInSettingsChanges(
+	) | rpl::on_next([=] {
+		updatePhoneText();
+		refreshUsernameGeometry(width());
+	}, lifetime());
+
 	Info::Profile::UsernameValue(
 		_user
 	) | rpl::on_next([=](const TextWithEntities &value) {
@@ -325,6 +332,11 @@ void Cover::refreshNameGeometry(int newWidth) {
 }
 
 void Cover::updatePhoneText() {
+	if (MakuGram::Settings::instance().hidePhoneNumberInSettings()) {
+		_phone->hide();
+		return;
+	}
+	_phone->show();
 	if (_user->session().settings().phoneNumberHidden()) {
 		_phone->setMarkedText(
 			Ui::Text::Wrapped({ _phoneText }, EntityType::Spoiler));
@@ -346,7 +358,9 @@ void Cover::refreshPhoneGeometry(int newWidth) {
 
 void Cover::refreshUsernameGeometry(int newWidth) {
 	const auto usernameLeft = st::settingsUsernameLeft;
-	const auto usernameTop = st::settingsUsernameTop;
+	const auto usernameTop = (_phone && _phone->isHidden())
+		? st::settingsPhoneTop
+		: st::settingsUsernameTop;
 	const auto usernameRight = st::infoProfileCover.rightSkip;
 	const auto usernameWidth = newWidth - usernameLeft - usernameRight;
 	_username->resizeToWidth(usernameWidth);
@@ -876,6 +890,9 @@ void SetupValidatePhoneNumberSuggestion(
 		not_null<Window::SessionController*> controller,
 		not_null<Ui::VerticalLayout*> container,
 		Fn<void(Type)> showOther) {
+	if (MakuGram::Settings::instance().hidePhoneNumberInSettings()) {
+		return;
+	}
 	if (!controller->session().promoSuggestions().current(
 			kSugValidatePhone.utf8())) {
 		return;

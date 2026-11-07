@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "settings/sections/settings_information.h"
+#include "makugram/makugram_settings.h"
 
 #include "settings/sections/settings_main.h"
 #include "settings/settings_builder.h"
@@ -607,6 +608,13 @@ void SetupRows(
 	if (targets) {
 		targets->phone = phoneButton;
 	}
+	if (MakuGram::Settings::instance().hidePhoneNumberInSettings()) {
+		phoneButton->hide();
+	}
+	MakuGram::Settings::instance().hidePhoneNumberInSettingsChanges(
+	) | rpl::on_next([=] {
+		phoneButton->setVisible(!MakuGram::Settings::instance().hidePhoneNumberInSettings());
+	}, phoneButton->lifetime());
 
 	auto username = Info::Profile::UsernameValue(self);
 	auto empty = base::duplicate(

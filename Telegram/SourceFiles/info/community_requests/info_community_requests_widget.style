@@ -38,7 +38,7 @@ requestsAddAllButton: RoundButton(defaultActiveButton) {
 	height: 32px;
 	textTop: 7px;
 }
-requestsDeclineAllButton: RoundButton(defaultLightButton) {
-	height: 32px;
-	textTop: 7px;
+requestsDeclineAllButton: RoundButton(requestsAddAllButton) {
+	textBg: attentionButtonFg;
+	textBgOver: attentionButtonFgOver;
 }
