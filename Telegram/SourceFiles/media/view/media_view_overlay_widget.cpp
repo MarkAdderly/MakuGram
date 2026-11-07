@@ -463,7 +463,11 @@ public:
 				hide();
 			} else if (isHidden()) {
 				show();
-				raise();
+				if (_owner->_dropdown) {
+					stackUnder(_owner->_dropdown.get());
+				} else {
+					raise();
+				}
 			}
 			update();
 		}
@@ -552,7 +556,11 @@ public:
 
 		if (_opacity > 0.01) {
 			show();
-			raise();
+			if (_owner->_dropdown) {
+				stackUnder(_owner->_dropdown.get());
+			} else {
+				raise();
+			}
 		}
 		update();
 	}
@@ -629,11 +637,14 @@ protected:
 			if (_selectRect.contains(e->pos())) {
 				_downSelect = true;
 				update();
+				return;
 			} else if (_forwardRect.contains(e->pos())) {
 				_downForward = true;
 				update();
+				return;
 			}
 		}
+		e->ignore();
 	}
 
 	void mouseReleaseEvent(QMouseEvent *e) override {
@@ -653,6 +664,11 @@ protected:
 		_downSelect = false;
 		_downForward = false;
 		update();
+		e->ignore();
+	}
+
+	void contextMenuEvent(QContextMenuEvent *e) override {
+		e->ignore();
 	}
 
 	void mouseMoveEvent(QMouseEvent *e) override {
@@ -9311,6 +9327,7 @@ void OverlayWidget::showDropdown() {
 	_dropdown->clearActions();
 	fillContextMenuActions(Ui::Menu::CreateAddActionCallback(_dropdown));
 	_dropdown->moveToRight(0, height() - _dropdown->height());
+	_dropdown->raise();
 	_dropdown->showAnimated(Ui::PanelAnimation::Origin::BottomRight);
 	_dropdown->setFocus();
 	if (_stories) {
@@ -9521,10 +9538,24 @@ void OverlayWidget::forwardMakuSelectedMedia() {
 		}
 	}
 	if (!ids.empty()) {
+		const auto controller = active.front();
+		_makuSelectedItems.clear();
+		if (_makuControls) {
+			_makuControls->updateState();
+		}
 		if (!_windowed) {
 			close();
 		}
-		Window::ShowForwardMessagesBox(active.front(), std::move(ids));
+		const auto cancelChatSelection = [=] {
+			const auto widgets = controller->widget()->findChildren<QWidget*>();
+			for (const auto widget : widgets) {
+				if (const auto list = dynamic_cast<HistoryView::ListWidget*>(widget)) {
+					list->cancelSelection();
+				}
+			}
+		};
+		cancelChatSelection();
+		Window::ShowForwardMessagesBox(controller, std::move(ids), cancelChatSelection);
 	}
 }
 
