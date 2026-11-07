@@ -282,12 +282,69 @@ void PeerMenuAddMuteSubmenuAction(
 	}
 }
 
+void ExecuteDeleteIds(
+		not_null<Window::SessionController*> controller,
+		not_null<PeerData*> peer,
+		std::shared_ptr<QVector<MTPint>> ids,
+		bool onlyMedia) {
+	const auto session = &peer->session();
+	const auto channel = peer->asChannel();
+	const auto totalCount = ids->size();
+	const auto offset = std::make_shared<int>(0);
+	auto deleteNextChunk = std::make_shared<Fn<void()>>();
+
+	*deleteNextChunk = [=] {
+		if (*offset >= ids->size()) {
+			session->data().sendHistoryChangeNotifications();
+			controller->showToast(onlyMedia
+				? QString::fromUtf8("Удалено медиа: %1").arg(totalCount)
+				: QString::fromUtf8("Удалено сообщений: %1").arg(totalCount));
+			return;
+		}
+		const auto chunkSize = std::min(100, int(ids->size() - *offset));
+		auto chunk = QVector<MTPint>();
+		chunk.reserve(chunkSize);
+		for (auto i = 0; i != chunkSize; ++i) {
+			const auto id = (*ids)[*offset + i];
+			chunk.push_back(id);
+			if (const auto item = session->data().message(peer->id, id.v)) {
+				item->destroy();
+			}
+		}
+		*offset += chunkSize;
+
+		if (channel) {
+			session->api().request(MTPchannels_DeleteMessages(
+				channel->inputChannel(),
+				MTP_vector<MTPint>(chunk)
+			)).done([=](const MTPmessages_AffectedMessages &) {
+				(*deleteNextChunk)();
+			}).fail([=](const MTP::Error &error) {
+				controller->showToast(QString::fromUtf8("Ошибка удаления: ") + error.type());
+			}).send();
+		} else {
+			using Flag = MTPmessages_DeleteMessages::Flag;
+			session->api().request(MTPmessages_DeleteMessages(
+				MTP_flags(Flag::f_revoke),
+				MTP_vector<MTPint>(chunk)
+			)).done([=](const MTPmessages_AffectedMessages &) {
+				(*deleteNextChunk)();
+			}).fail([=](const MTP::Error &error) {
+				controller->showToast(QString::fromUtf8("Ошибка удаления: ") + error.type());
+			}).send();
+		}
+	};
+
+	(*deleteNextChunk)();
+}
+
 void DeleteOwnMessagesByDates(
 		not_null<Window::SessionController*> controller,
 		not_null<PeerData*> peer,
 		QDate fromDate,
 		QDate toDate,
-		bool onlyMedia) {
+		bool onlyMedia,
+		const QString &periodText) {
 	const auto minDate = (fromDate == QDate(2013, 1, 1))
 		? 0
 		: (base::unixtime::serialize({ fromDate, QTime(0, 0) }) - 1);
@@ -296,8 +353,8 @@ void DeleteOwnMessagesByDates(
 	const auto user = session->user();
 	const auto channel = peer->asChannel();
 
+	auto allIds = std::make_shared<QVector<MTPint>>();
 	auto searchNext = std::make_shared<Fn<void(int)>>();
-	auto deletedCount = std::make_shared<int>(0);
 
 	*searchNext = [=](int offsetId) {
 		const auto flags = channel
@@ -331,20 +388,6 @@ void DeleteOwnMessagesByDates(
 			}, [](const auto &) {
 				return QVector<MTPMessage>();
 			});
-			if (messages.isEmpty()) {
-				if (*deletedCount > 0) {
-					controller->showToast(onlyMedia
-						? QString::fromUtf8("Удалено медиа: %1").arg(*deletedCount)
-						: QString::fromUtf8("Удалено сообщений: %1").arg(*deletedCount));
-				} else {
-					controller->showToast(onlyMedia
-						? QString::fromUtf8("Медиа за выбранный период не найдено")
-						: QString::fromUtf8("Сообщений за выбранный период не найдено"));
-				}
-				return;
-			}
-			auto ids = QVector<MTPint>();
-			ids.reserve(messages.size());
 			auto lastId = 0;
 			for (const auto &msg : messages) {
 				const auto id = msg.match([](const MTPDmessage &data) {
@@ -388,57 +431,36 @@ void DeleteOwnMessagesByDates(
 						return false;
 					});
 					if (isOwn && (!onlyMedia || isMedia)) {
-						ids.push_back(MTP_int(id));
-						if (const auto item = session->data().message(peer->id, id)) {
-							item->destroy();
-						}
+						allIds->push_back(MTP_int(id));
 					}
 				}
 			}
 
-			const auto nextStep = [=] {
-				if (messages.size() >= 100 && lastId > 0) {
-					(*searchNext)(lastId);
-				} else {
-					if (*deletedCount > 0) {
-						controller->showToast(onlyMedia
-							? QString::fromUtf8("Удалено медиа: %1").arg(*deletedCount)
-							: QString::fromUtf8("Удалено сообщений: %1").arg(*deletedCount));
-					} else {
-						controller->showToast(onlyMedia
-							? QString::fromUtf8("Медиа за выбранный период не найдено")
-							: QString::fromUtf8("Сообщений за выбранный период не найдено"));
-					}
-				}
-			};
-
-			if (ids.isEmpty()) {
-				nextStep();
-				return;
-			}
-
-			*deletedCount += ids.size();
-			session->data().sendHistoryChangeNotifications();
-
-			if (channel) {
-				session->api().request(MTPchannels_DeleteMessages(
-					channel->inputChannel(),
-					MTP_vector<MTPint>(ids)
-				)).done([=](const MTPmessages_AffectedMessages &) {
-					nextStep();
-				}).fail([=](const MTP::Error &error) {
-					controller->showToast(QString::fromUtf8("Ошибка удаления: ") + error.type());
-				}).send();
+			if (messages.size() >= 100 && lastId > 0) {
+				(*searchNext)(lastId);
+			} else if (allIds->isEmpty()) {
+				controller->showToast(onlyMedia
+					? QString::fromUtf8("Медиа за выбранный период не найдено")
+					: QString::fromUtf8("Сообщений за выбранный период не найдено"));
 			} else {
-				using Flag = MTPmessages_DeleteMessages::Flag;
-				session->api().request(MTPmessages_DeleteMessages(
-					MTP_flags(Flag::f_revoke),
-					MTP_vector<MTPint>(ids)
-				)).done([=](const MTPmessages_AffectedMessages &) {
-					nextStep();
-				}).fail([=](const MTP::Error &error) {
-					controller->showToast(QString::fromUtf8("Ошибка удаления: ") + error.type());
-				}).send();
+				const auto count = allIds->size();
+				const auto title = onlyMedia
+					? QString::fromUtf8("Удаление медиа")
+					: QString::fromUtf8("Удаление сообщений");
+				const auto text = onlyMedia
+					? QString::fromUtf8("Найдено медиа: %1 %2.\n\nВы уверены, что хотите удалить их?").arg(count).arg(periodText)
+					: QString::fromUtf8("Найдено сообщений: %1 %2.\n\nВы уверены, что хотите удалить их?").arg(count).arg(periodText);
+
+				controller->show(Ui::MakeConfirmBox({
+					.text = text,
+					.confirmed = [=](Fn<void()> close) {
+						close();
+						ExecuteDeleteIds(controller, peer, allIds, onlyMedia);
+					},
+					.confirmText = tr::lng_box_delete(),
+					.confirmStyle = &st::attentionBoxButton,
+					.title = title,
+				}));
 			}
 		}).fail([=](const MTP::Error &error) {
 			controller->showToast(QString::fromUtf8("Ошибка поиска: ") + error.type());
@@ -1062,7 +1084,7 @@ void Filler::addMassDeleteMyMessages() {
 		}
 	}
 	_addAction(
-		QString::fromUtf8("Удалить свои сообщения за период..."),
+		QString::fromUtf8("Удалить свои соо. за период..."),
 		[controller = _controller, peer = _peer] {
 			static const auto options = std::vector<QString>{
 				QString::fromUtf8("За сегодня"),
@@ -1142,28 +1164,14 @@ void Filler::addMassDeleteMyMessages() {
 							return QString::fromUtf8("за всё время");
 						}
 					}();
-					if (onlyMedia) {
-						controller->show(Ui::MakeConfirmBox({
-							.text = QString::fromUtf8("Вы уверены, что хотите удалить только медиа %1?").arg(periodText),
-							.confirmed = [=](Fn<void()> close) {
-								close();
-								DeleteOwnMessagesByDates(controller, peer, from, to, true);
-							},
-							.confirmText = tr::lng_box_delete(),
-							.confirmStyle = &st::attentionBoxButton,
-							.title = QString::fromUtf8("Удаление медиа"),
-						}));
-					} else if (const auto channel = peer->asChannel()) {
-						controller->show(Ui::MakeConfirmBox({
-							.text = QString::fromUtf8("Вы уверены, что хотите удалить свои сообщения %1?").arg(periodText),
-							.confirmed = [=](Fn<void()> close) {
-								close();
-								DeleteOwnMessagesByDates(controller, channel, from, to, false);
-							},
-							.confirmText = tr::lng_box_delete(),
-							.confirmStyle = &st::attentionBoxButton,
-							.title = QString::fromUtf8("Удаление сообщений"),
-						}));
+					if (onlyMedia || peer->asChannel()) {
+						DeleteOwnMessagesByDates(
+							controller,
+							peer,
+							from,
+							to,
+							onlyMedia,
+							periodText);
 					} else {
 						controller->show(Box<DeleteMessagesBox>(peer, from, to));
 					}
