@@ -5389,6 +5389,29 @@ MessageIdsList HistoryInner::getSelectedItems() const {
 	return result;
 }
 
+void HistoryInner::selectItems(const base::flat_set<FullMsgId> &ids) {
+	if (hasSelectRestriction() || ids.empty()) {
+		return;
+	}
+	clearTextSelection();
+	auto total = int(_selected.size());
+	auto changed = false;
+	for (const auto &id : ids) {
+		if (const auto item = session().data().message(id)) {
+			if (goodForSelection(&_selected, item, total) && total <= MaxSelectedItems) {
+				addToSelection(&_selected, item);
+				changed = true;
+			}
+		}
+	}
+	if (changed) {
+		_accessibilitySelectionAnchor = nullptr;
+		_widget->updateTopBarSelection();
+		_widget->update();
+		update();
+	}
+}
+
 MessageIdsList HistoryInner::getSelectedForwardItems() const {
 	if (!hasSelectedItems()) {
 		return {};

@@ -2199,6 +2199,29 @@ void ListWidget::selectItem(not_null<HistoryItem*> item) {
 	}
 }
 
+void ListWidget::selectItems(const base::flat_set<FullMsgId> &ids) {
+	if (hasSelectRestriction() || ids.empty()) {
+		return;
+	}
+	clearTextSelection();
+	auto already = int(_selected.size());
+	auto changed = false;
+	for (const auto &id : ids) {
+		if (const auto item = session().data().message(id)) {
+			if (isGoodForSelection(_selected, item, already)) {
+				if (addToSelection(_selected, item)) {
+					changed = true;
+				}
+			}
+		}
+	}
+	if (changed) {
+		_accessibilitySelectionAnchor = nullptr;
+		pushSelectedItems();
+		update();
+	}
+}
+
 void ListWidget::selectItemAsGroup(not_null<HistoryItem*> item) {
 	if (hasSelectRestriction()) {
 		return;

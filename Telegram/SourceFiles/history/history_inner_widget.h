@@ -193,6 +193,7 @@ public:
 	void clearSelected(bool onlyTextSelection = false);
 	[[nodiscard]] MessageIdsList getSelectedItems() const;
 	[[nodiscard]] MessageIdsList getSelectedForwardItems() const;
+	void selectItems(const base::flat_set<FullMsgId> &ids);
 	[[nodiscard]] auto getSelectedEphemeral() const
 		-> std::vector<not_null<HistoryItem*>>;
 	[[nodiscard]] bool hasSelectedItems() const;

@@ -9,6 +9,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_photo.h"
 #include "data/data_document.h"
 #include "history/view/history_view_list_widget.h"
+#include "history/history_inner_widget.h"
 #include "makugram/makugram_settings.h"
 
 #include "apiwrap.h"
@@ -9551,6 +9552,8 @@ void OverlayWidget::forwardMakuSelectedMedia() {
 			for (const auto widget : widgets) {
 				if (const auto list = dynamic_cast<HistoryView::ListWidget*>(widget)) {
 					list->cancelSelection();
+				} else if (const auto inner = dynamic_cast<HistoryInner*>(widget)) {
+					inner->clearSelected();
 				}
 			}
 		};
@@ -9578,6 +9581,13 @@ void OverlayWidget::syncMakuSelectionFromChat() {
 				}
 				break;
 			}
+		} else if (const auto inner = dynamic_cast<HistoryInner*>(widget)) {
+			if (inner->isVisible()) {
+				for (const auto &id : inner->getSelectedItems()) {
+					_makuSelectedItems.insert(id);
+				}
+				break;
+			}
 		}
 	}
 }
@@ -9595,11 +9605,12 @@ void OverlayWidget::applyMakuSelectionToChat() {
 	for (const auto widget : widgets) {
 		if (const auto list = dynamic_cast<HistoryView::ListWidget*>(widget)) {
 			if (list->isVisible()) {
-				for (const auto &id : _makuSelectedItems) {
-					if (const auto item = _session->data().message(id)) {
-						list->selectItem(item);
-					}
-				}
+				list->selectItems(_makuSelectedItems);
+				break;
+			}
+		} else if (const auto inner = dynamic_cast<HistoryInner*>(widget)) {
+			if (inner->isVisible()) {
+				inner->selectItems(_makuSelectedItems);
 				break;
 			}
 		}

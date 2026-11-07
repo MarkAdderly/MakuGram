@@ -406,6 +406,7 @@ public:
 	void cancelSelection();
 	[[nodiscard]] bool wasSelectedText() const;
 	void selectItem(not_null<HistoryItem*> item);
+	void selectItems(const base::flat_set<FullMsgId> &ids);
 	void selectItemAsGroup(not_null<HistoryItem*> item);
 	void selectItemsUpTo(not_null<HistoryItem*> item);
 	[[nodiscard]] bool canSelectItemsUpTo(
