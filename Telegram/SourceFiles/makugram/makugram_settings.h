@@ -115,6 +115,10 @@ public:
 	void setHidePhoneNumberInSettings(bool enabled);
 	[[nodiscard]] rpl::producer<bool> hidePhoneNumberInSettingsChanges() const;
 
+	[[nodiscard]] bool forwardWithoutAuthor() const;
+	void setForwardWithoutAuthor(bool enabled);
+	[[nodiscard]] rpl::producer<bool> forwardWithoutAuthorChanges() const;
+
 private:
 	Settings();
 	~Settings() = default;
@@ -145,6 +149,7 @@ private:
 	bool _disableReactionAnimations = false;
 	bool _disableStories = false;
 	bool _hidePhoneNumberInSettings = false;
+	bool _forwardWithoutAuthor = true;
 
 	rpl::event_stream<bool> _hideMessagesFromBlockedChanges;
 	rpl::event_stream<bool> _quickBanInRequestsChanges;
@@ -165,6 +170,7 @@ private:
 	rpl::event_stream<bool> _disableReactionAnimationsChanges;
 	rpl::event_stream<bool> _disableStoriesChanges;
 	rpl::event_stream<bool> _hidePhoneNumberInSettingsChanges;
+	rpl::event_stream<bool> _forwardWithoutAuthorChanges;
 };
 
 } // namespace MakuGram

@@ -136,6 +136,7 @@ Settings::Settings() {
 	_disableReactionAnimations = s.value("disableReactionAnimations", false).toBool();
 	_disableStories = s.value("disableStories", false).toBool();
 	_hidePhoneNumberInSettings = s.value("hidePhoneNumberInSettings", false).toBool();
+	_forwardWithoutAuthor = s.value("forwardWithoutAuthor", true).toBool();
 
 	parseSpamKeywords();
 }
@@ -526,6 +527,23 @@ void Settings::setHidePhoneNumberInSettings(bool enabled) {
 
 rpl::producer<bool> Settings::hidePhoneNumberInSettingsChanges() const {
 	return _hidePhoneNumberInSettingsChanges.events();
+}
+
+bool Settings::forwardWithoutAuthor() const {
+	return _forwardWithoutAuthor;
+}
+
+void Settings::setForwardWithoutAuthor(bool enabled) {
+	if (_forwardWithoutAuthor != enabled) {
+		_forwardWithoutAuthor = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("forwardWithoutAuthor", enabled);
+		_forwardWithoutAuthorChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::forwardWithoutAuthorChanges() const {
+	return _forwardWithoutAuthorChanges.events();
 }
 
 } // namespace MakuGram

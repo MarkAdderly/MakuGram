@@ -582,21 +582,23 @@ bool AddForwardSelectedAction(
 			ExtractIdsList(request.selectedItems),
 			callback);
 	}, &st::menuIconForward);
-	menu->addAction(QString::fromUtf8("Переслать без автора"), [=] {
-		const auto weak = base::make_weak(list);
-		const auto callback = [=] {
-			if (const auto strong = weak.get()) {
-				strong->cancelSelection();
-			}
-		};
-		Window::ShowForwardMessagesBox(
-			request.navigation,
-			Data::ForwardDraft{
-				.ids = ExtractIdsList(request.selectedItems),
-				.options = Data::ForwardOptions::NoSenderNames,
-			},
-			callback);
-	}, &st::menuIconForward);
+	if (MakuGram::Settings::instance().forwardWithoutAuthor()) {
+		menu->addAction(QString::fromUtf8("Переслать без автора"), [=] {
+			const auto weak = base::make_weak(list);
+			const auto callback = [=] {
+				if (const auto strong = weak.get()) {
+					strong->cancelSelection();
+				}
+			};
+			Window::ShowForwardMessagesBox(
+				request.navigation,
+				Data::ForwardDraft{
+					.ids = ExtractIdsList(request.selectedItems),
+					.options = Data::ForwardOptions::NoSenderNames,
+				},
+				callback);
+		}, &st::menuIconForward);
+	}
 	return true;
 }
 
@@ -631,18 +633,20 @@ bool AddForwardMessageAction(
 					: MessageIdsList{ 1, itemId }));
 		}
 	}, &st::menuIconForward);
-	menu->addAction(QString::fromUtf8("Переслать без автора"), [=] {
-		if (const auto item = owner->message(itemId)) {
-			Window::ShowForwardMessagesBox(
-				request.navigation,
-				Data::ForwardDraft{
-					.ids = (asGroup
-						? owner->itemOrItsGroup(item)
-						: MessageIdsList{ 1, itemId }),
-					.options = Data::ForwardOptions::NoSenderNames,
-				});
-		}
-	}, &st::menuIconForward);
+	if (MakuGram::Settings::instance().forwardWithoutAuthor()) {
+		menu->addAction(QString::fromUtf8("Переслать без автора"), [=] {
+			if (const auto item = owner->message(itemId)) {
+				Window::ShowForwardMessagesBox(
+					request.navigation,
+					Data::ForwardDraft{
+						.ids = (asGroup
+							? owner->itemOrItsGroup(item)
+							: MessageIdsList{ 1, itemId }),
+						.options = Data::ForwardOptions::NoSenderNames,
+					});
+			}
+		}, &st::menuIconForward);
+	}
 	return true;
 }
 

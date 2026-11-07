@@ -227,6 +227,15 @@ void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
+			rpl::single(QString::fromUtf8("Переслать без автора")),
+			MakuGram::Settings::instance().forwardWithoutAuthor(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setForwardWithoutAuthor(checked);
+			},
+			rpl::single(QString::fromUtf8("Добавляет пункт \"Переслать без автора\" в контекстное меню сообщений.")));
+
+		AddCheckboxRow(
+			box,
 			tr::lng_settings_makugram_spam_filter(),
 			MakuGram::Settings::instance().spamFilterEnabled(),
 			[=](bool checked) {
