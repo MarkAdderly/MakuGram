@@ -7872,6 +7872,29 @@ void OverlayWidget::handleWheelEvent(not_null<QWheelEvent*> e) {
 		_verticalWheelDelta = 0;
 		return;
 	}
+
+	if (MakuGram::Settings::instance().videoVolumeWheel()
+		&& !e->modifiers().testFlag(Qt::ControlModifier)
+		&& (videoShown() || streamingRequiresControls())) {
+		_verticalWheelDelta += angle.y();
+		while (std::abs(_verticalWheelDelta) >= step) {
+			const auto currentVolume = Core::App().settings().videoVolume();
+			const auto delta = (_verticalWheelDelta > 0) ? 0.05 : -0.05;
+			if (_verticalWheelDelta > 0) {
+				_verticalWheelDelta -= step;
+			} else {
+				_verticalWheelDelta += step;
+			}
+			const auto newVolume = std::clamp(currentVolume + delta, 0.0, 1.0);
+			playbackControlsVolumeChanged(newVolume);
+			playbackControlsVolumeChangeFinished();
+			activateControls();
+			const auto percent = int(std::round(newVolume * 100.0));
+			uiShow()->showToast(u"Громкость: %1%"_q.arg(percent));
+		}
+		return;
+	}
+
 	const auto acceptForJump = !_stories
 		&& ((e->source() == Qt::MouseEventNotSynthesized)
 			|| (e->source() == Qt::MouseEventSynthesizedBySystem));

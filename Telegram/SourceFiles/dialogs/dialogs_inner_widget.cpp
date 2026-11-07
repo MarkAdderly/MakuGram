@@ -392,6 +392,11 @@ InnerWidget::InnerWidget(
 
 	setupOnlineStatusCheck();
 
+	MakuGram::Settings::instance().streamerModeChanges(
+	) | rpl::on_next([=] {
+		update();
+	}, lifetime());
+
 	MakuGram::Settings::instance().compactChatListChanges(
 	) | rpl::on_next([=] {
 		const auto updateListHeights = [&](Dialogs::IndexedList *list) {

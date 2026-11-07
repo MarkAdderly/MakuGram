@@ -237,7 +237,7 @@ base::options::toggle ShowChannelJoinedBelowAbout({
 	return AboutValue(
 		peer
 	) | rpl::map([=](TextWithEntities &&value) {
-		if (ShowPeerIdBelowAbout.value() || MakuGram::Settings::instance().showProfileDetails()) {
+		if ((ShowPeerIdBelowAbout.value() || MakuGram::Settings::instance().showProfileDetails()) && !MakuGram::Settings::instance().streamerMode()) {
 			using namespace Ui::Text;
 			if (!value.empty()) {
 				value.append("\n\n");
@@ -285,7 +285,7 @@ base::options::toggle ShowChannelJoinedBelowAbout({
 void SetupAboutPeerIdDrag(
 		not_null<Ui::FlatLabel*> label,
 		not_null<PeerData*> peer) {
-	if (!ShowPeerIdBelowAbout.value() && !MakuGram::Settings::instance().showProfileDetails()) {
+	if ((!ShowPeerIdBelowAbout.value() && !MakuGram::Settings::instance().showProfileDetails()) || MakuGram::Settings::instance().streamerMode()) {
 		return;
 	}
 	const auto id = QString::number(peer->id.value & PeerId::kChatTypeMask);

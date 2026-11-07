@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/controls/userpic_button.h"
+#include "makugram/makugram_settings.h"
 
 #include "apiwrap.h"
 #include "api/api_peer_photo.h"
@@ -778,6 +779,18 @@ void UserpicButton::paintUserpicFrame(Painter &p, QPoint photoPosition) {
 				QRect(QPoint(), frame.size() / frame.devicePixelRatio()),
 				_monoforumMask);
 			q.end();
+		}
+		if (MakuGram::Settings::instance().streamerMode()) {
+			const auto blurDim = std::max(4, int(std::round(frame.width() / 10.0)));
+			frame = frame.scaled(
+				blurDim,
+				blurDim,
+				Qt::IgnoreAspectRatio,
+				Qt::SmoothTransformation
+			).scaled(
+				frame.size(),
+				Qt::IgnoreAspectRatio,
+				Qt::SmoothTransformation);
 		}
 		p.drawImage(QRect(photoPosition, size), frame);
 		if (!paused) {

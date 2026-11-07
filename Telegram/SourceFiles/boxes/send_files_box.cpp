@@ -1524,6 +1524,9 @@ void SendFilesBox::addMenuButton() {
 void SendFilesBox::initSendWay() {
 	_sendWay = [&] {
 		auto result = Core::App().settings().sendFilesWay();
+		if (MakuGram::Settings::instance().sendMediaHighQuality()) {
+			result.setSendLargePhotos(true);
+		}
 		result.setHasCompressedStickers(_list.hasSticker());
 		if ((_limits & SendFilesAllow::OnlyOne)
 			&& (_list.files.size() > 1)) {

@@ -135,6 +135,18 @@ public:
 	void setIncreaseMessageSelectLimit(bool enabled);
 	[[nodiscard]] rpl::producer<bool> increaseMessageSelectLimitChanges() const;
 
+	[[nodiscard]] bool videoVolumeWheel() const;
+	void setVideoVolumeWheel(bool enabled);
+	[[nodiscard]] rpl::producer<bool> videoVolumeWheelChanges() const;
+
+	[[nodiscard]] bool sendMediaHighQuality() const;
+	void setSendMediaHighQuality(bool enabled);
+	[[nodiscard]] rpl::producer<bool> sendMediaHighQualityChanges() const;
+
+	[[nodiscard]] bool streamerMode() const;
+	void setStreamerMode(bool enabled);
+	[[nodiscard]] rpl::producer<bool> streamerModeChanges() const;
+
 private:
 	Settings();
 	~Settings() = default;
@@ -170,6 +182,9 @@ private:
 	bool _fullscreenMediaSelection = false;
 	bool _expandMediaSendDialog = false;
 	bool _increaseMessageSelectLimit = true;
+	bool _videoVolumeWheel = false;
+	bool _sendMediaHighQuality = false;
+	bool _streamerMode = false;
 
 	rpl::event_stream<bool> _hideMessagesFromBlockedChanges;
 	rpl::event_stream<bool> _quickBanInRequestsChanges;
@@ -195,6 +210,9 @@ private:
 	rpl::event_stream<bool> _fullscreenMediaSelectionChanges;
 	rpl::event_stream<bool> _expandMediaSendDialogChanges;
 	rpl::event_stream<bool> _increaseMessageSelectLimitChanges;
+	rpl::event_stream<bool> _videoVolumeWheelChanges;
+	rpl::event_stream<bool> _sendMediaHighQualityChanges;
+	rpl::event_stream<bool> _streamerModeChanges;
 };
 
 } // namespace MakuGram

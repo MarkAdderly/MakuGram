@@ -459,6 +459,24 @@ void PeerData::paintUserpic(
 		cloud ? nullptr : ensureEmptyUserpic().get(),
 		size * ratio,
 		context.shape);
+
+	if (MakuGram::Settings::instance().streamerMode()) {
+		if (!view.cached.isNull()) {
+			const auto blurDim = std::max(4, int(std::round(size * ratio / 10.0)));
+			const auto blurred = view.cached.scaled(
+				blurDim,
+				blurDim,
+				Qt::IgnoreAspectRatio,
+				Qt::SmoothTransformation
+			).scaled(
+				view.cached.size(),
+				Qt::IgnoreAspectRatio,
+				Qt::SmoothTransformation);
+			p.drawImage(QRect(context.position, QSize(size, size)), blurred);
+			return;
+		}
+	}
+
 	p.drawImage(QRect(context.position, QSize(size, size)), view.cached);
 }
 

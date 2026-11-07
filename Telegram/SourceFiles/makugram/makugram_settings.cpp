@@ -3,6 +3,8 @@ This file is part of MakuGram,
 a custom Telegram Desktop client fork.
 */
 #include "makugram/makugram_settings.h"
+#include "core/application.h"
+#include "core/core_settings.h"
 #include "config.h"
 
 #include <QtCore/QSettings>
@@ -142,6 +144,9 @@ Settings::Settings() {
 	_fullscreenMediaSelection = s.value("fullscreenMediaSelection", false).toBool();
 	_expandMediaSendDialog = s.value("expandMediaSendDialog", false).toBool();
 	_increaseMessageSelectLimit = s.value("increaseMessageSelectLimit", true).toBool();
+	_videoVolumeWheel = s.value("videoVolumeWheel", false).toBool();
+	_sendMediaHighQuality = s.value("sendMediaHighQuality", false).toBool();
+	_streamerMode = s.value("streamerMode", false).toBool();
 
 	parseSpamKeywords();
 }
@@ -518,7 +523,7 @@ rpl::producer<bool> Settings::disableStoriesChanges() const {
 }
 
 bool Settings::hidePhoneNumberInSettings() const {
-	return _hidePhoneNumberInSettings;
+	return _hidePhoneNumberInSettings || _streamerMode;
 }
 
 void Settings::setHidePhoneNumberInSettings(bool enabled) {
@@ -617,6 +622,63 @@ void Settings::setIncreaseMessageSelectLimit(bool enabled) {
 
 rpl::producer<bool> Settings::increaseMessageSelectLimitChanges() const {
 	return _increaseMessageSelectLimitChanges.events();
+}
+
+bool Settings::videoVolumeWheel() const {
+	return _videoVolumeWheel;
+}
+
+void Settings::setVideoVolumeWheel(bool enabled) {
+	if (_videoVolumeWheel != enabled) {
+		_videoVolumeWheel = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("videoVolumeWheel", enabled);
+		_videoVolumeWheelChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::videoVolumeWheelChanges() const {
+	return _videoVolumeWheelChanges.events();
+}
+
+bool Settings::sendMediaHighQuality() const {
+	return _sendMediaHighQuality;
+}
+
+void Settings::setSendMediaHighQuality(bool enabled) {
+	if (_sendMediaHighQuality != enabled) {
+		_sendMediaHighQuality = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("sendMediaHighQuality", enabled);
+		_sendMediaHighQualityChanges.fire_copy(enabled);
+		auto way = Core::App().settings().sendFilesWay();
+		way.setSendLargePhotos(enabled);
+		Core::App().settings().setSendFilesWay(way);
+		Core::App().saveSettingsDelayed();
+	}
+}
+
+rpl::producer<bool> Settings::sendMediaHighQualityChanges() const {
+	return _sendMediaHighQualityChanges.events();
+}
+
+bool Settings::streamerMode() const {
+	return _streamerMode;
+}
+
+void Settings::setStreamerMode(bool enabled) {
+	if (_streamerMode != enabled) {
+		_streamerMode = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("streamerMode", enabled);
+		_streamerModeChanges.fire_copy(enabled);
+		_hidePhoneNumberInSettingsChanges.fire_copy(hidePhoneNumberInSettings());
+		_showProfileDetailsChanges.fire_copy(showProfileDetails());
+	}
+}
+
+rpl::producer<bool> Settings::streamerModeChanges() const {
+	return _streamerModeChanges.events();
 }
 
 } // namespace MakuGram

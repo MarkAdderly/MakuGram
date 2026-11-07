@@ -270,7 +270,7 @@ EditCaptionBox::EditCaptionBox(
 	Expects(item->allowsEditMedia());
 
 	_asFile = !AlbumTypeCompressed(_albumType);
-	_sendLargePhotos = Core::App().settings().sendFilesWay().sendLargePhotos();
+	_sendLargePhotos = Core::App().settings().sendFilesWay().sendLargePhotos() || MakuGram::Settings::instance().sendMediaHighQuality();
 
 	_mediaEditManager.start(item, spoilered, invertCaption);
 

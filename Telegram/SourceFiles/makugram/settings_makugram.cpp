@@ -439,6 +439,24 @@ void ShowMediaBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
+			rpl::single(QString::fromUtf8("Регулировка громкости колесиком мыши")),
+			MakuGram::Settings::instance().videoVolumeWheel(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setVideoVolumeWheel(checked);
+			},
+			rpl::single(QString::fromUtf8("При просмотре видео в полноэкранном режиме колесико мыши регулирует громкость звука вместо переключения на следующее или предыдущее медиа.")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Отправлять медиа в высоком качестве")),
+			MakuGram::Settings::instance().sendMediaHighQuality(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setSendMediaHighQuality(checked);
+			},
+			rpl::single(QString::fromUtf8("Автоматически включает отправку фото и медиа в максимальном HD-качестве (до 2560px) по умолчанию без необходимости каждый раз переключать режим.")));
+
+		AddCheckboxRow(
+			box,
 			rpl::single(QString::fromUtf8("Показывать разрешение")),
 			MakuGram::Settings::instance().showMediaResolution(),
 			[=](bool checked) {
@@ -493,6 +511,27 @@ void ShowAppearanceBox(not_null<Window::SessionController*> controller) {
 				MakuGram::Settings::instance().setDisableReactionAnimations(checked);
 			},
 			rpl::single(QString::fromUtf8("Отключает летающие большие эмодзи, эффекты и конфетти при установке реакций для максимальной плавности.")));
+
+		box->addButton(tr::lng_close(), [=] {
+			box->closeBox();
+		});
+	}));
+}
+
+void ShowStreamerModeBox(not_null<Window::SessionController*> controller) {
+	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+		box->setWidth(kBoxContentWidth);
+		box->setMaxHeight(kBoxMaxHeight);
+		box->setTitle(rpl::single(QString::fromUtf8("Режим стримера")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Включить режим стримера")),
+			MakuGram::Settings::instance().streamerMode(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setStreamerMode(checked);
+			},
+			rpl::single(QString::fromUtf8("Скрывает номера телефонов, расчетную дату регистрации и числовой ID профилей, а также размывает все аватарки пользователей и каналов во всем приложении для защиты личных данных при записи видео, демонстрации экрана или стриминге.")));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -634,6 +673,13 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.icon = { &st::menuIconPhoto },
 		.onClick = [=] { ShowMediaBox(controller); },
 		.keywords = { u"media"_q, u"zoom"_q, u"медиа"_q, u"масштаб"_q, u"экран"_q },
+	});
+
+	builder.addButton({
+		.title = rpl::single(QString::fromUtf8("Режим стримера")),
+		.icon = { &st::menuIconPermissions },
+		.onClick = [=] { ShowStreamerModeBox(controller); },
+		.keywords = { u"stream"_q, u"streamer"_q, u"blur"_q, u"стрим"_q, u"стример"_q, u"блюр"_q, u"аватарки"_q, u"приватность"_q },
 	});
 
 	builder.addButton({

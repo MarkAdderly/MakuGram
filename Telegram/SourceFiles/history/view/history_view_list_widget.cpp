@@ -729,6 +729,8 @@ ListWidget::ListWidget(
 		MakuGram::Settings::instance().spamFilterEnabledChanges()
 			| rpl::to_empty,
 		MakuGram::Settings::instance().spamKeywordsChanges()
+			| rpl::to_empty,
+		MakuGram::Settings::instance().streamerModeChanges()
 			| rpl::to_empty
 	) | rpl::on_next([=] {
 		crl::on_main(this, [=] {

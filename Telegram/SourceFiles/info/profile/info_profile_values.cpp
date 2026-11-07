@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "info/profile/info_profile_values.h"
+#include "makugram/makugram_settings.h"
 
 #include "api/api_chat_participants.h"
 #include "apiwrap.h"
@@ -168,13 +169,19 @@ rpl::producer<TextWithEntities> PhoneWithSpoilerValue(
 		not_null<UserData*> user,
 		rpl::producer<TextWithEntities> phone) {
 	if (!user->isSelf()) {
+		if (MakuGram::Settings::instance().streamerMode()) {
+			return std::move(phone) | rpl::map([](const TextWithEntities &p) {
+				return Ui::Text::Wrapped(p, EntityType::Spoiler);
+			});
+		}
 		return phone;
 	}
 	return rpl::combine(
 		std::move(phone),
 		user->session().settings().phoneNumberHiddenValue()
 	) | rpl::map([](const TextWithEntities &phone, bool hidden) {
-		return hidden
+		const auto hide = hidden || MakuGram::Settings::instance().streamerMode();
+		return hide
 			? Ui::Text::Wrapped(phone, EntityType::Spoiler)
 			: phone;
 	});
