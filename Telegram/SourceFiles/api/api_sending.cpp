@@ -43,6 +43,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_photo_media.h"
 #include "data/data_document_media.h"
 #include "styles/style_boxes.h"
+#include "base/timer.h"
+#include "ui/toast/toast.h"
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtCore/QBuffer>
@@ -907,20 +909,43 @@ void SendCopiedMessages(
 	const auto session = &action.history->session();
 	const auto captionLimit = Data::PremiumLimits(session).captionLengthCurrent();
 
+	auto resolveDocPath = [](not_null<DocumentData*> doc) {
+		const auto tempDir = QDir::temp();
+		auto filename = doc->filename();
+		if (filename.isEmpty() || !filename.contains('.')) {
+			if (doc->isVideoFile() || doc->isAnimation() || doc->isGifv() || doc->mimeString().contains(u"video"_q)) {
+				filename = filename.isEmpty() ? u"video.mp4"_q : (filename + u".mp4"_q);
+			} else if (doc->isSong() || doc->isAudioFile()) {
+				filename = filename.isEmpty() ? u"audio.mp3"_q : (filename + u".mp3"_q);
+			} else if (doc->isVoiceMessage()) {
+				filename = filename.isEmpty() ? u"audio.ogg"_q : (filename + u".ogg"_q);
+			} else if (doc->isImage()) {
+				filename = filename.isEmpty() ? u"image.jpg"_q : (filename + u".jpg"_q);
+			} else if (filename.isEmpty()) {
+				filename = u"file.dat"_q;
+			}
+		}
+		return tempDir.filePath(u"makugram_fwd_d_"_q + QString::number(doc->id) + u"_"_q + filename);
+	};
+
+	auto resolvePhotoPath = [](not_null<PhotoData*> photo) {
+		const auto tempDir = QDir::temp();
+		return tempDir.filePath(u"makugram_fwd_p_"_q + QString::number(photo->id) + u".jpg"_q);
+	};
+
+	auto photoViews = std::make_shared<std::vector<std::shared_ptr<Data::PhotoMedia>>>();
 	for (const auto &item : ordered) {
 		if (const auto media = item->media()) {
 			if (const auto photo = media->photo()) {
-				const auto view = photo->createMediaView();
-				view->wanted(Data::PhotoSize::Large, Data::FileOrigin(item->fullId()));
+				if (const auto view = photo->createMediaView()) {
+					view->wanted(Data::PhotoSize::Large, Data::FileOrigin(item->fullId()));
+					photoViews->push_back(view);
+				}
 			} else if (const auto doc = media->document()) {
 				const auto filepath = doc->filepath(true);
 				if (filepath.isEmpty() || !QFileInfo::exists(filepath)) {
-					const auto tempPath = QDir::temp().filePath(
-						u"makugram_fwd_d_"_q
-						+ QString::number(doc->id)
-						+ u"_"_q
-						+ (doc->filename().isEmpty() ? u"file.dat"_q : doc->filename()));
-					if (!QFileInfo::exists(tempPath) || QFileInfo(tempPath).size() == 0) {
+					const auto tempPath = resolveDocPath(doc);
+					if (!QFileInfo::exists(tempPath) || QFileInfo(tempPath).size() < doc->size) {
 						doc->save(Data::FileOrigin(item->fullId()), tempPath);
 					}
 				}
@@ -928,13 +953,16 @@ void SendCopiedMessages(
 		}
 	}
 
-	auto isAlbumMedia = [](not_null<HistoryItem*> item) {
+	auto isAlbumMedia = [](not_null<HistoryItem*> item) -> bool {
 		if (const auto media = item->media()) {
 			if (media->photo()) {
 				return true;
 			}
 			if (const auto doc = media->document()) {
-				return doc->isVideoFile();
+				return doc->isVideoFile()
+					|| doc->isAnimation()
+					|| doc->isGifv()
+					|| doc->mimeString().contains(u"video"_q);
 			}
 		}
 		return false;
@@ -990,11 +1018,7 @@ void SendCopiedMessages(
 	};
 
 	auto preparePhotoFile = [&](not_null<HistoryItem*> item, not_null<PhotoData*> photo) -> std::optional<Ui::PreparedFile> {
-		const auto tempDir = QDir::temp();
-		const auto photoPath = tempDir.filePath(
-			u"makugram_fwd_p_"_q
-			+ QString::number(photo->id)
-			+ u".jpg"_q);
+		const auto photoPath = resolvePhotoPath(photo);
 
 		if (const auto view = photo->createMediaView()) {
 			if (!QFileInfo::exists(photoPath) || QFileInfo(photoPath).size() == 0) {
@@ -1012,32 +1036,36 @@ void SendCopiedMessages(
 			}
 		}
 
-		QImage image;
-		QByteArray content;
 		if (const auto photoMedia = photo->createMediaView()) {
 			for (const auto size : { Data::PhotoSize::Large, Data::PhotoSize::Thumbnail, Data::PhotoSize::Small }) {
+				const auto bytes = photoMedia->imageBytes(size);
+				if (!bytes.isEmpty()) {
+					QFile f(photoPath);
+					if (f.open(QIODevice::WriteOnly) && (f.write(bytes) == bytes.size())) {
+						f.close();
+						auto list = Storage::PrepareMediaList(
+							QStringList{ photoPath },
+							st::sendMediaPreviewSize,
+							session->premium());
+						if (!list.files.empty()) {
+							return std::move(list.files.front());
+						}
+					}
+				}
 				if (const auto img = photoMedia->image(size)) {
-					image = img->original();
+					auto original = img->original();
+					if (!original.isNull()) {
+						if (original.save(photoPath, "JPG", 92)) {
+							auto list = Storage::PrepareMediaList(
+								QStringList{ photoPath },
+								st::sendMediaPreviewSize,
+								session->premium());
+						if (!list.files.empty()) {
+							return std::move(list.files.front());
+						}
+						}
+					}
 				}
-				content = photoMedia->imageBytes(size);
-				if (content.isEmpty()) {
-					content = photoMedia->videoContent(size);
-				}
-				if (!image.isNull() || !content.isEmpty()) {
-					break;
-				}
-			}
-		}
-		if (image.isNull() && !content.isEmpty()) {
-			image.loadFromData(content);
-		}
-		if (!image.isNull()) {
-			auto singleList = Storage::PrepareMediaFromImage(
-				std::move(image),
-				std::move(content),
-				st::sendMediaPreviewSize);
-			if (!singleList.files.empty()) {
-				return std::move(singleList.files.front());
 			}
 		}
 		return std::nullopt;
@@ -1046,11 +1074,7 @@ void SendCopiedMessages(
 	auto prepareDocumentFile = [&](not_null<HistoryItem*> item, not_null<DocumentData*> document) -> std::optional<Ui::PreparedFile> {
 		auto filepath = document->filepath(true);
 		if (filepath.isEmpty() || !QFileInfo::exists(filepath)) {
-			const auto tempPath = QDir::temp().filePath(
-				u"makugram_fwd_d_"_q
-				+ QString::number(document->id)
-				+ u"_"_q
-				+ (document->filename().isEmpty() ? u"file.dat"_q : document->filename()));
+			const auto tempPath = resolveDocPath(document);
 			if (QFileInfo::exists(tempPath) && QFileInfo(tempPath).size() > 0) {
 				filepath = tempPath;
 			}
@@ -1069,11 +1093,7 @@ void SendCopiedMessages(
 		if (const auto docMedia = document->activeMediaView()) {
 			const auto bytes = docMedia->bytes();
 			if (!bytes.isEmpty()) {
-				const auto tempPath = QDir::temp().filePath(
-					u"makugram_fwd_d_"_q
-					+ QString::number(document->id)
-					+ u"_"_q
-					+ (document->filename().isEmpty() ? u"file.dat"_q : document->filename()));
+				const auto tempPath = resolveDocPath(document);
 				QFile tempFile(tempPath);
 				if (tempFile.open(QIODevice::WriteOnly) && (tempFile.write(bytes) == bytes.size())) {
 					tempFile.close();
@@ -1142,82 +1162,117 @@ void SendCopiedMessages(
 					albumList.files.push_back(std::move(file));
 				}
 
-			if (allOk && !albumList.files.empty()) {
-				auto itemAction = action;
-				itemAction.clearDraft = false;
-				itemAction.generateLocal = true;
-				action.history->session().api().sendFiles(
-					std::move(albumList),
-					SendMediaType::Photo,
-					std::make_shared<SendingAlbum>(),
-					itemAction);
-				i = j;
-				continue;
+				if (allOk && !albumList.files.empty()) {
+					auto itemAction = action;
+					itemAction.clearDraft = false;
+					itemAction.generateLocal = true;
+					action.history->session().api().sendFiles(
+						std::move(albumList),
+						SendMediaType::Photo,
+						std::make_shared<SendingAlbum>(),
+						itemAction);
+					i = j;
+					continue;
+				}
+			}
+
+			const auto item = ordered[i];
+			auto itemAction = action;
+			itemAction.clearDraft = false;
+			itemAction.generateLocal = true;
+			if (const auto media = item->media()) {
+				itemAction.options.mediaSpoiler = media->hasSpoiler();
+			}
+			itemAction.options.invertCaption = item->invertMedia();
+
+			const auto captionTags = computeItemCaption(item, true);
+
+			auto message = MessageToSend(itemAction);
+			message.textWithTags = captionTags;
+
+			const auto media = item->media();
+			const auto photo = media ? media->photo() : nullptr;
+			const auto document = media ? media->document() : nullptr;
+
+			if (photo) {
+				if (auto prepared = preparePhotoFile(item, photo)) {
+					Ui::PreparedList singleList;
+					auto file = std::move(*prepared);
+					file.caption = captionTags;
+					file.spoiler = itemAction.options.mediaSpoiler;
+					file.sendLargePhotos = true;
+					singleList.files.push_back(std::move(file));
+					action.history->session().api().sendFiles(
+						std::move(singleList),
+						SendMediaType::Photo,
+						nullptr,
+						itemAction);
+					++i;
+					continue;
+				}
+				action.history->session().api().sendMessage(std::move(message));
+			} else if (document) {
+				if (auto prepared = prepareDocumentFile(item, document)) {
+					Ui::PreparedList singleList;
+					auto file = std::move(*prepared);
+					file.caption = captionTags;
+					file.spoiler = itemAction.options.mediaSpoiler;
+					singleList.files.push_back(std::move(file));
+					const auto isVideo = document->isVideoFile()
+						|| document->isAnimation()
+						|| document->isGifv()
+						|| document->mimeString().contains(u"video"_q)
+						|| document->isImage();
+					const auto sendType = isVideo
+						? SendMediaType::Photo
+						: (document->isSong() || document->isAudioFile())
+						? SendMediaType::Audio
+						: SendMediaType::File;
+					action.history->session().api().sendFiles(
+						std::move(singleList),
+						sendType,
+						nullptr,
+						itemAction);
+					++i;
+					continue;
+				}
+				action.history->session().api().sendMessage(std::move(message));
+			} else {
+				action.history->session().api().sendMessage(std::move(message));
+			}
+			++i;
+		}
+	};
+
+	const auto computeTotalProgress = [=] {
+		auto total = 0.0;
+		auto count = 0;
+		for (const auto &item : ordered) {
+			if (const auto media = item->media()) {
+				if (const auto photo = media->photo()) {
+					count++;
+					if (photo->loading()) {
+						total += std::clamp(photo->progress(), 0.0, 1.0);
+					} else {
+						const auto view = photo->createMediaView();
+						if ((view && view->loaded()) || photo->failed(Data::PhotoSize::Large)) {
+							total += 1.0;
+						}
+					}
+				} else if (const auto doc = media->document()) {
+					count++;
+					if (doc->loading()) {
+						total += std::clamp(doc->progress(), 0.0, 1.0);
+					} else {
+						const auto path = resolveDocPath(doc);
+						if (!doc->filepath(true).isEmpty() || QFileInfo::exists(path)) {
+							total += 1.0;
+						}
+					}
+				}
 			}
 		}
-
-		const auto item = ordered[i];
-		auto itemAction = action;
-		itemAction.clearDraft = false;
-		itemAction.generateLocal = true;
-		if (const auto media = item->media()) {
-			itemAction.options.mediaSpoiler = media->hasSpoiler();
-		}
-		itemAction.options.invertCaption = item->invertMedia();
-
-		const auto captionTags = computeItemCaption(item, true);
-
-		auto message = MessageToSend(itemAction);
-		message.textWithTags = captionTags;
-
-		const auto media = item->media();
-		const auto photo = media ? media->photo() : nullptr;
-		const auto document = media ? media->document() : nullptr;
-
-		if (photo) {
-			if (auto prepared = preparePhotoFile(item, photo)) {
-				Ui::PreparedList singleList;
-				auto file = std::move(*prepared);
-				file.caption = captionTags;
-				file.spoiler = itemAction.options.mediaSpoiler;
-				file.sendLargePhotos = true;
-				singleList.files.push_back(std::move(file));
-				action.history->session().api().sendFiles(
-					std::move(singleList),
-					SendMediaType::Photo,
-					nullptr,
-					itemAction);
-				++i;
-				continue;
-			}
-			SendExistingPhoto(
-				std::move(message),
-				photo,
-				Data::FileOrigin(item->fullId()));
-		} else if (document) {
-			if (auto prepared = prepareDocumentFile(item, document)) {
-				Ui::PreparedList singleList;
-				auto file = std::move(*prepared);
-				file.caption = captionTags;
-				file.spoiler = itemAction.options.mediaSpoiler;
-				singleList.files.push_back(std::move(file));
-				action.history->session().api().sendFiles(
-					std::move(singleList),
-					SendMediaType::File,
-					nullptr,
-					itemAction);
-				++i;
-				continue;
-			}
-			SendExistingDocument(
-				std::move(message),
-				document,
-				Data::FileOrigin(item->fullId()));
-		} else {
-			action.history->session().api().sendMessage(std::move(message));
-		}
-		++i;
-	}
+		return count > 0 ? (total / count) : 1.0;
 	};
 
 	const auto readyToSend = [=] {
@@ -1244,25 +1299,66 @@ void SendCopiedMessages(
 	if (readyToSend()) {
 		doSend();
 	} else {
-		if (const auto window = Core::App().windowFor(action.history->peer)) {
-			window->showToast(u"\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043c\u0435\u0434\u0438\u0430 \u043f\u0435\u0440\u0435\u0434 \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u043e\u0439..."_q);
-		}
-		auto lifetime = std::make_shared<rpl::lifetime>();
-		session->downloaderTaskFinished(
-		) | rpl::on_next([=]() mutable {
-			if (readyToSend()) {
-				if (lifetime) {
-					base::take(lifetime)->destroy();
+		struct ProgressState {
+			bool finished = false;
+			int lastPercent = -1;
+			base::weak_ptr<Ui::Toast::Instance> toast;
+			base::Timer timer;
+			rpl::lifetime lifetime;
+		};
+		const auto state = std::make_shared<ProgressState>();
+
+		const auto updateToast = [=] {
+			const auto progress = computeTotalProgress();
+			const auto percent = int(std::clamp(progress * 100.0, 0.0, 100.0));
+			if (percent != state->lastPercent) {
+				state->lastPercent = percent;
+				if (const auto old = state->toast.get()) {
+					old->hide();
 				}
-				doSend();
+				Ui::Toast::Config config;
+				config.text = { u"\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043c\u0435\u0434\u0438\u0430: %1%"_q.arg(percent) };
+				config.duration = crl::time(5000);
+				state->toast = Ui::Toast::Show(std::move(config));
 			}
-		}, *lifetime);
-		base::call_delayed(30000, session, [=]() mutable {
-			if (lifetime) {
-				base::take(lifetime)->destroy();
-				doSend();
+		};
+
+		const auto finish = [=] {
+			if (state->finished) {
+				return;
+			}
+			state->finished = true;
+			state->timer.cancel();
+			state->lifetime.destroy();
+			if (const auto old = state->toast.get()) {
+				old->hide();
+			}
+			doSend();
+		};
+
+		state->timer.setCallback([=] {
+			if (readyToSend()) {
+				finish();
+			} else {
+				updateToast();
 			}
 		});
+		state->timer.callEach(100);
+
+		session->downloaderTaskFinished(
+		) | rpl::on_next([=] {
+			if (readyToSend()) {
+				finish();
+			} else {
+				updateToast();
+			}
+		}, state->lifetime);
+
+		base::call_delayed(30000, session, [=] {
+			finish();
+		});
+
+		updateToast();
 	}
 }
 
