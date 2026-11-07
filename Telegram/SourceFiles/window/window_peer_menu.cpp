@@ -1050,7 +1050,10 @@ void Filler::addClearHistory() {
 }
 
 void Filler::addMassDeleteMyMessages() {
-	if (!MakuGram::Settings::instance().quickMassDeleteMyMessages() || _topic || _peer->isMonoforum()) {
+	if (!MakuGram::Settings::instance().quickMassDeleteMyMessages()
+		|| _topic
+		|| _peer->isMonoforum()
+		|| _peer->isBroadcast()) {
 		return;
 	}
 	if (const auto channel = _peer->asChannel()) {
@@ -1128,10 +1131,39 @@ void Filler::addMassDeleteMyMessages() {
 					} else if (index == 3) {
 						from = QDate(2013, 1, 1);
 					}
+					const auto periodText = [&] {
+						if (index == 0) {
+							return QString::fromUtf8("за сегодня");
+						} else if (index == 1) {
+							return QString::fromUtf8("за последние 7 дней");
+						} else if (index == 2) {
+							return QString::fromUtf8("за последний месяц");
+						} else {
+							return QString::fromUtf8("за всё время");
+						}
+					}();
 					if (onlyMedia) {
-						DeleteOwnMessagesByDates(controller, peer, from, to, true);
+						controller->show(Ui::MakeConfirmBox({
+							.text = QString::fromUtf8("Вы уверены, что хотите удалить только медиа %1?").arg(periodText),
+							.confirmed = [=](Fn<void()> close) {
+								close();
+								DeleteOwnMessagesByDates(controller, peer, from, to, true);
+							},
+							.confirmText = tr::lng_box_delete(),
+							.confirmStyle = &st::attentionBoxButton,
+							.title = QString::fromUtf8("Удаление медиа"),
+						}));
 					} else if (const auto channel = peer->asChannel()) {
-						DeleteOwnMessagesByDates(controller, channel, from, to, false);
+						controller->show(Ui::MakeConfirmBox({
+							.text = QString::fromUtf8("Вы уверены, что хотите удалить свои сообщения %1?").arg(periodText),
+							.confirmed = [=](Fn<void()> close) {
+								close();
+								DeleteOwnMessagesByDates(controller, channel, from, to, false);
+							},
+							.confirmText = tr::lng_box_delete(),
+							.confirmStyle = &st::attentionBoxButton,
+							.title = QString::fromUtf8("Удаление сообщений"),
+						}));
 					} else {
 						controller->show(Box<DeleteMessagesBox>(peer, from, to));
 					}
