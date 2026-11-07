@@ -234,6 +234,11 @@ UserpicButton::UserpicButton(
 UserpicButton::~UserpicButton() = default;
 
 void UserpicButton::prepare() {
+	MakuGram::Settings::instance().streamerModeChanges(
+	) | rpl::on_next([=] {
+		update();
+	}, lifetime());
+
 	resize(_st.size);
 	setNaturalWidth(_st.size.width());
 	_notShownYet = _waiting;
@@ -546,6 +551,9 @@ PopupMenu *UserpicButton::showChangePhotoMenu() {
 }
 
 void UserpicButton::openPeerPhoto() {
+	if (MakuGram::Settings::instance().streamerMode()) {
+		return;
+	}
 	Expects(_peer != nullptr);
 	Expects(_controller != nullptr);
 
@@ -781,23 +789,20 @@ void UserpicButton::paintUserpicFrame(Painter &p, QPoint photoPosition) {
 			q.end();
 		}
 		if (MakuGram::Settings::instance().streamerMode()) {
-			const auto blurDim = std::max(4, int(std::round(frame.width() / 10.0)));
-			frame = frame.scaled(
-				blurDim,
-				blurDim,
-				Qt::IgnoreAspectRatio,
-				Qt::SmoothTransformation
-			).scaled(
-				frame.size(),
-				Qt::IgnoreAspectRatio,
-				Qt::SmoothTransformation);
+			MakuGram::BlurImageStrong(frame);
 		}
 		p.drawImage(QRect(photoPosition, size), frame);
 		if (!paused) {
 			_streamed->markFrameShown();
 		}
 	} else {
-		p.drawPixmapLeft(photoPosition, width(), _userpic);
+		if (MakuGram::Settings::instance().streamerMode()) {
+			auto img = _userpic.toImage();
+			MakuGram::BlurImageStrong(img);
+			p.drawImage(photoPosition, img);
+		} else {
+			p.drawPixmapLeft(photoPosition, width(), _userpic);
+		}
 	}
 }
 

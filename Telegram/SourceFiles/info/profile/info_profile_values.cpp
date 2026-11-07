@@ -168,20 +168,18 @@ rpl::producer<TextWithEntities> PhoneOrHiddenValue(not_null<UserData*> user) {
 rpl::producer<TextWithEntities> PhoneWithSpoilerValue(
 		not_null<UserData*> user,
 		rpl::producer<TextWithEntities> phone) {
-	if (!user->isSelf()) {
-		if (MakuGram::Settings::instance().streamerMode()) {
-			return std::move(phone) | rpl::map([](const TextWithEntities &p) {
-				return Ui::Text::Wrapped(p, EntityType::Spoiler);
-			});
-		}
-		return phone;
-	}
 	return rpl::combine(
 		std::move(phone),
-		user->session().settings().phoneNumberHiddenValue()
-	) | rpl::map([](const TextWithEntities &phone, bool hidden) {
-		const auto hide = hidden || MakuGram::Settings::instance().streamerMode();
-		return hide
+		user->session().settings().phoneNumberHiddenValue(),
+		MakuGram::Settings::instance().streamerModeValue()
+	) | rpl::map([=](const TextWithEntities &phone, bool hidden, bool streamerMode) {
+		if (streamerMode) {
+			return TextWithEntities();
+		}
+		if (!user->isSelf()) {
+			return phone;
+		}
+		return hidden
 			? Ui::Text::Wrapped(phone, EntityType::Spoiler)
 			: phone;
 	});
@@ -197,13 +195,16 @@ void CopyPhoneToClipboard(rpl::producer<TextWithEntities> phone) {
 rpl::producer<TextWithEntities> UsernameValue(
 		not_null<PeerData*> peer,
 		bool primary) {
-	return (primary
-		? PlainPrimaryUsernameValue(peer)
-		: (PlainUsernameValue(peer) | rpl::type_erased)
-	) | rpl::map([](QString &&username) {
-		return username.isEmpty()
-			? tr::marked()
-			: tr::marked('@' + username);
+	return rpl::combine(
+		(primary
+			? PlainPrimaryUsernameValue(peer)
+			: (PlainUsernameValue(peer) | rpl::type_erased)),
+		MakuGram::Settings::instance().streamerModeValue()
+	) | rpl::map([](QString &&username, bool streamerMode) {
+		if (streamerMode || username.isEmpty()) {
+			return tr::marked();
+		}
+		return tr::marked('@' + username);
 	});
 }
 
@@ -226,7 +227,10 @@ QString UsernameUrl(
 
 rpl::producer<std::vector<TextWithEntities>> UsernamesValue(
 		not_null<PeerData*> peer) {
-	const auto map = [=](const std::vector<QString> &usernames) {
+	const auto map = [=](const std::vector<QString> &usernames, bool streamerMode) {
+		if (streamerMode) {
+			return std::vector<TextWithEntities>();
+		}
 		return ranges::views::all(
 			usernames
 		) | ranges::views::transform([&](const QString &u) {
@@ -237,13 +241,20 @@ rpl::producer<std::vector<TextWithEntities>> UsernamesValue(
 		peer->session().changes().peerFlagsValue(peer, UpdateFlag::Username),
 		peer->session().changes().peerFlagsValue(peer, UpdateFlag::Usernames)
 	);
+	auto streamer = MakuGram::Settings::instance().streamerModeValue();
 	if (const auto user = peer->asUser()) {
-		return std::move(value) | rpl::map([=] {
-			return map(user->usernames());
+		return rpl::combine(
+			std::move(value),
+			std::move(streamer)
+		) | rpl::map([=](auto &&, bool streamerMode) {
+			return map(user->usernames(), streamerMode);
 		});
 	} else if (const auto channel = peer->asChannel()) {
-		return std::move(value) | rpl::map([=] {
-			return map(channel->usernames());
+		return rpl::combine(
+			std::move(value),
+			std::move(streamer)
+		) | rpl::map([=](auto &&, bool streamerMode) {
+			return map(channel->usernames(), streamerMode);
 		});
 	} else {
 		return rpl::single(std::vector<TextWithEntities>());

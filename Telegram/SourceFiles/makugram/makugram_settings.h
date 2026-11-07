@@ -10,7 +10,11 @@ a custom Telegram Desktop client fork.
 #include <QtCore/QRegularExpression>
 #include <vector>
 
+class QImage;
+
 namespace MakuGram {
+
+void BlurImageStrong(QImage &image);
 
 enum class PatternType {
 	Exact,
@@ -146,6 +150,7 @@ public:
 	[[nodiscard]] bool streamerMode() const;
 	void setStreamerMode(bool enabled);
 	[[nodiscard]] rpl::producer<bool> streamerModeChanges() const;
+	[[nodiscard]] rpl::producer<bool> streamerModeValue() const;
 
 private:
 	Settings();

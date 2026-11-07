@@ -7888,9 +7888,10 @@ void OverlayWidget::handleWheelEvent(not_null<QWheelEvent*> e) {
 			const auto newVolume = std::clamp(currentVolume + delta, 0.0, 1.0);
 			playbackControlsVolumeChanged(newVolume);
 			playbackControlsVolumeChangeFinished();
+			if (_streamed && _streamed->controls) {
+				_streamed->controls->updateVolume();
+			}
 			activateControls();
-			const auto percent = int(std::round(newVolume * 100.0));
-			uiShow()->showToast(u"Громкость: %1%"_q.arg(percent));
 		}
 		return;
 	}

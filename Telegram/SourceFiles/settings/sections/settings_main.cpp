@@ -282,6 +282,17 @@ void Cover::initViewers() {
 		refreshUsernameGeometry(width());
 	}, lifetime());
 
+	MakuGram::Settings::instance().streamerModeChanges(
+	) | rpl::on_next([=](bool streamerMode) {
+		if (streamerMode) {
+			_username->hide();
+		} else {
+			_username->show();
+		}
+		updatePhoneText();
+		refreshUsernameGeometry(width());
+	}, lifetime());
+
 	Info::Profile::UsernameValue(
 		_user
 	) | rpl::on_next([=](const TextWithEntities &value) {
@@ -357,6 +368,10 @@ void Cover::refreshPhoneGeometry(int newWidth) {
 }
 
 void Cover::refreshUsernameGeometry(int newWidth) {
+	if (MakuGram::Settings::instance().streamerMode()) {
+		_username->hide();
+		return;
+	}
 	const auto usernameLeft = st::settingsUsernameLeft;
 	const auto usernameTop = (_phone && _phone->isHidden())
 		? st::settingsPhoneTop

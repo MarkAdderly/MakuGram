@@ -234,10 +234,14 @@ base::options::toggle ShowChannelJoinedBelowAbout({
 [[nodiscard]] rpl::producer<TextWithEntities> AboutWithAdvancedValue(
 		not_null<PeerData*> peer) {
 
-	return AboutValue(
-		peer
-	) | rpl::map([=](TextWithEntities &&value) {
-		if ((ShowPeerIdBelowAbout.value() || MakuGram::Settings::instance().showProfileDetails()) && !MakuGram::Settings::instance().streamerMode()) {
+	return rpl::combine(
+		AboutValue(peer),
+		MakuGram::Settings::instance().streamerModeValue()
+	) | rpl::map([=](TextWithEntities &&value, bool streamerMode) {
+		if (streamerMode) {
+			return TextWithEntities();
+		}
+		if (ShowPeerIdBelowAbout.value() || MakuGram::Settings::instance().showProfileDetails()) {
 			using namespace Ui::Text;
 			if (!value.empty()) {
 				value.append("\n\n");

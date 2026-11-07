@@ -462,16 +462,8 @@ void PeerData::paintUserpic(
 
 	if (MakuGram::Settings::instance().streamerMode()) {
 		if (!view.cached.isNull()) {
-			const auto blurDim = std::max(4, int(std::round(size * ratio / 10.0)));
-			const auto blurred = view.cached.scaled(
-				blurDim,
-				blurDim,
-				Qt::IgnoreAspectRatio,
-				Qt::SmoothTransformation
-			).scaled(
-				view.cached.size(),
-				Qt::IgnoreAspectRatio,
-				Qt::SmoothTransformation);
+			auto blurred = view.cached;
+			MakuGram::BlurImageStrong(blurred);
 			p.drawImage(QRect(context.position, QSize(size, size)), blurred);
 			return;
 		}
@@ -529,15 +521,20 @@ QImage PeerData::GenerateUserpicImage(
 				std::move(image),
 				Images::CornersMask(radius / style::DevicePixelRatio()));
 		};
+		auto result = QImage();
 		if (radius == 0) {
-			return image;
+			result = image;
 		} else if (radius) {
-			return round(*radius);
+			result = round(*radius);
 		} else if (peer->isForum()) {
-			return round(size * Ui::ForumUserpicRadiusMultiplier());
+			result = round(size * Ui::ForumUserpicRadiusMultiplier());
 		} else {
-			return Images::Circle(std::move(image));
+			result = Images::Circle(std::move(image));
 		}
+		if (MakuGram::Settings::instance().streamerMode()) {
+			MakuGram::BlurImageStrong(result);
+		}
+		return result;
 	}
 	auto result = QImage(
 		QSize(size, size),
@@ -562,6 +559,10 @@ QImage PeerData::GenerateUserpicImage(
 		peer->ensureEmptyUserpic()->paintCircle(p, 0, 0, size, size);
 	}
 	p.end();
+
+	if (MakuGram::Settings::instance().streamerMode()) {
+		MakuGram::BlurImageStrong(result);
+	}
 
 	return result;
 }

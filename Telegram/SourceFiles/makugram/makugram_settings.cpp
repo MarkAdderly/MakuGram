@@ -5,7 +5,9 @@ a custom Telegram Desktop client fork.
 #include "makugram/makugram_settings.h"
 #include "core/application.h"
 #include "core/core_settings.h"
+#include "rpl/then.h"
 #include "config.h"
+#include <QtGui/QImage>
 
 #include <QtCore/QSettings>
 #include <QtCore/QStringList>
@@ -679,6 +681,23 @@ void Settings::setStreamerMode(bool enabled) {
 
 rpl::producer<bool> Settings::streamerModeChanges() const {
 	return _streamerModeChanges.events();
+}
+
+rpl::producer<bool> Settings::streamerModeValue() const {
+	return rpl::single(_streamerMode) | rpl::then(_streamerModeChanges.events());
+}
+
+void BlurImageStrong(QImage &image) {
+	if (image.isNull()) {
+		return;
+	}
+	const auto origSize = image.size();
+	const auto minDim = std::min(origSize.width(), origSize.height());
+	const auto smallDim = std::clamp(minDim / 16, 2, 6);
+	const auto midDim = std::clamp(minDim / 4, 8, 20);
+	image = image.scaled(smallDim, smallDim, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+		.scaled(midDim, midDim, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+		.scaled(origSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 }
 
 } // namespace MakuGram

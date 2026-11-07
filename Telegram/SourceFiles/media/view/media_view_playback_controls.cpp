@@ -241,6 +241,11 @@ void PlaybackControls::updateSpeedToggleQuality() {
 	_speedToggle->setQuality(_delegate->playbackControlsCurrentQuality());
 }
 
+void PlaybackControls::updateVolume() {
+	_volumeController->setValue(_delegate->playbackControlsCurrentVolume());
+	updateVolumeToggleIcon();
+}
+
 void PlaybackControls::updatePlaybackSpeed(float64 speed) {
 	DEBUG_LOG(("Media playback speed: update to %1.").arg(speed));
 	_delegate->playbackControlsSpeedChanged(speed);

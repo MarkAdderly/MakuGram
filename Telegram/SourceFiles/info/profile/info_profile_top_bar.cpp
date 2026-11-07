@@ -1,3 +1,4 @@
+#include "makugram/makugram_settings.h"
 /*
 This file is part of Telegram Desktop,
 the official desktop application for the Telegram messaging service.
@@ -476,6 +477,11 @@ TopBar::TopBar(
 }())
 , _backToggles(std::move(descriptor.backToggles)) {
 	setObjectName(u"profileTopBar"_q);
+	MakuGram::Settings::instance().streamerModeChanges(
+	) | rpl::on_next([=] {
+		_userpicUniqueKey = InMemoryKey();
+		update();
+	}, lifetime());
 	_peer->updateFull();
 	_communityEffect = (_source == Source::Community);
 	if (const auto broadcast = _peer->monoforumBroadcast()) {
@@ -1297,6 +1303,9 @@ void TopBar::setupUserpicButton(
 	}
 
 	const auto openPhoto = [=, peer = _peer] {
+		if (MakuGram::Settings::instance().streamerMode()) {
+			return;
+		}
 		if (const auto id = peer->userpicPhotoId()) {
 			if (const auto photo = peer->owner().photo(id); photo->date()) {
 				controller->openPhoto(photo, peer);
@@ -2795,11 +2804,14 @@ void TopBar::paintUserpic(QPainter &p, const QRect &geometry) {
 	if (_videoUserpicPlayer && _videoUserpicPlayer->ready()) {
 		const auto size = st::infoProfileTopBarPhotoSize;
 		const auto paused = _gifPausedChecker();
-		const auto frame = _videoUserpicPlayer->frame(
+		auto frame = _videoUserpicPlayer->frame(
 			Size(size),
 			_peer,
 			paused);
 		if (!frame.isNull()) {
+			if (MakuGram::Settings::instance().streamerMode()) {
+				MakuGram::BlurImageStrong(frame);
+			}
 			auto hq = PainterHighQualityEnabler(p);
 			p.drawImage(geometry, frame);
 			return;
@@ -2859,7 +2871,13 @@ void TopBar::paintUserpic(QPainter &p, const QRect &geometry) {
 	}
 	{
 		auto hq = PainterHighQualityEnabler(p);
-		p.drawImage(geometry, _cachedUserpic);
+		if (MakuGram::Settings::instance().streamerMode()) {
+			auto blurred = _cachedUserpic;
+			MakuGram::BlurImageStrong(blurred);
+			p.drawImage(geometry, blurred);
+		} else {
+			p.drawImage(geometry, _cachedUserpic);
+		}
 	}
 	if (_uploadOverlay && _uploadOverlay->shown()) {
 		_uploadOverlay->paint(p, geometry, {
