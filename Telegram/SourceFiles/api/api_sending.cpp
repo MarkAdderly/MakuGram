@@ -35,6 +35,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/text/text_entity.h" // TextWithEntities.
 #include "ui/item_text_options.h" // Ui::ItemTextOptions.
 #include "ui/chat/attach/attach_prepare.h"
+#include "ui/chat/attach/attach_send_files_way.h"
 #include "main/main_session.h"
 #include "main/main_app_config.h"
 #include "storage/localimageloader.h"
@@ -1008,15 +1009,44 @@ void SendCopiedMessages(
 		}
 	}
 
-	const auto captionLimit = Data::PremiumLimits(session).captionLengthCurrent();
+	struct CopyContext {
+		SendAction action;
+		Data::ForwardOptions forwardOptions;
+		std::vector<CopiedMediaItem> itemsToCopy;
+		QString tempDir;
+		bool finished = false;
+		int lastPercent = -1;
+		base::Timer timer;
+		rpl::lifetime lifetime;
 
-	const auto computeCaption = [&](const CopiedMediaItem &item, bool includeAuthor) {
-		auto caption = (forwardOptions != Data::ForwardOptions::NoNamesAndCaptions)
+		CopyContext(
+			SendAction action,
+			Data::ForwardOptions forwardOptions,
+			std::vector<CopiedMediaItem> &&itemsToCopy,
+			QString tempDir)
+		: action(action)
+		, forwardOptions(forwardOptions)
+		, itemsToCopy(std::move(itemsToCopy))
+		, tempDir(std::move(tempDir)) {
+		}
+	};
+
+	const auto ctx = std::make_shared<CopyContext>(
+		action,
+		forwardOptions,
+		std::move(itemsToCopy),
+		tempDir);
+
+	const auto computeCaption = [ctx](const CopiedMediaItem &item, bool includeAuthor) -> TextWithTags {
+		const auto session = &ctx->action.history->session();
+		const auto captionLimit = Data::PremiumLimits(session).captionLengthCurrent();
+
+		auto caption = (ctx->forwardOptions != Data::ForwardOptions::NoNamesAndCaptions)
 			? item.originalText
 			: TextWithEntities();
 
-		const auto dropAuthor = (forwardOptions == Data::ForwardOptions::NoSenderNames)
-			|| (forwardOptions == Data::ForwardOptions::NoNamesAndCaptions);
+		const auto dropAuthor = (ctx->forwardOptions == Data::ForwardOptions::NoSenderNames)
+			|| (ctx->forwardOptions == Data::ForwardOptions::NoNamesAndCaptions);
 
 		if (includeAuthor && !dropAuthor && !item.authorName.isEmpty()) {
 			const auto prefix = caption.text.isEmpty() ? QString() : QString("\n\n");
@@ -1058,10 +1088,12 @@ void SendCopiedMessages(
 		};
 	};
 
-	const auto preparePhoto = [&](const CopiedMediaItem &item) -> std::optional<Ui::PreparedFile> {
+	const auto preparePhoto = [ctx](const CopiedMediaItem &item) -> std::optional<Ui::PreparedFile> {
 		if (!item.photo) {
 			return std::nullopt;
 		}
+		const auto session = &ctx->action.history->session();
+		const auto premium = session->premium();
 		if (item.photoView) {
 			if (!QFileInfo::exists(item.photoPath) || QFileInfo(item.photoPath).size() == 0) {
 				item.photoView->saveToFile(item.photoPath);
@@ -1071,7 +1103,7 @@ void SendCopiedMessages(
 			auto list = Storage::PrepareMediaList(
 				QStringList{ item.photoPath },
 				st::sendMediaPreviewSize,
-				session->premium());
+				premium);
 			if (!list.files.empty()) {
 				return std::move(list.files.front());
 			}
@@ -1086,7 +1118,7 @@ void SendCopiedMessages(
 						auto list = Storage::PrepareMediaList(
 							QStringList{ item.photoPath },
 							st::sendMediaPreviewSize,
-						session->premium());
+							premium);
 						if (!list.files.empty()) {
 							return std::move(list.files.front());
 						}
@@ -1099,7 +1131,7 @@ void SendCopiedMessages(
 							auto list = Storage::PrepareMediaList(
 								QStringList{ item.photoPath },
 								st::sendMediaPreviewSize,
-								session->premium());
+								premium);
 							if (!list.files.empty()) {
 								return std::move(list.files.front());
 							}
@@ -1111,10 +1143,12 @@ void SendCopiedMessages(
 		return std::nullopt;
 	};
 
-	const auto prepareDoc = [&](const CopiedMediaItem &item) -> std::optional<Ui::PreparedFile> {
+	const auto prepareDoc = [ctx](const CopiedMediaItem &item) -> std::optional<Ui::PreparedFile> {
 		if (!item.document) {
 			return std::nullopt;
 		}
+		const auto session = &ctx->action.history->session();
+		const auto premium = session->premium();
 		auto filepath = item.docPath;
 		if (!QFileInfo::exists(filepath) || QFileInfo(filepath).size() == 0) {
 			const auto cached = item.document->filepath(true);
@@ -1129,7 +1163,7 @@ void SendCopiedMessages(
 			auto list = Storage::PrepareMediaList(
 				QStringList{ filepath },
 				st::sendMediaPreviewSize,
-				session->premium());
+				premium);
 			if (!list.files.empty()) {
 				return std::move(list.files.front());
 			}
@@ -1137,7 +1171,7 @@ void SendCopiedMessages(
 		return std::nullopt;
 	};
 
-	const auto isAlbumItem = [](const CopiedMediaItem &item) {
+	const auto isAlbumItem = [](const CopiedMediaItem &item) -> bool {
 		if (item.photo) {
 			return true;
 		}
@@ -1147,16 +1181,19 @@ void SendCopiedMessages(
 		return false;
 	};
 
-	const auto doSend = [=] {
-		const auto count = int(itemsToCopy.size());
+	const auto doSend = [ctx, computeCaption, preparePhoto, prepareDoc, isAlbumItem] {
+		const auto session = &ctx->action.history->session();
+		auto &api = session->api();
+		const auto count = int(ctx->itemsToCopy.size());
+
 		for (auto i = 0; i < count;) {
-			const auto &first = itemsToCopy[i];
+			const auto &first = ctx->itemsToCopy[i];
 			const auto groupId = first.groupId;
 			auto j = i + 1;
 			if (!groupId.empty() && isAlbumItem(first)) {
 				while (j < count
-					&& itemsToCopy[j].groupId == groupId
-					&& isAlbumItem(itemsToCopy[j])
+					&& ctx->itemsToCopy[j].groupId == groupId
+					&& isAlbumItem(ctx->itemsToCopy[j])
 					&& (j - i < Ui::MaxAlbumItems())) {
 					++j;
 				}
@@ -1165,7 +1202,7 @@ void SendCopiedMessages(
 			if (j - i > 1) {
 				auto captionIndex = -1;
 				for (auto k = i; k < j; ++k) {
-					if (!itemsToCopy[k].originalText.text.isEmpty()) {
+					if (!ctx->itemsToCopy[k].originalText.text.isEmpty()) {
 						captionIndex = k;
 						break;
 					}
@@ -1177,7 +1214,7 @@ void SendCopiedMessages(
 				Ui::PreparedList albumList;
 				auto allOk = true;
 				for (auto k = i; k < j; ++k) {
-					const auto &copyItem = itemsToCopy[k];
+					const auto &copyItem = ctx->itemsToCopy[k];
 					std::optional<Ui::PreparedFile> prepared;
 					if (copyItem.photo) {
 						prepared = preparePhoto(copyItem);
@@ -1198,21 +1235,34 @@ void SendCopiedMessages(
 				}
 
 				if (allOk && !albumList.files.empty()) {
-					auto itemAction = action;
+					auto itemAction = ctx->action;
 					itemAction.clearDraft = false;
 					itemAction.generateLocal = true;
-					action.history->session().api().sendFiles(
-						std::move(albumList),
-						SendMediaType::Photo,
-						std::make_shared<SendingAlbum>(),
-						itemAction);
+
+					Ui::SendFilesWay way;
+					way.setGroupFiles(true);
+					way.setSendImagesAsPhotos(true);
+					way.setSendLargePhotos(true);
+
+					auto groups = Ui::DivideByGroups(std::move(albumList), way, false);
+					for (auto &group : groups) {
+						const auto album = (group.type != Ui::AlbumType::None)
+							? std::make_shared<SendingAlbum>()
+							: nullptr;
+						const auto type = (group.type == Ui::AlbumType::Music)
+							? SendMediaType::Audio
+							: (group.type == Ui::AlbumType::File)
+							? SendMediaType::File
+							: SendMediaType::Photo;
+						api.sendFiles(std::move(group.list), type, album, itemAction);
+					}
 					i = j;
 					continue;
 				}
 			}
 
-			const auto &copyItem = itemsToCopy[i];
-			auto itemAction = action;
+			const auto &copyItem = ctx->itemsToCopy[i];
+			auto itemAction = ctx->action;
 			itemAction.clearDraft = false;
 			itemAction.generateLocal = true;
 			itemAction.options.mediaSpoiler = copyItem.spoiler;
@@ -1231,7 +1281,7 @@ void SendCopiedMessages(
 					file.spoiler = itemAction.options.mediaSpoiler;
 					file.sendLargePhotos = true;
 					singleList.files.push_back(std::move(file));
-					action.history->session().api().sendFiles(
+					api.sendFiles(
 						std::move(singleList),
 						SendMediaType::Photo,
 						nullptr,
@@ -1239,7 +1289,7 @@ void SendCopiedMessages(
 					++i;
 					continue;
 				}
-				action.history->session().api().sendMessage(std::move(message));
+				api.sendMessage(std::move(message));
 			} else if (copyItem.document) {
 				if (auto prepared = prepareDoc(copyItem)) {
 					Ui::PreparedList singleList;
@@ -1252,7 +1302,7 @@ void SendCopiedMessages(
 						: copyItem.isAudio
 						? SendMediaType::Audio
 						: SendMediaType::File;
-					action.history->session().api().sendFiles(
+					api.sendFiles(
 						std::move(singleList),
 						sendType,
 						nullptr,
@@ -1260,15 +1310,15 @@ void SendCopiedMessages(
 					++i;
 					continue;
 				}
-				action.history->session().api().sendMessage(std::move(message));
+				api.sendMessage(std::move(message));
 			} else {
-				action.history->session().api().sendMessage(std::move(message));
+				api.sendMessage(std::move(message));
 			}
 			++i;
 		}
 	};
 
-	const auto isItemReady = [](const CopiedMediaItem &item) {
+	const auto isItemReady = [ctx](const CopiedMediaItem &item) {
 		if (item.photo) {
 			if (QFileInfo::exists(item.photoPath) && QFileInfo(item.photoPath).size() > 0) {
 				return true;
@@ -1297,8 +1347,8 @@ void SendCopiedMessages(
 		return true;
 	};
 
-	const auto allReady = [=] {
-		for (const auto &item : itemsToCopy) {
+	const auto allReady = [ctx, isItemReady] {
+		for (const auto &item : ctx->itemsToCopy) {
 			if (!isItemReady(item)) {
 				return false;
 			}
@@ -1306,10 +1356,10 @@ void SendCopiedMessages(
 		return true;
 	};
 
-	const auto computeProgress = [=] {
+	const auto computeProgress = [ctx, isItemReady] {
 		auto total = 0.0;
 		auto count = 0;
-		for (const auto &item : itemsToCopy) {
+		for (const auto &item : ctx->itemsToCopy) {
 			if (item.photo) {
 				count++;
 				if (isItemReady(item)) {
@@ -1334,60 +1384,52 @@ void SendCopiedMessages(
 	if (allReady()) {
 		doSend();
 	} else {
-		const auto showToast = [=](const QString &text) {
-			if (const auto window = Core::App().windowFor(action.history->peer)) {
+		const auto showToast = [ctx](const QString &text) {
+			if (const auto window = Core::App().windowFor(ctx->action.history->peer)) {
 				window->showToast(text);
-			} else if (const auto window = Core::App().windowFor(not_null(&action.history->session().account()))) {
+			} else if (const auto window = Core::App().windowFor(not_null(&ctx->action.history->session().account()))) {
 				window->showToast(text);
 			}
 		};
 
-		struct ProgressState {
-			bool finished = false;
-			int lastPercent = -1;
-			base::Timer timer;
-			rpl::lifetime lifetime;
-		};
-		const auto state = std::make_shared<ProgressState>();
-
-		const auto updateToast = [=] {
+		const auto updateToast = [ctx, computeProgress, showToast] {
 			const auto progress = computeProgress();
 			const auto percent = int(std::clamp(progress * 100.0, 0.0, 100.0));
-			if (percent != state->lastPercent) {
-				state->lastPercent = percent;
+			if (percent != ctx->lastPercent) {
+				ctx->lastPercent = percent;
 				showToast(u"\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043c\u0435\u0434\u0438\u0430: %1%"_q.arg(percent));
 			}
 		};
 
-		const auto finish = [=] {
-			if (state->finished) {
+		const auto finish = [ctx, doSend] {
+			if (ctx->finished) {
 				return;
 			}
-			state->finished = true;
-			state->timer.cancel();
-			state->lifetime.destroy();
+			ctx->finished = true;
+			ctx->timer.cancel();
+			ctx->lifetime.destroy();
 			doSend();
 		};
 
-		state->timer.setCallback([=] {
+		ctx->timer.setCallback([allReady, finish, updateToast] {
 			if (allReady()) {
 				finish();
 			} else {
 				updateToast();
 			}
 		});
-		state->timer.callEach(100);
+		ctx->timer.callEach(100);
 
 		session->downloaderTaskFinished(
-		) | rpl::on_next([=] {
+		) | rpl::on_next([allReady, finish, updateToast] {
 			if (allReady()) {
 				finish();
 			} else {
 				updateToast();
 			}
-		}, state->lifetime);
+		}, ctx->lifetime);
 
-		base::call_delayed(45000, session, [=] {
+		base::call_delayed(45000, session, [finish] {
 			finish();
 		});
 
