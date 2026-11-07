@@ -119,6 +119,14 @@ public:
 	void setForwardWithoutAuthor(bool enabled);
 	[[nodiscard]] rpl::producer<bool> forwardWithoutAuthorChanges() const;
 
+	[[nodiscard]] bool showMediaResolution() const;
+	void setShowMediaResolution(bool enabled);
+	[[nodiscard]] rpl::producer<bool> showMediaResolutionChanges() const;
+
+	[[nodiscard]] bool fullscreenMediaSelection() const;
+	void setFullscreenMediaSelection(bool enabled);
+	[[nodiscard]] rpl::producer<bool> fullscreenMediaSelectionChanges() const;
+
 private:
 	Settings();
 	~Settings() = default;
@@ -150,6 +158,8 @@ private:
 	bool _disableStories = false;
 	bool _hidePhoneNumberInSettings = false;
 	bool _forwardWithoutAuthor = true;
+	bool _showMediaResolution = true;
+	bool _fullscreenMediaSelection = true;
 
 	rpl::event_stream<bool> _hideMessagesFromBlockedChanges;
 	rpl::event_stream<bool> _quickBanInRequestsChanges;
@@ -171,6 +181,8 @@ private:
 	rpl::event_stream<bool> _disableStoriesChanges;
 	rpl::event_stream<bool> _hidePhoneNumberInSettingsChanges;
 	rpl::event_stream<bool> _forwardWithoutAuthorChanges;
+	rpl::event_stream<bool> _showMediaResolutionChanges;
+	rpl::event_stream<bool> _fullscreenMediaSelectionChanges;
 };
 
 } // namespace MakuGram

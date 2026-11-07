@@ -405,6 +405,24 @@ void ShowMediaBox(not_null<Window::SessionController*> controller) {
 			},
 			tr::lng_settings_makugram_always_zoom_about());
 
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Показывать разрешение")),
+			MakuGram::Settings::instance().showMediaResolution(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setShowMediaResolution(checked);
+			},
+			rpl::single(QString::fromUtf8("Отображает разрешение изображения или видео в полноэкранном режиме просмотра медиа.")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Добавить выделение медиа в полноэкранном режиме")),
+			MakuGram::Settings::instance().fullscreenMediaSelection(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setFullscreenMediaSelection(checked);
+			},
+			rpl::single(QString::fromUtf8("Позволяет выделять и пересылать медиа при полноэкранном просмотре, сохраняя выделение при возврате в чат.")));
+
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
 		});

@@ -172,6 +172,8 @@ private:
 		Icon,
 		Video,
 		Caption,
+		MakuSelect,
+		MakuForward,
 	};
 	struct Entity {
 		std::variant<
@@ -546,6 +548,11 @@ private:
 		QRect clip,
 		float64 opacity);
 	[[nodiscard]] QRect footerGeometry() const;
+	[[nodiscard]] QSize currentMediaResolution() const;
+	void toggleMakuMediaSelection();
+	void forwardMakuSelectedMedia();
+	void applyMakuSelectionToChat();
+	void syncMakuSelectionFromChat();
 	void paintCaptionContent(
 		Painter &p,
 		QRect outer,
@@ -676,6 +683,11 @@ private:
 	QRect _recognizeNav, _recognizeNavOver, _recognizeNavIcon;
 	QRect _saveNav, _saveNavOver, _saveNavIcon;
 	QRect _moreNav, _moreNavOver, _moreNavIcon;
+	QRect _makuSelectNav;
+	QRect _makuForwardNav;
+	QRect _makuResNav;
+	QString _makuResText;
+	base::flat_set<FullMsgId> _makuSelectedItems;
 	bool _leftNavVisible = false;
 	bool _rightNavVisible = false;
 	bool _saveVisible = false;

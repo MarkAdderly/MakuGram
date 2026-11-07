@@ -570,18 +570,6 @@ bool AddForwardSelectedAction(
 		return false;
 	}
 
-	menu->addAction(tr::lng_context_forward_selected(tr::now), [=] {
-		const auto weak = base::make_weak(list);
-		const auto callback = [=] {
-			if (const auto strong = weak.get()) {
-				strong->cancelSelection();
-			}
-		};
-		Window::ShowForwardMessagesBox(
-			request.navigation,
-			ExtractIdsList(request.selectedItems),
-			callback);
-	}, &st::menuIconForward);
 	if (MakuGram::Settings::instance().forwardWithoutAuthor()) {
 		menu->addAction(QString::fromUtf8("Переслать без автора"), [=] {
 			const auto weak = base::make_weak(list);
@@ -599,6 +587,18 @@ bool AddForwardSelectedAction(
 				callback);
 		}, &st::menuIconForward);
 	}
+	menu->addAction(tr::lng_context_forward_selected(tr::now), [=] {
+		const auto weak = base::make_weak(list);
+		const auto callback = [=] {
+			if (const auto strong = weak.get()) {
+				strong->cancelSelection();
+			}
+		};
+		Window::ShowForwardMessagesBox(
+			request.navigation,
+			ExtractIdsList(request.selectedItems),
+			callback);
+	}, &st::menuIconForward);
 	return true;
 }
 
@@ -624,15 +624,6 @@ bool AddForwardMessageAction(
 		}
 	}
 	const auto itemId = item->fullId();
-	menu->addAction(tr::lng_context_forward_msg(tr::now), [=] {
-		if (const auto item = owner->message(itemId)) {
-			Window::ShowForwardMessagesBox(
-				request.navigation,
-				(asGroup
-					? owner->itemOrItsGroup(item)
-					: MessageIdsList{ 1, itemId }));
-		}
-	}, &st::menuIconForward);
 	if (MakuGram::Settings::instance().forwardWithoutAuthor()) {
 		menu->addAction(QString::fromUtf8("Переслать без автора"), [=] {
 			if (const auto item = owner->message(itemId)) {
@@ -647,6 +638,15 @@ bool AddForwardMessageAction(
 			}
 		}, &st::menuIconForward);
 	}
+	menu->addAction(tr::lng_context_forward_msg(tr::now), [=] {
+		if (const auto item = owner->message(itemId)) {
+			Window::ShowForwardMessagesBox(
+				request.navigation,
+				(asGroup
+					? owner->itemOrItsGroup(item)
+					: MessageIdsList{ 1, itemId }));
+		}
+	}, &st::menuIconForward);
 	return true;
 }
 

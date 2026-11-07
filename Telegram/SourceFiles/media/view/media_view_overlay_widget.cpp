@@ -6,6 +6,10 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "media/view/media_view_overlay_widget.h"
+#include "data/data_photo.h"
+#include "data/data_document.h"
+#include "history/view/history_view_list_widget.h"
+#include "makugram/makugram_settings.h"
 
 #include "apiwrap.h"
 #include "api/api_attached_stickers.h"
@@ -1856,6 +1860,60 @@ void OverlayWidget::updateControls() {
 	_recognizeNavOver = style::centerrect(_recognizeNav, overRect);
 	_recognizeNavIcon = style::centerrect(_recognizeNav, st::mediaviewRecognize);
 	Assert(st::mediaviewSave.size() == st::mediaviewSaveLocked.size());
+
+	const auto navBottom = height() - st::mediaviewIconSize.height();
+	const auto makuRowHeight = 28;
+	const auto makuRowTop = navBottom - makuRowHeight - 6;
+	auto makuRight = width() - 14;
+
+	const auto selectionEnabled = MakuGram::Settings::instance().fullscreenMediaSelection()
+		&& (_message != nullptr)
+		&& !_stories
+		&& !_themePreviewShown;
+	if (selectionEnabled) {
+		const auto circleSide = 24;
+		_makuSelectNav = QRect(
+			makuRight - circleSide,
+			makuRowTop + (makuRowHeight - circleSide) / 2,
+			circleSide,
+			circleSide);
+		makuRight -= circleSide + 8;
+
+		const auto forwardText = _makuSelectedItems.empty()
+			? QString::fromUtf8("Переслать")
+			: QString::fromUtf8("Переслать (%1)").arg(_makuSelectedItems.size());
+		const auto forwardTextWidth = st::mediaviewFont->width(forwardText);
+		const auto forwardBtnWidth = forwardTextWidth + 20;
+		const auto forwardBtnHeight = 26;
+		_makuForwardNav = QRect(
+			makuRight - forwardBtnWidth,
+			makuRowTop + (makuRowHeight - forwardBtnHeight) / 2,
+			forwardBtnWidth,
+			forwardBtnHeight);
+		makuRight -= forwardBtnWidth + 12;
+	} else {
+		_makuSelectNav = QRect();
+		_makuForwardNav = QRect();
+	}
+
+	const auto resolutionEnabled = MakuGram::Settings::instance().showMediaResolution()
+		&& !_stories
+		&& !_themePreviewShown;
+	const auto res = resolutionEnabled ? currentMediaResolution() : QSize();
+	if (res.isValid() && res.width() > 0 && res.height() > 0) {
+		_makuResText = QString::fromUtf8("Разрешение: %1х%2").arg(res.width()).arg(res.height());
+		const auto resTextWidth = st::mediaviewFont->width(_makuResText);
+		const auto resWidth = resTextWidth + 16;
+		const auto resHeight = 24;
+		_makuResNav = QRect(
+			makuRight - resWidth,
+			makuRowTop + (makuRowHeight - resHeight) / 2,
+			resWidth,
+			resHeight);
+	} else {
+		_makuResText = QString();
+		_makuResNav = QRect();
+	}
 
 	const auto dNow = QDateTime::currentDateTime();
 	const auto d = [&] {
@@ -4557,6 +4615,7 @@ not_null<QWidget*> OverlayWidget::widget() const {
 }
 
 void OverlayWidget::hide() {
+	applyMakuSelectionToChat();
 	clearBeforeHide();
 	applyHideWindowWorkaround();
 	_window->hide();
@@ -4611,6 +4670,7 @@ void OverlayWidget::show(OpenRequest request) {
 		}
 	}
 	if (isHidden() || isMinimized()) {
+		syncMakuSelectionFromChat();
 		// Count top notch on macOS before counting geometry.
 		_helper->beforeShow(_fullscreen);
 	}
@@ -7311,10 +7371,87 @@ void OverlayWidget::paintFooterContent(
 			p.drawLine(date.left(), date.top() + st::mediaviewFont->ascent + 1, date.right(), date.top() + st::mediaviewFont->ascent + 1);
 		}
 	}
+
+	const auto toLocal = [&](QRect r) { return r.translated(-outer.topLeft()); };
+
+	if (_makuResNav.isValid()) {
+		const auto localRes = toLocal(_makuResNav);
+		if (localRes.intersects(clip)) {
+			p.setOpacity(opacity * 0.85);
+			p.setBrush(QColor(0, 0, 0, 110));
+			p.setPen(Qt::NoPen);
+			p.drawRoundedRect(localRes, 4, 4);
+
+			p.setOpacity(opacity);
+			p.setPen(st::mediaviewControlFg);
+			p.setFont(st::mediaviewFont);
+			p.drawText(
+				localRes,
+				Qt::AlignCenter,
+				_makuResText);
+		}
+	}
+
+	if (_makuForwardNav.isValid()) {
+		const auto localForward = toLocal(_makuForwardNav);
+		if (localForward.intersects(clip)) {
+			const auto isOver = (_over == Over::MakuForward);
+			p.setOpacity(opacity * (isOver ? 0.95 : 0.8));
+			p.setBrush(isOver ? QColor(40, 140, 230, 200) : QColor(0, 0, 0, 130));
+			p.setPen(isOver ? QPen(QColor(80, 170, 255), 1) : QPen(QColor(255, 255, 255, 60), 1));
+			p.drawRoundedRect(localForward, localForward.height() / 2, localForward.height() / 2);
+
+			p.setOpacity(opacity);
+			p.setPen(st::mediaviewControlFg);
+			p.setFont(st::mediaviewFont);
+			const auto forwardText = _makuSelectedItems.empty()
+				? QString::fromUtf8("Переслать")
+				: QString::fromUtf8("Переслать (%1)").arg(_makuSelectedItems.size());
+			p.drawText(
+				localForward,
+				Qt::AlignCenter,
+				forwardText);
+		}
+	}
+
+	if (_makuSelectNav.isValid()) {
+		const auto localSelect = toLocal(_makuSelectNav);
+		if (localSelect.intersects(clip)) {
+			const auto isSelected = _message && _makuSelectedItems.contains(_message->fullId());
+			const auto isOver = (_over == Over::MakuSelect);
+
+			if (isSelected) {
+				p.setOpacity(opacity);
+				p.setBrush(st::windowBgActive);
+				p.setPen(Qt::NoPen);
+				p.drawEllipse(localSelect);
+
+				p.setPen(QPen(Qt::white, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+				const auto center = localSelect.center();
+				p.drawLine(center.x() - 4, center.y(), center.x() - 1, center.y() + 3);
+				p.drawLine(center.x() - 1, center.y() + 3, center.x() + 4, center.y() - 3);
+			} else {
+				p.setOpacity(opacity * (isOver ? 0.9 : 0.7));
+				p.setBrush(QColor(0, 0, 0, 100));
+				p.setPen(QPen(isOver ? QColor(255, 255, 255, 240) : QColor(255, 255, 255, 160), 2));
+				p.drawEllipse(localSelect.adjusted(1, 1, -1, -1));
+			}
+		}
+	}
 }
 
 QRect OverlayWidget::footerGeometry() const {
-	return _headerNav.united(_nameNav).united(_separatorNav).united(_dateNav);
+	auto rect = _headerNav.united(_nameNav).united(_separatorNav).united(_dateNav);
+	if (_makuSelectNav.isValid()) {
+		rect = rect.united(_makuSelectNav);
+	}
+	if (_makuForwardNav.isValid()) {
+		rect = rect.united(_makuForwardNav);
+	}
+	if (_makuResNav.isValid()) {
+		rect = rect.united(_makuResNav);
+	}
+	return rect;
 }
 
 void OverlayWidget::paintCaptionContent(
@@ -8128,7 +8265,9 @@ void OverlayWidget::handleMousePress(
 				|| _over == Over::Recognize
 				|| _over == Over::Icon
 				|| _over == Over::More
-				|| _over == Over::Video) {
+				|| _over == Over::Video
+				|| _over == Over::MakuSelect
+				|| _over == Over::MakuForward) {
 				_down = _over;
 				if (_over == Over::Video && _stories) {
 					_stories->contentPressed(true);
@@ -8383,6 +8522,8 @@ void OverlayWidget::updateOverRect(Over state) {
 	case Over::Header: update(_headerNav); break;
 	case Over::More: update(_moreNavOver); break;
 	case Over::Recognize: update(_recognizeNavOver); break;
+	case Over::MakuSelect: update(_makuSelectNav); break;
+	case Over::MakuForward: update(_makuForwardNav); break;
 	}
 }
 
@@ -8525,6 +8666,10 @@ void OverlayWidget::updateOver(QPoint pos) {
 		updateOverState(Over::Draw);
 	} else if (_recognizeVisible && _recognizeNav.contains(pos)) {
 		updateOverState(Over::Recognize);
+	} else if (_makuSelectNav.isValid() && _makuSelectNav.contains(pos)) {
+		updateOverState(Over::MakuSelect);
+	} else if (_makuForwardNav.isValid() && _makuForwardNav.contains(pos)) {
+		updateOverState(Over::MakuForward);
 	} else if (contentShown() && finalContentRect().contains(pos)) {
 		if (_stories) {
 			updateOverState(Over::Video);
@@ -8639,6 +8784,10 @@ void OverlayWidget::handleMouseRelease(
 		draw();
 	} else if (_over == Over::Recognize && _down == Over::Recognize) {
 		recognize();
+	} else if (_over == Over::MakuSelect && _down == Over::MakuSelect) {
+		toggleMakuMediaSelection();
+	} else if (_over == Over::MakuForward && _down == Over::MakuForward) {
+		forwardMakuSelectedMedia();
 	} else if (_down == Over::Video) {
 		if (_stories) {
 			_stories->contentPressed(false);
@@ -9181,6 +9330,121 @@ float64 OverlayWidget::overLevel(Over control) const {
 	return (i == end(_animationOpacities))
 		? (_over == control ? 1. : 0.)
 		: i->second.current();
+}
+
+QSize OverlayWidget::currentMediaResolution() const {
+	auto res = QSize();
+	if (videoShown()) {
+		if (_streamed && _streamed->instance.info().video.size.isValid()) {
+			res = _streamed->instance.info().video.size;
+		} else if (_document && _document->dimensions.isValid()) {
+			res = _document->dimensions;
+		}
+	} else if (_document && _document->dimensions.isValid()) {
+		res = _document->dimensions;
+	} else if (_photo) {
+		if (_photo->width() > 0 && _photo->height() > 0) {
+			res = QSize(_photo->width(), _photo->height());
+		} else if (!_staticContent.isNull()) {
+			res = _staticContent.size();
+		}
+	} else if (!_staticContent.isNull()) {
+		res = _staticContent.size();
+	}
+	return res.isValid() ? flipSizeByRotation(res) : QSize();
+}
+
+void OverlayWidget::toggleMakuMediaSelection() {
+	if (!_message) {
+		return;
+	}
+	const auto fullId = _message->fullId();
+	if (_makuSelectedItems.contains(fullId)) {
+		_makuSelectedItems.erase(fullId);
+	} else {
+		_makuSelectedItems.insert(fullId);
+	}
+	updateControlsGeometry();
+	update();
+}
+
+void OverlayWidget::forwardMakuSelectedMedia() {
+	if (!_session) {
+		return;
+	}
+	const auto &active = _session->windows();
+	if (active.empty()) {
+		return;
+	}
+	auto ids = MessageIdsList();
+	if (_makuSelectedItems.empty()) {
+		if (_message && _message->allowsForward()) {
+			ids.push_back(_message->fullId());
+		}
+	} else {
+		ids.reserve(_makuSelectedItems.size());
+		for (const auto &id : _makuSelectedItems) {
+			if (const auto item = _session->data().message(id)) {
+				if (item->allowsForward()) {
+					ids.push_back(id);
+				}
+			}
+		}
+	}
+	if (!ids.empty()) {
+		if (!_windowed) {
+			close();
+		}
+		Window::ShowForwardMessagesBox(active.front(), std::move(ids));
+	}
+}
+
+void OverlayWidget::syncMakuSelectionFromChat() {
+	_makuSelectedItems.clear();
+	if (!_session) {
+		return;
+	}
+	const auto &active = _session->windows();
+	if (active.empty()) {
+		return;
+	}
+	const auto controller = active.front();
+	const auto widgets = controller->widget()->findChildren<QWidget*>();
+	for (const auto widget : widgets) {
+		if (const auto list = dynamic_cast<HistoryView::ListWidget*>(widget)) {
+			if (list->isVisible()) {
+				for (const auto &id : list->getSelectedIds()) {
+					_makuSelectedItems.insert(id);
+				}
+				break;
+			}
+		}
+	}
+}
+
+void OverlayWidget::applyMakuSelectionToChat() {
+	if (_makuSelectedItems.empty() || !_session) {
+		return;
+	}
+	const auto &active = _session->windows();
+	if (active.empty()) {
+		return;
+	}
+	const auto controller = active.front();
+	const auto widgets = controller->widget()->findChildren<QWidget*>();
+	for (const auto widget : widgets) {
+		if (const auto list = dynamic_cast<HistoryView::ListWidget*>(widget)) {
+			if (list->isVisible()) {
+				for (const auto &id : _makuSelectedItems) {
+					if (const auto item = _session->data().message(id)) {
+						list->selectItem(item);
+					}
+				}
+				break;
+			}
+		}
+	}
+	_makuSelectedItems.clear();
 }
 
 } // namespace View

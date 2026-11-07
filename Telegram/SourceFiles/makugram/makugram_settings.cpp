@@ -137,6 +137,8 @@ Settings::Settings() {
 	_disableStories = s.value("disableStories", false).toBool();
 	_hidePhoneNumberInSettings = s.value("hidePhoneNumberInSettings", false).toBool();
 	_forwardWithoutAuthor = s.value("forwardWithoutAuthor", true).toBool();
+	_showMediaResolution = s.value("showMediaResolution", true).toBool();
+	_fullscreenMediaSelection = s.value("fullscreenMediaSelection", true).toBool();
 
 	parseSpamKeywords();
 }
@@ -544,6 +546,40 @@ void Settings::setForwardWithoutAuthor(bool enabled) {
 
 rpl::producer<bool> Settings::forwardWithoutAuthorChanges() const {
 	return _forwardWithoutAuthorChanges.events();
+}
+
+bool Settings::showMediaResolution() const {
+	return _showMediaResolution;
+}
+
+void Settings::setShowMediaResolution(bool enabled) {
+	if (_showMediaResolution != enabled) {
+		_showMediaResolution = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("showMediaResolution", enabled);
+		_showMediaResolutionChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::showMediaResolutionChanges() const {
+	return _showMediaResolutionChanges.events();
+}
+
+bool Settings::fullscreenMediaSelection() const {
+	return _fullscreenMediaSelection;
+}
+
+void Settings::setFullscreenMediaSelection(bool enabled) {
+	if (_fullscreenMediaSelection != enabled) {
+		_fullscreenMediaSelection = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("fullscreenMediaSelection", enabled);
+		_fullscreenMediaSelectionChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::fullscreenMediaSelectionChanges() const {
+	return _fullscreenMediaSelectionChanges.events();
 }
 
 } // namespace MakuGram
