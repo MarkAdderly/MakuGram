@@ -5,6 +5,7 @@ a custom Telegram Desktop client fork.
 #include "makugram/settings_makugram.h"
 
 #include "makugram/makugram_settings.h"
+#include "core/click_handler_types.h"
 #include "lang/lang_keys.h"
 #include "settings/sections/settings_main.h"
 #include "settings/settings_builder.h"
@@ -13,6 +14,7 @@ a custom Telegram Desktop client fork.
 #include "styles/style_settings.h"
 #include "styles/style_boxes.h"
 #include "styles/style_layers.h"
+#include "ui/basic_click_handlers.h"
 #include "ui/boxes/confirm_box.h"
 #include "ui/layers/generic_box.h"
 #include "ui/widgets/buttons.h"
@@ -28,11 +30,71 @@ namespace {
 using namespace Builder;
 
 constexpr auto kBoxContentWidth = 540;
+// Content height cap of 635px results in total box height of ~735-740px (with title and buttons),
+// which comfortably fits up to 4 checkboxes before enabling scrolling.
+constexpr auto kBoxMaxHeight = 635;
 
 [[nodiscard]] [[maybe_unused]] int CheckboxTextSkip() {
 	return st::defaultBoxCheckbox.checkPosition.x()
 		+ st::defaultCheck.diameter
 		+ st::defaultBoxCheckbox.textPosition.x();
+}
+
+[[nodiscard]] const style::RoundButton &TelegramButtonStyle() {
+	static auto tgBg = style::complex_color([] { return QColor(42, 142, 230); });
+	static auto tgBgOver = style::complex_color([] { return QColor(36, 126, 206); });
+	static auto ripple = style::complex_color([] { return QColor(255, 255, 255, 50); });
+	static auto result = [] {
+		auto st = st::defaultActiveButton;
+		st.height = 36;
+		st.textTop = 8;
+		st.style = st::semiboldTextStyle;
+		st.textFg = st::activeButtonFg;
+		st.textFgOver = st::activeButtonFg;
+		st.textBg = tgBg.color();
+		st.textBgOver = tgBgOver.color();
+		st.ripple.color = ripple.color();
+		return st;
+	}();
+	return result;
+}
+
+[[nodiscard]] const style::RoundButton &YouTubeButtonStyle() {
+	static auto ytBg = style::complex_color([] { return QColor(230, 33, 23); });
+	static auto ytBgOver = style::complex_color([] { return QColor(200, 25, 16); });
+	static auto ripple = style::complex_color([] { return QColor(255, 255, 255, 50); });
+	static auto result = [] {
+		auto st = st::defaultActiveButton;
+		st.height = 36;
+		st.textTop = 8;
+		st.style = st::semiboldTextStyle;
+		st.textFg = st::activeButtonFg;
+		st.textFgOver = st::activeButtonFg;
+		st.textBg = ytBg.color();
+		st.textBgOver = ytBgOver.color();
+		st.ripple.color = ripple.color();
+		return st;
+	}();
+	return result;
+}
+
+[[nodiscard]] const style::RoundButton &BoostyButtonStyle() {
+	static auto boostyBg = style::complex_color([] { return QColor(241, 95, 44); });
+	static auto boostyBgOver = style::complex_color([] { return QColor(220, 80, 32); });
+	static auto ripple = style::complex_color([] { return QColor(255, 255, 255, 50); });
+	static auto result = [] {
+		auto st = st::defaultActiveButton;
+		st.height = 36;
+		st.textTop = 8;
+		st.style = st::semiboldTextStyle;
+		st.textFg = st::activeButtonFg;
+		st.textFgOver = st::activeButtonFg;
+		st.textBg = boostyBg.color();
+		st.textBgOver = boostyBgOver.color();
+		st.ripple.color = ripple.color();
+		return st;
+	}();
+	return result;
 }
 
 class MakuGramSection : public Section<MakuGramSection> {
@@ -89,6 +151,7 @@ void AddCheckboxRow(
 void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
+		box->setMaxHeight(kBoxMaxHeight);
 		box->setTitle(QString::fromUtf8("Локальный спам-фильтр"));
 
 		box->addRow(
@@ -151,6 +214,7 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
+		box->setMaxHeight(kBoxMaxHeight);
 		box->setTitle(rpl::single(QString::fromUtf8("Сообщения")));
 
 		AddCheckboxRow(
@@ -204,6 +268,7 @@ void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
+		box->setMaxHeight(kBoxMaxHeight);
 		box->setTitle(rpl::single(QString::fromUtf8("Приватность и безопасность")));
 
 		AddCheckboxRow(
@@ -260,6 +325,7 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 void ShowModerationBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
+		box->setMaxHeight(kBoxMaxHeight);
 		box->setTitle(rpl::single(QString::fromUtf8("Модерация чатов")));
 
 		AddCheckboxRow(
@@ -298,6 +364,7 @@ void ShowModerationBox(not_null<Window::SessionController*> controller) {
 void ShowProfileBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
+		box->setMaxHeight(kBoxMaxHeight);
 		box->setTitle(tr::lng_settings_makugram_section_profile());
 
 		AddCheckboxRow(
@@ -327,6 +394,7 @@ void ShowProfileBox(not_null<Window::SessionController*> controller) {
 void ShowMediaBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
+		box->setMaxHeight(kBoxMaxHeight);
 		box->setTitle(tr::lng_settings_makugram_section_media());
 
 		AddCheckboxRow(
@@ -347,6 +415,7 @@ void ShowMediaBox(not_null<Window::SessionController*> controller) {
 void ShowAppearanceBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
+		box->setMaxHeight(kBoxMaxHeight);
 		box->setTitle(QString::fromUtf8("Внешний вид"));
 
 		AddCheckboxRow(
@@ -376,6 +445,7 @@ void ShowAppearanceBox(not_null<Window::SessionController*> controller) {
 void ShowAboutBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
+		box->setMaxHeight(kBoxMaxHeight);
 		box->setTitle(QString::fromUtf8("О клиенте MakuGram"));
 
 		box->addRow(
@@ -390,17 +460,70 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
-				QString::fromUtf8(
-					"• Безлимитный мультиаккаунт (до 100 аккаунтов) активен по умолчанию.\n"
-					"• Сообщения: точное время отправки в секундах, кнопка непрочитанных чатов, локальный спам-фильтр.\n"
-					"• Приватность и безопасность: скрытие статуса набора текста, снятие ограничений на сохранение контента, массовое удаление сообщений, скрытие заблокированных, сокрытие номера телефона.\n"
-					"• Модерация чатов: быстрый бан в заявках, поиск сообщений автора в группе, бейдж \"Новичок\".\n"
-					"• Профиль: ID и дата регистрации, полное отключение сторис.\n"
-					"• Внешний вид: компактный список чатов, отключение эффектов реакций.\n"
-					"• Медиа: открытие во весь экран.\n\n"
-					"Версия клиента: MakuGram 7.4.0"),
-				st::boxDividerLabel),
+				QString::fromUtf8("Автор - Марк Аддерли"),
+				st::boxLabel),
 			st::boxRowPadding);
+
+		box->addSkip(st::boxMediumSkip);
+
+		const auto buttonWidth = kBoxContentWidth
+			- st::boxRowPadding.left()
+			- st::boxRowPadding.right();
+
+		// 1. Telegram канал автора (синяя)
+		const auto tgBtn = box->addRow(
+			object_ptr<Ui::RoundButton>(
+				box,
+				rpl::single(QString::fromUtf8("Telegram канал автора")),
+				TelegramButtonStyle()),
+			style::margins(
+				st::boxRowPadding.left(),
+				4,
+				st::boxRowPadding.right(),
+				4));
+		tgBtn->setFullWidth(buttonWidth);
+		tgBtn->setFullRadius(true);
+		tgBtn->setClickedCallback([=] {
+			UrlClickHandler::Open(
+				u"https://t.me/adderly324"_q,
+				QVariant::fromValue(ClickHandlerContext{
+					.sessionWindow = base::make_weak(controller),
+				}));
+		});
+
+		// 2. YouTube канал автора (красная)
+		const auto ytBtn = box->addRow(
+			object_ptr<Ui::RoundButton>(
+				box,
+				rpl::single(QString::fromUtf8("YouTube канал автора")),
+				YouTubeButtonStyle()),
+			style::margins(
+				st::boxRowPadding.left(),
+				4,
+				st::boxRowPadding.right(),
+				4));
+		ytBtn->setFullWidth(buttonWidth);
+		ytBtn->setFullRadius(true);
+		ytBtn->setClickedCallback([=] {
+			UrlClickHandler::Open(u"https://youtube.com/@makuadarii"_q);
+		});
+
+		// 3. Поддержать разработку (оранжевая)
+		const auto boostyBtn = box->addRow(
+			object_ptr<Ui::RoundButton>(
+				box,
+				rpl::single(QString::fromUtf8("Поддержать разработку")),
+				BoostyButtonStyle()),
+			style::margins(
+				st::boxRowPadding.left(),
+				4,
+				st::boxRowPadding.right(),
+				8));
+		boostyBtn->setFullWidth(buttonWidth);
+		boostyBtn->setFullRadius(true);
+		boostyBtn->setClickedCallback([=] {
+			UrlClickHandler::Open(u"https://boosty.to/adderly"_q);
+		});
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
