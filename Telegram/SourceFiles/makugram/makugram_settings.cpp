@@ -3,6 +3,7 @@ This file is part of MakuGram,
 a custom Telegram Desktop client fork.
 */
 #include "makugram/makugram_settings.h"
+#include "config.h"
 
 #include <QtCore/QSettings>
 #include <QtCore/QStringList>
@@ -139,6 +140,8 @@ Settings::Settings() {
 	_forwardWithoutAuthor = s.value("forwardWithoutAuthor", true).toBool();
 	_showMediaResolution = s.value("showMediaResolution", true).toBool();
 	_fullscreenMediaSelection = s.value("fullscreenMediaSelection", true).toBool();
+	_expandMediaSendDialog = s.value("expandMediaSendDialog", true).toBool();
+	_increaseMessageSelectLimit = s.value("increaseMessageSelectLimit", true).toBool();
 
 	parseSpamKeywords();
 }
@@ -582,4 +585,44 @@ rpl::producer<bool> Settings::fullscreenMediaSelectionChanges() const {
 	return _fullscreenMediaSelectionChanges.events();
 }
 
+bool Settings::expandMediaSendDialog() const {
+	return _expandMediaSendDialog;
+}
+
+void Settings::setExpandMediaSendDialog(bool enabled) {
+	if (_expandMediaSendDialog != enabled) {
+		_expandMediaSendDialog = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("expandMediaSendDialog", enabled);
+		_expandMediaSendDialogChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::expandMediaSendDialogChanges() const {
+	return _expandMediaSendDialogChanges.events();
+}
+
+bool Settings::increaseMessageSelectLimit() const {
+	return _increaseMessageSelectLimit;
+}
+
+void Settings::setIncreaseMessageSelectLimit(bool enabled) {
+	if (_increaseMessageSelectLimit != enabled) {
+		_increaseMessageSelectLimit = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("increaseMessageSelectLimit", enabled);
+		_increaseMessageSelectLimitChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::increaseMessageSelectLimitChanges() const {
+	return _increaseMessageSelectLimitChanges.events();
+}
+
 } // namespace MakuGram
+
+int MaxSelectedItemsLimit() {
+	return MakuGram::Settings::instance().increaseMessageSelectLimit()
+		? ExpandedMaxSelectedItems
+		: DefaultMaxSelectedItems;
+}

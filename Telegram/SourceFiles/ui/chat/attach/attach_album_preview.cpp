@@ -222,7 +222,9 @@ void AlbumPreview::prepareThumbs(gsl::span<Ui::PreparedFile> items) {
 }
 
 int AlbumPreview::contentLeft() const {
-	return (st::boxWideWidth - st::sendMediaPreviewSize) / 2;
+	return (width() > 0)
+		? ((width() - st::sendMediaPreviewSize) / 2)
+		: ((st::boxWideWidth - st::sendMediaPreviewSize) / 2);
 }
 
 int AlbumPreview::contentTop() const {
@@ -367,7 +369,7 @@ void AlbumPreview::updateSize() {
 		}
 	}();
 	if (height() != newHeight) {
-		resize(st::boxWideWidth, newHeight);
+		resize(width(), newHeight);
 	}
 }
 
@@ -411,7 +413,7 @@ void AlbumPreview::paintAlbum(Painter &p) const {
 }
 
 void AlbumPreview::paintPhotos(Painter &p, QRect clip) const {
-	const auto left = (st::boxWideWidth - st::sendMediaPreviewSize) / 2;
+	const auto left = contentLeft();
 	auto top = 0;
 	const auto outerWidth = width();
 	for (const auto &thumb : _thumbs) {
@@ -434,7 +436,7 @@ void AlbumPreview::paintPhotos(Painter &p, QRect clip) const {
 }
 
 void AlbumPreview::paintFiles(Painter &p, QRect clip) const {
-	const auto left = (st::boxWideWidth - st::sendMediaPreviewSize) / 2;
+	const auto left = contentLeft();
 	const auto outerWidth = width();
 	if (!_hasMixedFileHeights) {
 		const auto fileHeight = _thumbs.front()->fileHeight()

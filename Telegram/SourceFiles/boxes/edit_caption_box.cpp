@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "boxes/edit_caption_box.h"
+#include "makugram/makugram_settings.h"
 
 #include "api/api_editing.h"
 #include "api/api_text_entities.h"
@@ -532,8 +533,11 @@ void EditCaptionBox::rebuildPreview() {
 		rpl::single(st::boxPhotoPadding.top()),
 		rpl::mappers::_1 + rpl::mappers::_2 + rpl::mappers::_3
 	) | rpl::on_next([=](int height) {
+		const auto boxWidth = MakuGram::Settings::instance().expandMediaSendDialog()
+			? 560
+			: st::boxWideWidth;
 		setDimensions(
-			st::boxWideWidth,
+			boxWidth,
 			std::min(st::sendMediaPreviewHeightMax, height),
 			true);
 	}, _content->lifetime());
@@ -597,7 +601,12 @@ void EditCaptionBox::setupField() {
 
 	_field->setSubmitSettings(
 		Core::App().settings().sendSubmitWay());
-	_field->setMaxHeight(st::defaultComposeFiles.caption.heightMax);
+	if (MakuGram::Settings::instance().expandMediaSendDialog()) {
+		_field->setMinHeight(72);
+		_field->setMaxHeight(320);
+	} else {
+		_field->setMaxHeight(st::defaultComposeFiles.caption.heightMax);
+	}
 
 	_field->submits(
 	) | rpl::on_next([=] { save(); }, _field->lifetime());
@@ -744,7 +753,10 @@ void EditCaptionBox::setupControls() {
 		rebuildPreview();
 	}, _controls->lifetime());
 
-	_controls->resizeToWidth(st::sendMediaPreviewSize);
+	const auto cWidth = MakuGram::Settings::instance().expandMediaSendDialog()
+		? (560 - st::boxPhotoPadding.left() - st::boxPhotoPadding.right())
+		: st::sendMediaPreviewSize;
+	_controls->resizeToWidth(cWidth);
 }
 
 void EditCaptionBox::setupEditEventHandler() {

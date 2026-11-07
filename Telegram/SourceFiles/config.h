@@ -10,7 +10,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "settings.h"
 
 enum {
-	MaxSelectedItems = 100,
+	DefaultMaxSelectedItems = 100,
+	ExpandedMaxSelectedItems = 1000,
 
 	LocalEncryptIterCount = 4000, // key derivation iteration count
 	LocalEncryptNoPwdIterCount = 4, // key derivation iteration count without pwd (not secure anyway)
@@ -31,6 +32,9 @@ enum {
 
 	ChoosePeerByDragTimeout = 1000, // 1 second mouse not moved to choose dialog when dragging a file
 };
+
+int MaxSelectedItemsLimit();
+#define MaxSelectedItems (MaxSelectedItemsLimit())
 
 inline const char *cGUIDStr() {
 #ifndef OS_MAC_STORE

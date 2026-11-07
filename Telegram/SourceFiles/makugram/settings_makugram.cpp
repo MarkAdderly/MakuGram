@@ -236,6 +236,15 @@ void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
+			rpl::single(QString::fromUtf8("Увеличить лимит выделяемых сообщений с 100 до 1000")),
+			MakuGram::Settings::instance().increaseMessageSelectLimit(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setIncreaseMessageSelectLimit(checked);
+			},
+			rpl::single(QString::fromUtf8("Позволяет одновременно выделять до 1000 сообщений в чатах и медиа для их пересылки или удаления.")));
+
+		AddCheckboxRow(
+			box,
 			tr::lng_settings_makugram_spam_filter(),
 			MakuGram::Settings::instance().spamFilterEnabled(),
 			[=](bool checked) {
@@ -422,6 +431,15 @@ void ShowMediaBox(not_null<Window::SessionController*> controller) {
 				MakuGram::Settings::instance().setFullscreenMediaSelection(checked);
 			},
 			rpl::single(QString::fromUtf8("Позволяет выделять и пересылать медиа при полноэкранном просмотре, сохраняя выделение при возврате в чат.")));
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Расширить окно отправки медиа")),
+			MakuGram::Settings::instance().expandMediaSendDialog(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setExpandMediaSendDialog(checked);
+			},
+			rpl::single(QString::fromUtf8("Увеличивает ширину окна предпросмотра при отправке фото и видео, а также расширяет поле ввода подписи по высоте для комфортного написания длинного текста.")));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();

@@ -127,6 +127,14 @@ public:
 	void setFullscreenMediaSelection(bool enabled);
 	[[nodiscard]] rpl::producer<bool> fullscreenMediaSelectionChanges() const;
 
+	[[nodiscard]] bool expandMediaSendDialog() const;
+	void setExpandMediaSendDialog(bool enabled);
+	[[nodiscard]] rpl::producer<bool> expandMediaSendDialogChanges() const;
+
+	[[nodiscard]] bool increaseMessageSelectLimit() const;
+	void setIncreaseMessageSelectLimit(bool enabled);
+	[[nodiscard]] rpl::producer<bool> increaseMessageSelectLimitChanges() const;
+
 private:
 	Settings();
 	~Settings() = default;
@@ -160,6 +168,8 @@ private:
 	bool _forwardWithoutAuthor = true;
 	bool _showMediaResolution = true;
 	bool _fullscreenMediaSelection = true;
+	bool _expandMediaSendDialog = true;
+	bool _increaseMessageSelectLimit = true;
 
 	rpl::event_stream<bool> _hideMessagesFromBlockedChanges;
 	rpl::event_stream<bool> _quickBanInRequestsChanges;
@@ -183,6 +193,8 @@ private:
 	rpl::event_stream<bool> _forwardWithoutAuthorChanges;
 	rpl::event_stream<bool> _showMediaResolutionChanges;
 	rpl::event_stream<bool> _fullscreenMediaSelectionChanges;
+	rpl::event_stream<bool> _expandMediaSendDialogChanges;
+	rpl::event_stream<bool> _increaseMessageSelectLimitChanges;
 };
 
 } // namespace MakuGram

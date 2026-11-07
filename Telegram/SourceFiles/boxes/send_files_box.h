@@ -222,6 +222,8 @@ private:
 
 	};
 
+	[[nodiscard]] int boxWidth() const;
+	[[nodiscard]] int captionWidth() const;
 	void initSendWay();
 	void initPreview();
 	[[nodiscard]] bool hasSendMenu(const MenuDetails &details) const;

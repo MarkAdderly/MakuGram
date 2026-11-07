@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "boxes/send_files_box.h"
+#include "makugram/makugram_settings.h"
 
 #include "lang/lang_keys.h"
 #include "storage/localimageloader.h"
@@ -869,6 +870,18 @@ auto SendFilesBox::prepareSendMenuCallback()
 	});
 }
 
+int SendFilesBox::boxWidth() const {
+	return MakuGram::Settings::instance().expandMediaSendDialog()
+		? 560
+		: st::boxWideWidth;
+}
+
+int SendFilesBox::captionWidth() const {
+	return MakuGram::Settings::instance().expandMediaSendDialog()
+		? (width() - st::boxPhotoPadding.left() - st::boxPhotoPadding.right())
+		: st::sendMediaPreviewSize;
+}
+
 void SendFilesBox::initPreview() {
 	using namespace rpl::mappers;
 
@@ -876,8 +889,9 @@ void SendFilesBox::initPreview() {
 
 	updateBoxSize();
 
+	const auto width = boxWidth();
 	_dimensionsLifetime.destroy();
-	_inner->resizeToWidth(st::boxWideWidth);
+	_inner->resizeToWidth(width);
 
 	rpl::combine(
 		_inner->heightValue(),
@@ -886,7 +900,7 @@ void SendFilesBox::initPreview() {
 		_1 + _2 + _3
 	) | rpl::on_next([=](int height) {
 		setDimensions(
-			st::boxWideWidth,
+			width,
 			std::min(st::sendMediaPreviewHeightMax, height),
 			true);
 	}, _dimensionsLifetime);
@@ -1016,7 +1030,7 @@ void SendFilesBox::refreshAllAfterChanges(int fromItem, Fn<void()> perform) {
 		}
 		_sendWay = sendWay;
 	}
-	_inner->resizeToWidth(st::boxWideWidth);
+	_inner->resizeToWidth(boxWidth());
 	refreshControls();
 	captionResized();
 	updateSelectionMode();
@@ -1545,7 +1559,7 @@ void SendFilesBox::initSendWay() {
 		updateEmojiPanelGeometry();
 		applyBlockChanges();
 		generatePreviewFrom(0);
-		_inner->resizeToWidth(st::boxWideWidth);
+		_inner->resizeToWidth(boxWidth());
 		refreshControls();
 		captionResized();
 		if (was != hidden()) {
@@ -2329,6 +2343,11 @@ void SendFilesBox::setupCaption() {
 	) | rpl::on_next([=] {
 		captionResized();
 	}, _caption->lifetime());
+
+	if (MakuGram::Settings::instance().expandMediaSendDialog()) {
+		_caption->setMinHeight(72);
+		_caption->setMaxHeight(320);
+	}
 	_caption->submits(
 	) | rpl::on_next([=](Qt::KeyboardModifiers modifiers) {
 		const auto ctrlShiftEnter = modifiers.testFlag(Qt::ShiftModifier)
@@ -2737,9 +2756,10 @@ void SendFilesBox::resizeEvent(QResizeEvent *e) {
 }
 
 void SendFilesBox::updateControlsGeometry() {
+	const auto cWidth = captionWidth();
 	auto bottom = height();
 	if (!_caption->isHidden()) {
-		_caption->resize(st::sendMediaPreviewSize, _caption->height());
+		_caption->resize(cWidth, _caption->height());
 		_caption->moveToLeft(
 			st::boxPhotoPadding.left(),
 			bottom - _caption->height());
@@ -2748,7 +2768,7 @@ void SendFilesBox::updateControlsGeometry() {
 		if (_emojiToggle) {
 			_emojiToggle->moveToLeft(
 				(st::boxPhotoPadding.left()
-					+ st::sendMediaPreviewSize
+					+ cWidth
 					- _emojiToggle->width()),
 				_caption->y() + st::boxAttachEmojiTop);
 			_emojiToggle->update();

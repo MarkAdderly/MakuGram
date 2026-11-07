@@ -152,7 +152,9 @@ void AbstractSingleMediaPreview::preparePreview(QImage preview) {
 		accumulate_max(_previewWidth, kMinPreviewWidth);
 		_previewHeight = maxthumbh;
 	}
-	_previewLeft = (st::boxWideWidth - _previewWidth) / 2;
+	_previewLeft = (width() > 0)
+		? ((width() - _previewWidth) / 2)
+		: ((st::boxWideWidth - _previewWidth) / 2);
 	if (_previewHeight < _minThumbH) {
 		_previewTop = (_minThumbH - _previewHeight) / 2;
 	}
@@ -179,8 +181,14 @@ bool AbstractSingleMediaPreview::isOverPreview(QPoint position) const {
 }
 
 void AbstractSingleMediaPreview::resizeEvent(QResizeEvent *e) {
+	_previewLeft = (width() > 0)
+		? ((width() - _previewWidth) / 2)
+		: ((st::boxWideWidth - _previewWidth) / 2);
+	const auto right = (width() > 0)
+		? ((width() - _previewWidth) / 2)
+		: st::boxPhotoPadding.right();
 	_controls->moveToRight(
-		st::boxPhotoPadding.right() + st::sendBoxAlbumGroupSkipRight,
+		right + st::sendBoxAlbumGroupSkipRight,
 		st::sendBoxAlbumGroupSkipTop,
 		width());
 }
