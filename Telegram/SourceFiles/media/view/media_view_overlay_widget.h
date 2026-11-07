@@ -151,6 +151,7 @@ private:
 	class RendererGL;
 	class RendererRhi;
 	class SponsoredButton;
+	class MakuControls;
 
 	// If changing, see paintControls()!
 	enum class Over {
@@ -172,8 +173,6 @@ private:
 		Icon,
 		Video,
 		Caption,
-		MakuSelect,
-		MakuForward,
 	};
 	struct Entity {
 		std::variant<
@@ -549,6 +548,8 @@ private:
 		float64 opacity);
 	[[nodiscard]] QRect footerGeometry() const;
 	[[nodiscard]] QSize currentMediaResolution() const;
+	[[nodiscard]] bool isCurrentMediaSelected() const;
+	[[nodiscard]] int makuSelectedCount() const;
 	void toggleMakuMediaSelection();
 	void forwardMakuSelectedMedia();
 	void applyMakuSelectionToChat();
@@ -683,10 +684,7 @@ private:
 	QRect _recognizeNav, _recognizeNavOver, _recognizeNavIcon;
 	QRect _saveNav, _saveNavOver, _saveNavIcon;
 	QRect _moreNav, _moreNavOver, _moreNavIcon;
-	QRect _makuSelectNav;
-	QRect _makuForwardNav;
-	QRect _makuResNav;
-	QString _makuResText;
+	std::unique_ptr<MakuControls> _makuControls;
 	base::flat_set<FullMsgId> _makuSelectedItems;
 	bool _leftNavVisible = false;
 	bool _rightNavVisible = false;
