@@ -47,6 +47,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "storage/storage_account.h"
 #include "base/timer.h"
 #include "ui/toast/toast.h"
+#include "makugram/makugram_settings.h"
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtCore/QBuffer>
@@ -837,6 +838,9 @@ void SendExistingPhoto(
 }
 
 bool ItemForbidsForwardRaw(not_null<const HistoryItem*> item) {
+	if (!MakuGram::Settings::instance().bypassRestrictedContent()) {
+		return false;
+	}
 	if (item->forbidsForwardRaw()) {
 		return true;
 	}
