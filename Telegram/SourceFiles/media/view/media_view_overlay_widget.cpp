@@ -492,20 +492,25 @@ public:
 			return;
 		}
 
+		const auto font = st::mediaviewCaptionStyle.font;
+		const auto padH = st::mediaviewCaptionPadding.left();
+		const auto padV = st::mediaviewCaptionPadding.top();
+		const auto badgeHeight = font->height + 2 * padV;
+
 		const auto parentW = _owner->width();
 		const auto parentH = _owner->height();
 		const auto rightMargin = 16;
 		const auto contentRight = parentW - rightMargin;
 
+		const auto bottomButtonsTop = parentH - 54;
+		const auto gapAboveButtons = 20;
+
 		auto resRect = QRect();
-		auto row1Top = parentH - 54;
+		auto row1Top = bottomButtonsTop - gapAboveButtons - badgeHeight;
 		if (hasRes) {
 			_resText = QString::fromUtf8("Разрешение: %1х%2").arg(res.width()).arg(res.height());
-			const auto resWidth = st::mediaviewFont->width(_resText) + 16;
-			const auto resHeight = 22;
-			const auto resTop = parentH - 54 - 6 - resHeight;
-			resRect = QRect(contentRight - resWidth, resTop, resWidth, resHeight);
-			row1Top = resTop;
+			const auto resWidth = font->width(_resText) + 2 * padH;
+			resRect = QRect(contentRight - resWidth, row1Top, resWidth, badgeHeight);
 		} else {
 			_resText = QString();
 		}
@@ -513,18 +518,17 @@ public:
 		auto selRect = QRect();
 		auto fwdRect = QRect();
 		if (selectionEnabled) {
-			const auto row2Height = 28;
-			const auto row2Top = (hasRes ? (row1Top - 6) : (parentH - 54 - 6)) - row2Height;
-			const auto circleSide = 24;
-			selRect = QRect(contentRight - circleSide, row2Top + (row2Height - circleSide) / 2, circleSide, circleSide);
+			const auto rowsGap = 8;
+			const auto row2Top = (hasRes ? (row1Top - rowsGap) : (bottomButtonsTop - gapAboveButtons)) - badgeHeight;
+			const auto circleSide = std::min(badgeHeight, 26);
+			selRect = QRect(contentRight - circleSide, row2Top + (badgeHeight - circleSide) / 2, circleSide, circleSide);
 
 			const auto count = _owner->makuSelectedCount();
 			const auto fwdText = (count == 0)
 				? QString::fromUtf8("Переслать")
 				: QString::fromUtf8("Переслать (%1)").arg(count);
-			const auto fwdWidth = st::mediaviewFont->width(fwdText) + 22;
-			const auto fwdHeight = 26;
-			fwdRect = QRect(selRect.left() - 8 - fwdWidth, row2Top + (row2Height - fwdHeight) / 2, fwdWidth, fwdHeight);
+			const auto fwdWidth = font->width(fwdText) + 2 * padH;
+			fwdRect = QRect(selRect.left() - 8 - fwdWidth, row2Top, fwdWidth, badgeHeight);
 		}
 
 		auto bounds = QRect();
@@ -562,13 +566,15 @@ protected:
 		auto hq = PainterHighQualityEnabler(p);
 		p.setOpacity(_opacity);
 
+		const auto font = st::mediaviewCaptionStyle.font;
+
 		if (!_resRect.isEmpty()) {
 			p.setPen(Qt::NoPen);
-			p.setBrush(QColor(0, 0, 0, 130));
-			p.drawRoundedRect(_resRect, 4, 4);
+			p.setBrush(st::mediaviewCaptionBg);
+			p.drawRoundedRect(_resRect, st::mediaviewCaptionRadius, st::mediaviewCaptionRadius);
 
-			p.setPen(st::mediaviewControlFg);
-			p.setFont(st::mediaviewFont);
+			p.setPen(st::mediaviewCaptionFg);
+			p.setFont(font);
 			p.drawText(_resRect, Qt::AlignCenter, _resText);
 		}
 
@@ -578,14 +584,13 @@ protected:
 				? QString::fromUtf8("Переслать")
 				: QString::fromUtf8("Переслать (%1)").arg(count);
 
+			const auto over = (_overForward || _downForward);
 			p.setPen(Qt::NoPen);
-			p.setBrush((_overForward || _downForward)
-				? QColor(40, 140, 230, 220)
-				: QColor(0, 0, 0, 140));
-			p.drawRoundedRect(_forwardRect, 13, 13);
+			p.setBrush(over ? QColor(50, 140, 230, 210) : st::mediaviewCaptionBg->c);
+			p.drawRoundedRect(_forwardRect, st::mediaviewCaptionRadius, st::mediaviewCaptionRadius);
 
-			p.setPen(st::mediaviewControlFg);
-			p.setFont(st::mediaviewFont);
+			p.setPen(st::mediaviewCaptionFg);
+			p.setFont(font);
 			p.drawText(_forwardRect, Qt::AlignCenter, fwdText);
 		}
 
@@ -607,8 +612,8 @@ protected:
 				p.setBrush(Qt::NoBrush);
 				drawCheckmark(p, path);
 			} else {
-				p.setPen(QPen(QColor(255, 255, 255, (_overSelect || _downSelect) ? 230 : 160), 1.8));
-				p.setBrush(QColor(0, 0, 0, (_overSelect || _downSelect) ? 140 : 110));
+				p.setPen(QPen(QColor(255, 255, 255, (_overSelect || _downSelect) ? 220 : 150), 1.8));
+				p.setBrush(st::mediaviewCaptionBg);
 				p.drawEllipse(_selectRect.adjusted(1, 1, -1, -1));
 			}
 		}
