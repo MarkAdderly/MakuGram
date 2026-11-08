@@ -58,7 +58,7 @@ private:
 	void saveCachedRates();
 	void parseRatesJson(const QByteArray &json);
 
-	mutable std::mutex _mutex;
+	mutable std::recursive_mutex _mutex;
 	std::unique_ptr<QNetworkAccessManager> _network;
 	std::unordered_map<QString, double> _ratesFromUSD;
 	qint64 _lastUpdateTime = 0;

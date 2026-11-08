@@ -31,6 +31,8 @@ a custom Telegram Desktop client fork.
 #include <QtCore/QSettings>
 #include <QtGui/QCursor>
 #include <QtNetwork/QNetworkReply>
+#include <QtCore/QPointer>
+#include "crl/crl_time.h"
 #include <QtNetwork/QNetworkRequest>
 #include <algorithm>
 
@@ -280,27 +282,51 @@ QString CurrencyClickHandler::tooltip() const {
 	return _text + u" ≈\n"_q + lines.join(u"\n"_q);
 }
 
+static QPointer<Ui::PopupMenu> gActiveCurrencyMenu;
+static crl::time gLastCurrencyClickTime = 0;
+
 void CurrencyClickHandler::onClick(ClickContext context) const {
 	if (context.button != Qt::LeftButton) {
 		return;
 	}
+	const auto now = crl::now();
+	if (now - gLastCurrencyClickTime < 250) {
+		if (gActiveCurrencyMenu) {
+			gActiveCurrencyMenu->hideMenu(true);
+			gActiveCurrencyMenu = nullptr;
+		}
+		return;
+	}
+	gLastCurrencyClickTime = now;
+
+	if (gActiveCurrencyMenu) {
+		gActiveCurrencyMenu->hideMenu(true);
+		gActiveCurrencyMenu = nullptr;
+		return;
+	}
+
 	const auto my = context.other.value<ClickHandlerContext>();
 	const auto controller = my.sessionWindow.get();
 	if (!controller) {
 		return;
 	}
+
+	const auto weak = base::make_weak(controller);
 	const auto menu = Ui::CreateChild<Ui::PopupMenu>(
 		controller->content(),
 		st::popupMenuWithIcons);
+	gActiveCurrencyMenu = menu;
 
 	const auto pos = QCursor::pos();
 
 	const auto origFlag = FlagForCurrency(_currency);
 	const auto title = (origFlag.isEmpty() ? QString() : (origFlag + ' '))
 		+ _text + u" ("_q + _currency + u")"_q;
-	const auto copyOriginal = [val = _text, show = controller->uiShow()] {
+	const auto copyOriginal = [val = _text, weak] {
 		TextUtilities::SetClipboardText(TextForMimeData::Simple(val));
-		show->showToast(Tr::Get(u"Скопировано: "_q, u"Copied: "_q) + val);
+		if (const auto strong = weak.get()) {
+			strong->uiShow()->showToast(Tr::Get(u"Скопировано: "_q, u"Copied: "_q) + val);
+		}
 	};
 	menu->addAction(title, copyOriginal, &st::menuIconCopy);
 
@@ -319,9 +345,11 @@ void CurrencyClickHandler::onClick(ClickContext context) const {
 			target);
 		if (conv > 0.0) {
 			const auto formatted = CurrencyRatesManager::instance().formatConverted(conv, target);
-			const auto copyThis = [val = formatted, show = controller->uiShow()] {
+			const auto copyThis = [val = formatted, weak] {
 				TextUtilities::SetClipboardText(TextForMimeData::Simple(val));
-				show->showToast(Tr::Get(u"Скопировано: "_q, u"Copied: "_q) + val);
+				if (const auto strong = weak.get()) {
+					strong->uiShow()->showToast(Tr::Get(u"Скопировано: "_q, u"Copied: "_q) + val);
+				}
 			};
 			menu->addAction(formatted, copyThis, &st::menuIconCopy);
 		}
@@ -331,7 +359,11 @@ void CurrencyClickHandler::onClick(ClickContext context) const {
 
 	menu->addAction(
 		Tr::Get(u"+ Настроить валюты..."_q, u"+ Configure currencies..."_q),
-		[controller] { ShowCurrencyTargetsBox(controller); },
+		[weak] {
+			if (const auto strong = weak.get()) {
+				ShowCurrencyTargetsBox(strong);
+			}
+		},
 		&st::menuIconSettings);
 
 	menu->popup(pos);
