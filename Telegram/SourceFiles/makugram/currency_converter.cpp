@@ -36,6 +36,37 @@ a custom Telegram Desktop client fork.
 namespace MakuGram {
 namespace {
 
+QString FlagForCurrency(const QString &code) {
+	const auto c = code.toUpper();
+	if (c == u"USD"_q) return QString::fromUtf8("🇺🇸");
+	if (c == u"RUB"_q) return QString::fromUtf8("🇷🇺");
+	if (c == u"UAH"_q) return QString::fromUtf8("🇺🇦");
+	if (c == u"EUR"_q) return QString::fromUtf8("🇪🇺");
+	if (c == u"KZT"_q) return QString::fromUtf8("🇰🇿");
+	if (c == u"BYN"_q) return QString::fromUtf8("🇧🇾");
+	if (c == u"TRY"_q) return QString::fromUtf8("🇹🇷");
+	if (c == u"CNY"_q) return QString::fromUtf8("🇨🇳");
+	if (c == u"JPY"_q) return QString::fromUtf8("🇯🇵");
+	if (c == u"IDR"_q) return QString::fromUtf8("🇮🇩");
+	if (c == u"GBP"_q) return QString::fromUtf8("🇬🇧");
+	if (c == u"PLN"_q) return QString::fromUtf8("🇵🇱");
+	if (c == u"THB"_q) return QString::fromUtf8("🇹🇭");
+	if (c == u"AED"_q) return QString::fromUtf8("🇦🇪");
+	if (c == u"GEL"_q) return QString::fromUtf8("🇬🇪");
+	if (c == u"AMD"_q) return QString::fromUtf8("🇦🇲");
+	if (c == u"CAD"_q) return QString::fromUtf8("🇨🇦");
+	if (c == u"AUD"_q) return QString::fromUtf8("🇦🇺");
+	if (c == u"BRL"_q) return QString::fromUtf8("🇧🇷");
+	if (c == u"CHF"_q) return QString::fromUtf8("🇨🇭");
+	if (c == u"INR"_q) return QString::fromUtf8("🇮🇳");
+	if (c == u"KRW"_q) return QString::fromUtf8("🇰🇷");
+	if (c == u"SGD"_q) return QString::fromUtf8("🇸🇬");
+	if (c == u"ILS"_q) return QString::fromUtf8("🇮🇱");
+	if (c == u"UZS"_q) return QString::fromUtf8("🇺🇿");
+	if (c == u"USDT"_q) return QString::fromUtf8("🪙");
+	return QString();
+}
+
 const QRegularExpression &SuffixRegex() {
 	static const auto expression = QRegularExpression(
 		u"(?<![\\w\\d])"
@@ -43,7 +74,7 @@ const QRegularExpression &SuffixRegex() {
 		"\\s*"
 		"(k|к|тыс(?:\\.|яч[а-я]*)?|kk|кк|m|м|млн(?:\\.)?|миллион[а-я]*|b|млрд(?:\\.)?|миллиард[а-я]*)?"
 		"\\s*"
-		"(руб(?:лей|ля|ли|ль|\\.)?|₽|rur|rub|idr|rp|рупи[йяи]|usd|\\$|доллар(?:ов|а|ы)?|долл(?:\\.)?|бакс(?:ов|а|ы)?|eur|€|евро|гривен|гривн[ыа]|грн(?:\\.)?|₴|uah|тенге|тг(?:\\.)?|₸|kzt|бел\\.?\\s*руб(?:лей|ля|ли|\\.)?|белруб|byn|турецких\\s+лир|лир[ыа]?|₺|try|фунт(?:ов|а|ы)?|£|gbp|юан(?:ей|я|и|ь)|¥|cny|злотых|злоты[ей]|zł|zl|pln|бат(?:ов|а|ы)?|฿|thb|дирхам(?:ов|а|ы)?|aed|лари|₾|gel|драм(?:ов|а|ы)?|֏|amd|usdt)"
+		"(руб(?:лей|ля|ли|ль|\\.)?|₽|rur|rub|idr|rp|рупи[йяи]|usd|\\$|доллар(?:ов|а|ы)?|долл(?:\\.)?|бакс(?:ов|а|ы)?|eur|€|евро|гривен|гривн[ыа]|грн(?:\\.)?|₴|uah|тенге|тг(?:\\.)?|₸|kzt|бел\\.?\\s*руб(?:лей|ля|ли|\\.)?|белруб|byn|турецких\\s+лир|лир[ыа]?|₺|try|фунт(?:ов|а|ы)?|£|gbp|юан(?:ей|я|и|ь)|¥|cny|йен(?:ей|а|ы|у|ах)?|иен(?:ей|а|ы|у|ах)?|jpy|злотых|злоты[ей]|zł|zl|pln|бат(?:ов|а|ы)?|฿|thb|дирхам(?:ов|а|ы)?|aed|лари|₾|gel|драм(?:ов|а|ы)?|֏|amd|usdt)"
 		"(?![\\w\\d])"_q,
 		QRegularExpression::CaseInsensitiveOption);
 	return expression;
@@ -87,6 +118,8 @@ QString MapCurrency(QString cur) {
 		return u"GBP"_q;
 	} else if (cur == u"¥"_q || cur == u"cny"_q || cur.startsWith(u"юан"_q)) {
 		return u"CNY"_q;
+	} else if (cur == u"jpy"_q || cur.startsWith(u"йен"_q) || cur.startsWith(u"иен"_q)) {
+		return u"JPY"_q;
 	} else if (cur == u"zł"_q || cur == u"zl"_q || cur == u"pln"_q || cur.startsWith(u"злот"_q)) {
 		return u"PLN"_q;
 	} else if (cur == u"฿"_q || cur == u"thb"_q || cur.startsWith(u"бат"_q)) {
@@ -258,7 +291,9 @@ void CurrencyClickHandler::onClick(ClickContext context) const {
 
 	const auto pos = QCursor::pos();
 
-	const auto title = _text + u" ("_q + _currency + u")"_q;
+	const auto origFlag = FlagForCurrency(_currency);
+	const auto title = (origFlag.isEmpty() ? QString() : (origFlag + ' '))
+		+ _text + u" ("_q + _currency + u")"_q;
 	const auto copyOriginal = [val = _text, show = controller->uiShow()] {
 		TextUtilities::SetClipboardText(TextForMimeData::Simple(val));
 		show->showToast(QString::fromUtf8("Скопировано: ") + val);
@@ -327,6 +362,7 @@ void CurrencyRatesManager::initFallbacks() {
 	_ratesFromUSD[u"TRY"_q] = 50.0;
 	_ratesFromUSD[u"GBP"_q] = 0.75;
 	_ratesFromUSD[u"CNY"_q] = 6.7;
+	_ratesFromUSD[u"JPY"_q] = 155.0;
 	_ratesFromUSD[u"PLN"_q] = 3.9;
 	_ratesFromUSD[u"THB"_q] = 33.5;
 	_ratesFromUSD[u"AED"_q] = 3.67;
@@ -433,40 +469,45 @@ QString CurrencyRatesManager::formatConverted(
 		const QString &targetCurrency) const {
 	const auto num = FormatNumber(amount);
 	const auto code = targetCurrency.toUpper();
+	const auto flag = FlagForCurrency(code);
+	const auto prefix = flag.isEmpty() ? QString() : (flag + ' ');
+
 	if (code == u"USD"_q) {
-		return u"$"_q + num + u" USD"_q;
+		return prefix + u"$"_q + num + u" USD"_q;
 	} else if (code == u"EUR"_q) {
-		return u"€"_q + num + u" EUR"_q;
+		return prefix + u"€"_q + num + u" EUR"_q;
 	} else if (code == u"RUB"_q) {
-		return num + u" ₽"_q;
+		return prefix + num + u" ₽"_q;
 	} else if (code == u"IDR"_q) {
-		return num + u" IDR"_q;
+		return prefix + num + u" IDR"_q;
 	} else if (code == u"UAH"_q) {
-		return num + u" ₴"_q;
+		return prefix + num + u" ₴"_q;
 	} else if (code == u"KZT"_q) {
-		return num + u" ₸"_q;
+		return prefix + num + u" ₸"_q;
 	} else if (code == u"BYN"_q) {
-		return num + u" бел. руб"_q;
+		return prefix + num + u" бел. руб"_q;
 	} else if (code == u"TRY"_q) {
-		return num + u" ₺"_q;
+		return prefix + num + u" ₺"_q;
 	} else if (code == u"GBP"_q) {
-		return u"£"_q + num + u" GBP"_q;
+		return prefix + u"£"_q + num + u" GBP"_q;
 	} else if (code == u"CNY"_q) {
-		return u"¥"_q + num + u" CNY"_q;
+		return prefix + u"¥"_q + num + u" CNY"_q;
+	} else if (code == u"JPY"_q) {
+		return prefix + u"¥"_q + num + u" JPY"_q;
 	} else if (code == u"PLN"_q) {
-		return num + u" zł"_q;
+		return prefix + num + u" zł"_q;
 	} else if (code == u"THB"_q) {
-		return num + u" ฿"_q;
+		return prefix + num + u" ฿"_q;
 	} else if (code == u"AED"_q) {
-		return num + u" AED"_q;
+		return prefix + num + u" AED"_q;
 	} else if (code == u"GEL"_q) {
-		return num + u" ₾"_q;
+		return prefix + num + u" ₾"_q;
 	} else if (code == u"AMD"_q) {
-		return num + u" ֏"_q;
+		return prefix + num + u" ֏"_q;
 	} else if (code == u"USDT"_q) {
-		return num + u" USDT"_q;
+		return prefix + num + u" USDT"_q;
 	}
-	return num + u" "_q + code;
+	return prefix + num + u" "_q + code;
 }
 
 TextWithEntities AddCurrencyLinks(TextWithEntities text) {
@@ -615,21 +656,16 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 			QString name;
 		};
 		const auto options = std::vector<CurrencyOption>{
-			{ u"USD"_q, QString::fromUtf8("USD — Доллар США ($)") },
-			{ u"EUR"_q, QString::fromUtf8("EUR — Евро (€)") },
-			{ u"RUB"_q, QString::fromUtf8("RUB — Российский рубль (₽)") },
-			{ u"IDR"_q, QString::fromUtf8("IDR — Индонезийская рупия (Rp)") },
-			{ u"UAH"_q, QString::fromUtf8("UAH — Украинская гривна (₴)") },
-			{ u"KZT"_q, QString::fromUtf8("KZT — Казахстанский тенге (₸)") },
-			{ u"BYN"_q, QString::fromUtf8("BYN — Белорусский рубль") },
-			{ u"TRY"_q, QString::fromUtf8("TRY — Турецкая лира (₺)") },
-			{ u"GBP"_q, QString::fromUtf8("GBP — Британский фунт (£)") },
-			{ u"CNY"_q, QString::fromUtf8("CNY — Китайский юань (¥)") },
-			{ u"PLN"_q, QString::fromUtf8("PLN — Польский злотый (zł)") },
-			{ u"THB"_q, QString::fromUtf8("THB — Тайский бат (฿)") },
-			{ u"AED"_q, QString::fromUtf8("AED — Дирхам ОАЭ") },
-			{ u"GEL"_q, QString::fromUtf8("GEL — Грузинский лари (₾)") },
-			{ u"USDT"_q, QString::fromUtf8("USDT — Tether USD") },
+			{ u"USD"_q, QString::fromUtf8("🇺🇸 Доллары (USD)") },
+			{ u"RUB"_q, QString::fromUtf8("🇷🇺 Рубли (RUB)") },
+			{ u"UAH"_q, QString::fromUtf8("🇺🇦 Гривны (UAH)") },
+			{ u"EUR"_q, QString::fromUtf8("🇪🇺 Евро (EUR)") },
+			{ u"KZT"_q, QString::fromUtf8("🇰🇿 Казахские тенге (KZT)") },
+			{ u"BYN"_q, QString::fromUtf8("🇧🇾 Белорусские рубли (BYN)") },
+			{ u"TRY"_q, QString::fromUtf8("🇹🇷 Турецкие лиры (TRY)") },
+			{ u"CNY"_q, QString::fromUtf8("🇨🇳 Китайские юани (CNY)") },
+			{ u"JPY"_q, QString::fromUtf8("🇯🇵 Японские йены (JPY)") },
+			{ u"IDR"_q, QString::fromUtf8("🇮🇩 Индонезийские рупии (IDR)") },
 		};
 
 		const auto currentTargets = Settings::instance().currencyConverterTargets()
@@ -666,7 +702,7 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
-				rpl::single(QString::fromUtf8("Другие валюты (через запятую, например: JPY, CAD, BRL):")),
+				rpl::single(QString::fromUtf8("Другие валюты (через запятую, например: GBP, PLN, THB, AED):")),
 				st::boxDividerLabel),
 			style::margins(
 				st::boxRowPadding.left(),
