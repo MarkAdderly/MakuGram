@@ -33,7 +33,7 @@ namespace {
 using namespace Builder;
 
 constexpr auto kBoxContentWidth = 540;
-constexpr auto kBoxMaxHeight = 660;
+constexpr auto kBoxMaxHeight = 690;
 
 [[nodiscard]] [[maybe_unused]] int CheckboxTextSkip() {
 	return st::defaultBoxCheckbox.checkPosition.x()
@@ -299,7 +299,7 @@ void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 			[=](bool checked) {
 				MakuGram::Settings::instance().setCurrencyConverter(checked);
 			},
-			rpl::single(QString::fromUtf8("Автоматически подсвечивает суммы в сообщениях (например, «15 рублей», «10M IDR», «100$») и показывает их конвертацию при наведении или клике.")),
+			rpl::single(QString::fromUtf8("Автоматически подсвечивает суммы в сообщениях (например, \"15 рублей\", \"10M IDR\", \"100$\") и показывает их конвертацию при наведении или клике.")),
 			0);
 
 		const auto curSetupBtn = box->addRow(

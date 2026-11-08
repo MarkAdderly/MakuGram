@@ -637,7 +637,7 @@ ClickHandlerPtr CreateCurrencyClickHandler(
 void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(540);
-		box->setMaxHeight(660);
+		box->setMaxHeight(690);
 		box->setTitle(rpl::single(QString::fromUtf8("Выбор валют для конвертации")));
 
 		box->addRow(
@@ -721,6 +721,8 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 				0,
 				st::boxRowPadding.right(),
 				st::boxMediumSkip));
+
+		box->addSkip(30);
 
 		box->addButton(tr::lng_settings_save(), [=] {
 			QStringList selected;
