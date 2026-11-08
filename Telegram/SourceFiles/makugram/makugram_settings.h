@@ -199,7 +199,7 @@ private:
 	bool _sendMediaHighQuality = false;
 	bool _streamerMode = false;
 	bool _currencyConverter = false;
-	QString _currencyConverterTargets;
+	QString _currencyConverterTargets = "USD,RUB,KZT";
 
 	rpl::event_stream<bool> _hideMessagesFromBlockedChanges;
 	rpl::event_stream<bool> _quickBanInRequestsChanges;
