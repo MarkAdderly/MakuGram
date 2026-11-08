@@ -3,6 +3,7 @@ This file is part of MakuGram,
 a custom Telegram Desktop client fork.
 */
 #include "makugram/makugram_updater.h"
+#include "makugram/makugram_lang.h"
 
 #include "ui/layers/generic_box.h"
 #include "ui/widgets/labels.h"
@@ -60,7 +61,7 @@ public:
 		if (_inProgress) {
 			if (!silent) {
 				if (const auto controller = weakController.get()) {
-					controller->showToast(QString::fromUtf8("Проверка обновлений уже выполняется..."));
+					controller->showToast(Tr::Get(u"Проверка обновлений уже выполняется..."_q, u"Update check is already in progress..."_q));
 				}
 			}
 			return;
@@ -86,7 +87,7 @@ public:
 
 			if (reply->error() != QNetworkReply::NoError) {
 				if (!silent && controller) {
-					controller->showToast(QString::fromUtf8("Не удалось проверить обновления. Проверьте соединение с интернетом."));
+					controller->showToast(Tr::Get(u"Не удалось проверить обновления. Проверьте соединение с интернетом."_q, u"Failed to check for updates. Check your internet connection."_q));
 				}
 				return;
 			}
@@ -96,7 +97,7 @@ public:
 			const auto doc = QJsonDocument::fromJson(data, &parseError);
 			if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
 				if (!silent && controller) {
-					controller->showToast(QString::fromUtf8("Ошибка обработки ответа от GitHub."));
+					controller->showToast(Tr::Get(u"Ошибка обработки ответа от GitHub."_q, u"Error parsing response from GitHub."_q));
 				}
 				return;
 			}
@@ -116,7 +117,7 @@ public:
 				}
 			} else {
 				if (!silent && controller) {
-					controller->showToast(QString::fromUtf8("У вас установлена последняя версия MakuGram (v%1)").arg(kVersion));
+					controller->showToast(Tr::Get(QString::fromUtf8("У вас установлена последняя версия MakuGram (v%1)").arg(kVersion), QString::fromUtf8("You have the latest version of MakuGram (v%1)").arg(kVersion)));
 				}
 			}
 		});
@@ -131,12 +132,12 @@ private:
 			const QString &body) {
 		controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 			box->setWidth(500);
-			box->setTitle(rpl::single(QString::fromUtf8("Доступно обновление MakuGram!")));
+			box->setTitle(Tr::Value(u"Доступно обновление MakuGram!"_q, u"MakuGram update available!"_q));
 
 			box->addRow(
 				object_ptr<Ui::FlatLabel>(
 					box,
-					QString::fromUtf8("Найдена новая версия: %1 (текущая: v%2)%3")
+					Tr::Get(u"Найдена новая версия: %1 (текущая: v%2)%3"_q, u"New version available: %1 (current: v%2)%3"_q)
 						.arg(tag.startsWith('v') ? tag : ("v" + tag))
 						.arg(kVersion)
 						.arg(name.isEmpty() ? QString() : ("\n" + name)),
@@ -153,7 +154,7 @@ private:
 					st::boxRowPadding);
 			}
 
-			box->addButton(rpl::single(QString::fromUtf8("Скачать обновление")), [=] {
+			box->addButton(Tr::Value(u"Скачать обновление"_q, u"Download Update"_q), [=] {
 				UrlClickHandler::Open(url.isEmpty()
 					? u"https://github.com/MarkAdderly/MakuGram/releases/latest"_q
 					: url);

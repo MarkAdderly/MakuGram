@@ -9134,37 +9134,37 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_tgw_copied" = "Copied: {text}";
 "lng_in_dlg_widget" = "Widget";
 
-"lng_settings_makugram" = "Функции MakuGram";
-"lng_settings_makugram_about" = "MakuGram - форк Telegram с расширенными возможностями модерации и приватности.";
-"lng_settings_makugram_hide_blocked" = "Скрывать сообщения от заблокированных";
-"lng_settings_makugram_hide_blocked_about" = "Не отображать сообщения заблокированных пользователей в общих чатах и группах.";
-"lng_settings_makugram_quick_ban" = "Кнопка \"Забанить\" в заявках";
-"lng_settings_makugram_quick_ban_about" = "Добавляет кнопку быстрого бана прямо рядом с кнопками одобрения и отклонения заявок на вступление.";
-"lng_makugram_ban_button" = "Забанить";
-"lng_makugram_banned_toast" = "Пользователь {user} заблокирован(а).";
-"lng_settings_makugram_always_zoom" = "Всегда открывать медиа по размеру экрана";
-"lng_settings_makugram_always_zoom_about" = "Автоматически растягивать изображения и медиафайлы до границ окна по соотношению сторон при открытии (аналогично нажатию на колёсико мыши).";
-"lng_settings_makugram_section_privacy" = "Приватность и сообщения";
-"lng_settings_makugram_section_moderation" = "Модерация и безопасность";
-"lng_settings_makugram_section_profile" = "Профиль и информация";
-"lng_settings_makugram_section_media" = "Медиа";
+"lng_settings_makugram" = "MakuGram Features";
+"lng_settings_makugram_about" = "MakuGram - Telegram fork with advanced moderation and privacy features.";
+"lng_settings_makugram_hide_blocked" = "Hide messages from blocked users";
+"lng_settings_makugram_hide_blocked_about" = "Do not display messages from blocked users in public and group chats.";
+"lng_settings_makugram_quick_ban" = "\"Ban\" button in join requests";
+"lng_settings_makugram_quick_ban_about" = "Adds a quick ban button directly next to approve and decline join requests.";
+"lng_makugram_ban_button" = "Ban";
+"lng_makugram_banned_toast" = "User {user} has been banned.";
+"lng_settings_makugram_always_zoom" = "Always open media fit to window";
+"lng_settings_makugram_always_zoom_about" = "Automatically scale images and media to window borders when opened.";
+"lng_settings_makugram_section_privacy" = "Privacy & Security";
+"lng_settings_makugram_section_moderation" = "Chat Moderation";
+"lng_settings_makugram_section_profile" = "Profile & Info";
+"lng_settings_makugram_section_media" = "Media";
 
-"lng_settings_makugram_exact_time" = "Точное время сообщений (с секундами)";
-"lng_settings_makugram_exact_time_about" = "Отображать время отправленных сообщений с точностью до секунды (ЧЧ:ММ:СС).";
+"lng_settings_makugram_exact_time" = "Exact message time (with seconds)";
+"lng_settings_makugram_exact_time_about" = "Display message sent time with second precision (HH:MM:SS).";
 
-"lng_settings_makugram_quick_delete_ban" = "\"Удалить всё и забанить\" в меню сообщения";
-"lng_settings_makugram_quick_delete_ban_about" = "Добавляет кнопку в контекстное меню сообщения участника для быстрого удаления всей истории и бана.";
+"lng_settings_makugram_quick_delete_ban" = "\"Delete all and ban\" in message menu";
+"lng_settings_makugram_quick_delete_ban_about" = "Adds an item to the message context menu to quickly delete all messages and ban the user.";
 
-"lng_settings_makugram_newbie_badge" = "Бейдж \"Новичок\" в чатах";
-"lng_settings_makugram_newbie_badge_about" = "Отображать бейдж \"Новичок\" рядом с именем участников, состоящих в чате меньше 3 месяцев.";
+"lng_settings_makugram_newbie_badge" = "\"Newbie\" badge in chats";
+"lng_settings_makugram_newbie_badge_about" = "Show \"Newbie\" badge next to chat members who joined less than 3 months ago.";
 
-"lng_settings_makugram_profile_details" = "Показывать ID и дату регистрации аккаунта";
-"lng_settings_makugram_profile_details_about" = "Отображать числовой ID и расчетный период регистрации в профиле пользователя.";
+"lng_settings_makugram_profile_details" = "Show account ID and registration date";
+"lng_settings_makugram_profile_details_about" = "Display numeric ID and estimated registration date in user profile.";
 
 
-"lng_settings_makugram_spam_filter" = "Локальный спам-фильтр по ключевым словам";
-"lng_settings_makugram_spam_filter_about" = "Скрывать сообщения со скрываемыми словами в чатах и в личных сообщениях.";
-"lng_settings_makugram_spam_setup" = "Настроить скрываемые слова...";
-"lng_settings_makugram_fwd_no_author_hint" = "Кнопка \"Переслать без автора\" доступна в контекстном меню любого сообщения.";
+"lng_settings_makugram_spam_filter" = "Local keyword spam filter";
+"lng_settings_makugram_spam_filter_about" = "Hide messages containing hidden words in chats and direct messages.";
+"lng_settings_makugram_spam_setup" = "Configure hidden words...";
+"lng_settings_makugram_fwd_no_author_hint" = "\"Forward without author\" is available in the context menu of any message.";
 
 // Keys finished

@@ -8,6 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "settings/sections/settings_main.h"
 
 #include "makugram/settings_makugram.h"
+#include "makugram/makugram_lang.h"
 #include "makugram/makugram_settings.h"
 
 #include "settings/settings_common_session.h"
@@ -410,7 +411,7 @@ void BuildSectionButtons(SectionBuilder &builder) {
 	}
 
 	builder.addSectionButton({
-		.title = tr::lng_settings_makugram(),
+		.title = MakuGram::Tr::Value(QString::fromUtf8("Функции MakuGram"), u"MakuGram Features"_q),
 		.targetSection = MakuGramId(),
 		.icon = { &st::menuIconManage },
 		.keywords = { u"makugram"_q, u"maku"_q, u"features"_q, u"функции"_q, u"блокировка"_q, u"заявки"_q },

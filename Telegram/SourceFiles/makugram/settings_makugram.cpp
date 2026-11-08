@@ -5,6 +5,7 @@ a custom Telegram Desktop client fork.
 #include "makugram/settings_makugram.h"
 #include "makugram/currency_converter.h"
 #include "makugram/makugram_updater.h"
+#include "makugram/makugram_lang.h"
 #include "boxes/connection_box.h"
 
 #include "makugram/makugram_settings.h"
@@ -32,6 +33,7 @@ namespace Settings {
 namespace {
 
 using namespace Builder;
+using namespace MakuGram;
 
 constexpr auto kBoxContentWidth = 540;
 constexpr auto kBoxMaxHeight = 690;
@@ -157,14 +159,19 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
 		box->setMaxHeight(kBoxMaxHeight);
-		box->setTitle(QString::fromUtf8("Локальный спам-фильтр"));
+		box->setTitle(Tr::Value(
+			QString::fromUtf8("Локальный спам-фильтр"),
+			u"Local Spam Filter"_q));
 
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
-				QString::fromUtf8(
-					"Введите скрываемые слова через запятую или с новой строки.\n"
-					"Поддерживается звёздочка * (например: кошк* скроет \"кошка\", \"кошку\", \"кошки\" и т.д.):"),
+				Tr::Value(
+					QString::fromUtf8(
+						"Введите скрываемые слова через запятую или с новой строки.\n"
+						"Поддерживается звёздочка * (например: кошк* скроет \"кошка\", \"кошку\", \"кошки\" и т.д.):"),
+					u"Enter filtered words comma-separated or one per line.\n"
+					"Asterisk * wildcard is supported (e.g.: cat* will hide \"cat\", \"cats\", etc.):"_q),
 				st::boxLabel),
 			st::boxRowPadding);
 
@@ -173,7 +180,9 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 				box,
 				st::supportInfoField,
 				Ui::InputField::Mode::MultiLine,
-				rpl::single(QString::fromUtf8("Введите слова или шаблоны (*)...")),
+				Tr::Value(
+					QString::fromUtf8("Введите слова или шаблоны (*)..."),
+					u"Enter words or patterns (*)..."_q),
 				MakuGram::Settings::instance().spamKeywords()),
 			st::boxRowPadding);
 		field->setFocus();
@@ -182,7 +191,9 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 		const auto excludeSearch = box->addRow(
 			object_ptr<Ui::Checkbox>(
 				box,
-				QString::fromUtf8("Исключить скрываемые слова из поиска"),
+				Tr::Value(
+					QString::fromUtf8("Исключить скрываемые слова из поиска"),
+					u"Exclude hidden words from search"_q),
 				MakuGram::Settings::instance().filterSpamInSearch(),
 				st::defaultBoxCheckbox),
 			style::margins(
@@ -198,7 +209,9 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 		const auto excludeAbout = box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
-				QString::fromUtf8("Сообщения, содержащие скрываемые слова, не будут отображаться в результатах глобального поиска и поиска по чату."),
+				Tr::Value(
+					QString::fromUtf8("Сообщения, содержащие скрываемые слова, не будут отображаться в результатах глобального поиска и поиска по чату."),
+					u"Messages containing hidden words will not appear in global and chat search results."_q),
 				st::boxDividerLabel),
 			style::margins(
 				st::boxRowPadding.left(),
@@ -219,7 +232,9 @@ void ShowSpamFilterBox(not_null<Window::SessionController*> controller) {
 			MakuGram::Settings::instance().setSpamKeywords(field->getLastText());
 			MakuGram::Settings::instance().setFilterSpamInSearch(excludeSearch->checked());
 			box->closeBox();
-			controller->showToast(QString::fromUtf8("Настройки сохранены"));
+			controller->showToast(Tr::Get(
+				QString::fromUtf8("Настройки сохранены"),
+				u"Settings saved"_q));
 		});
 		box->addButton(tr::lng_cancel(), [=] {
 			box->closeBox();
@@ -231,58 +246,82 @@ void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
 		box->setMaxHeight(kBoxMaxHeight);
-		box->setTitle(rpl::single(QString::fromUtf8("Сообщения")));
+		box->setTitle(Tr::Value(
+			QString::fromUtf8("Сообщения"),
+			u"Messages"_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Кнопка \"Только непрочитанные\" над чатами")),
+			Tr::Value(
+				QString::fromUtf8("Кнопка \"Только непрочитанные\" над чатами"),
+				u"\"Unread only\" button above chats"_q),
 			MakuGram::Settings::instance().showUnreadFilterButton(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setShowUnreadFilterButton(checked);
 			},
-			rpl::single(QString::fromUtf8("Отображает кнопку над списком чатов для быстрого показа только непрочитанных диалогов в один клик.")));
+			Tr::Value(
+				QString::fromUtf8("Отображает кнопку над списком чатов для быстрого показа только непрочитанных диалогов в один клик."),
+				u"Displays a button above the chat list to quickly show only unread dialogs in one click."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Переслать без автора")),
+			Tr::Value(
+				QString::fromUtf8("Переслать без автора"),
+				u"Forward without author"_q),
 			MakuGram::Settings::instance().forwardWithoutAuthor(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setForwardWithoutAuthor(checked);
 			},
-			rpl::single(QString::fromUtf8("Добавляет пункт \"Переслать без автора\" в контекстное меню сообщений.")));
+			Tr::Value(
+				QString::fromUtf8("Добавляет пункт \"Переслать без автора\" в контекстное меню сообщений."),
+				u"Adds a \"Forward without author\" item to the message context menu."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Увеличить лимит выделяемых сообщений с 100 до 1000")),
+			Tr::Value(
+				QString::fromUtf8("Увеличить лимит выделяемых сообщений с 100 до 1000"),
+				u"Increase message selection limit from 100 to 1000"_q),
 			MakuGram::Settings::instance().increaseMessageSelectLimit(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setIncreaseMessageSelectLimit(checked);
 			},
-			rpl::single(QString::fromUtf8("Позволяет одновременно выделять до 1000 сообщений в чатах и медиа для их пересылки или удаления.")));
+			Tr::Value(
+				QString::fromUtf8("Позволяет одновременно выделять до 1000 сообщений в чатах и медиа для их пересылки или удаления."),
+				u"Allows selecting up to 1000 messages in chats and media at once for forwarding or deleting."_q));
 
 		AddCheckboxRow(
 			box,
-			tr::lng_settings_makugram_exact_time(),
+			Tr::Value(
+				QString::fromUtf8("Точное время сообщений (с секундами)"),
+				u"Exact message time (with seconds)"_q),
 			MakuGram::Settings::instance().showExactTime(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setShowExactTime(checked);
 			},
-			tr::lng_settings_makugram_exact_time_about());
+			Tr::Value(
+				QString::fromUtf8("Отображать время отправленных сообщений с точностью до секунды (ЧЧ:ММ:СС)."),
+				u"Display message sent time with second precision (HH:MM:SS)."_q));
 
 		AddCheckboxRow(
 			box,
-			tr::lng_settings_makugram_spam_filter(),
+			Tr::Value(
+				QString::fromUtf8("Локальный спам-фильтр по ключевым словам"),
+				u"Local keyword spam filter"_q),
 			MakuGram::Settings::instance().spamFilterEnabled(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setSpamFilterEnabled(checked);
 			},
-			tr::lng_settings_makugram_spam_filter_about(),
-			 0);
+			Tr::Value(
+				QString::fromUtf8("Скрывать сообщения со скрываемыми словами в чатах и в личных сообщениях."),
+				u"Hide messages containing filtered words in chats and direct messages."_q),
+			0);
 
 		const auto spamSetupBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
 				box,
-				tr::lng_settings_makugram_spam_setup(),
+				Tr::Value(
+					QString::fromUtf8("Настроить скрываемые слова..."),
+					u"Configure hidden words..."_q),
 				st::defaultBoxButton),
 			style::margins(
 				st::boxRowPadding.left(),
@@ -295,18 +334,24 @@ void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Конвертер валют")),
+			Tr::Value(
+				QString::fromUtf8("Конвертер валют"),
+				u"Currency converter"_q),
 			MakuGram::Settings::instance().currencyConverter(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setCurrencyConverter(checked);
 			},
-			rpl::single(QString::fromUtf8("Автоматически подсвечивает суммы в сообщениях (например, \"15 рублей\", \"10M IDR\", \"100$\") и показывает их конвертацию при наведении или клике.")),
+			Tr::Value(
+				QString::fromUtf8("Автоматически подсвечивает суммы в сообщениях (например, \"15 рублей\", \"10M IDR\", \"100$\") и показывает их конвертацию при наведении или клике."),
+				u"Automatically detects amounts in messages (e.g. \"15 rubles\", \"10M IDR\", \"100$\") and shows conversion on hover or click."_q),
 			0);
 
 		const auto curSetupBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
 				box,
-				rpl::single(QString::fromUtf8("Выбрать целевые валюты...")),
+				Tr::Value(
+					QString::fromUtf8("Выбрать целевые валюты..."),
+					u"Select target currencies..."_q),
 				st::defaultBoxButton),
 			style::margins(
 				st::boxRowPadding.left(),
@@ -327,52 +372,74 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
 		box->setMaxHeight(kBoxMaxHeight);
-		box->setTitle(rpl::single(QString::fromUtf8("Приватность и безопасность")));
+		box->setTitle(Tr::Value(
+			QString::fromUtf8("Приватность и безопасность"),
+			u"Privacy & Security"_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Не передавать статус набора текста")),
+			Tr::Value(
+				QString::fromUtf8("Не передавать статус набора текста"),
+				u"Do not send typing status"_q),
 			MakuGram::Settings::instance().hideTypingStatus(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setHideTypingStatus(checked);
 			},
-			rpl::single(QString::fromUtf8("Собеседники не будут видеть, когда вы печатаете текст или записываете голосовое/видеосообщение.")));
+			Tr::Value(
+				QString::fromUtf8("Собеседники не будут видеть, когда вы печатаете текст или записываете голосовое/видеосообщение."),
+				u"Others will not see when you are typing or recording voice/video messages."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Разрешить копирование и сохранение контента")),
+			Tr::Value(
+				QString::fromUtf8("Разрешить копирование и сохранение контента"),
+				u"Allow copying and saving protected content"_q),
 			MakuGram::Settings::instance().bypassRestrictedContent(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setBypassRestrictedContent(checked);
 			},
-			rpl::single(QString::fromUtf8("Снимает ограничения на пересылку, сохранение медиа, копирование текста и скриншоты в защищённых каналах и группах (при пересылке защищённых сообщений они копируются с сохранением текста, медиа и указанием автора в конце).")));
+			Tr::Value(
+				QString::fromUtf8("Снимает ограничения на пересылку, сохранение медиа, копирование текста и скриншоты в защищённых каналах и группах (при пересылке защищённых сообщений они копируются с сохранением текста, медиа и указанием автора в конце)."),
+				u"Removes restrictions on forwarding, saving media, copying text, and screenshots in protected channels and groups."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Массовое удаление сообщений за период")),
+			Tr::Value(
+				QString::fromUtf8("Массовое удаление сообщений за период"),
+				u"Mass delete messages by period"_q),
 			MakuGram::Settings::instance().quickMassDeleteMyMessages(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setQuickMassDeleteMyMessages(checked);
 			},
-			rpl::single(QString::fromUtf8("Добавляет в меню диалога пункт для быстрого удаления сообщений за сегодня, неделю, месяц или всё время.")));
+			Tr::Value(
+				QString::fromUtf8("Добавляет в меню диалога пункт для быстрого удаления сообщений за сегодня, неделю, месяц или всё время."),
+				u"Adds an option to chat menu for quickly deleting messages for today, week, month, or all time."_q));
 
 		AddCheckboxRow(
 			box,
-			tr::lng_settings_makugram_hide_blocked(),
+			Tr::Value(
+				QString::fromUtf8("Скрывать сообщения от заблокированных"),
+				u"Hide messages from blocked users"_q),
 			MakuGram::Settings::instance().hideMessagesFromBlocked(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setHideMessagesFromBlocked(checked);
 			},
-			tr::lng_settings_makugram_hide_blocked_about());
+			Tr::Value(
+				QString::fromUtf8("Не отображать сообщения заблокированных пользователей в общих чатах и группах."),
+				u"Do not display messages from blocked users in public and group chats."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Спрятать номер телефона из настроек")),
+			Tr::Value(
+				QString::fromUtf8("Спрятать номер телефона из настроек"),
+				u"Hide phone number in settings"_q),
 			MakuGram::Settings::instance().hidePhoneNumberInSettings(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setHidePhoneNumberInSettings(checked);
 			},
-			rpl::single(QString::fromUtf8("Скрывает номер телефона в шапке настроек и в меню редактирования профиля для защиты от случайной демонстрации.")));
+			Tr::Value(
+				QString::fromUtf8("Скрывает номер телефона в шапке настроек и в меню редактирования профиля для защиты от случайной демонстрации."),
+				u"Hides phone number in settings header and profile edit menu to protect against accidental exposure."_q));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -384,34 +451,48 @@ void ShowModerationBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
 		box->setMaxHeight(kBoxMaxHeight);
-		box->setTitle(rpl::single(QString::fromUtf8("Модерация чатов")));
+		box->setTitle(Tr::Value(
+			QString::fromUtf8("Модерация чатов"),
+			u"Chat Moderation"_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Поиск сообщений пользователя в чате")),
+			Tr::Value(
+				QString::fromUtf8("Поиск сообщений пользователя в чате"),
+				u"Search user messages in chat"_q),
 			MakuGram::Settings::instance().searchUserMessagesInChat(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setSearchUserMessagesInChat(checked);
 			},
-			rpl::single(QString::fromUtf8("Добавляет пункт в контекстное меню сообщения для быстрого поиска всех сообщений автора в текущей группе.")));
+			Tr::Value(
+				QString::fromUtf8("Добавляет пункт в контекстное меню сообщения для быстрого поиска всех сообщений автора в текущей группе."),
+				u"Adds an item to message context menu to quickly find all messages from this author in current group."_q));
 
 		AddCheckboxRow(
 			box,
-			tr::lng_settings_makugram_quick_ban(),
+			Tr::Value(
+				QString::fromUtf8("Кнопка \"Забанить\" в заявках"),
+				u"\"Ban\" button in join requests"_q),
 			MakuGram::Settings::instance().quickBanInRequests(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setQuickBanInRequests(checked);
 			},
-			tr::lng_settings_makugram_quick_ban_about());
+			Tr::Value(
+				QString::fromUtf8("Добавляет кнопку быстрого бана прямо рядом с кнопками одобрения и отклонения заявок на вступление."),
+				u"Adds a quick ban button directly next to approve and decline join requests."_q));
 
 		AddCheckboxRow(
 			box,
-			tr::lng_settings_makugram_newbie_badge(),
+			Tr::Value(
+				QString::fromUtf8("Бейдж \"Новичок\" в чатах"),
+				u"\"Newbie\" badge in chats"_q),
 			MakuGram::Settings::instance().showNewbieBadge(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setShowNewbieBadge(checked);
 			},
-			tr::lng_settings_makugram_newbie_badge_about());
+			Tr::Value(
+				QString::fromUtf8("Отображать бейдж \"Новичок\" рядом с именем участников, состоящих в чате меньше 3 месяцев."),
+				u"Show \"Newbie\" badge next to members who joined the chat less than 3 months ago."_q));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -423,25 +504,35 @@ void ShowProfileBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
 		box->setMaxHeight(kBoxMaxHeight);
-		box->setTitle(tr::lng_settings_makugram_section_profile());
+		box->setTitle(Tr::Value(
+			QString::fromUtf8("Профиль и информация"),
+			u"Profile & Info"_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Показывать ID и дату регистрации аккаунта")),
+			Tr::Value(
+				QString::fromUtf8("Показывать ID и дату регистрации аккаунта"),
+				u"Show account ID and registration date"_q),
 			MakuGram::Settings::instance().showProfileDetails(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setShowProfileDetails(checked);
 			},
-			rpl::single(QString::fromUtf8("Отображать числовой ID (с копированием в буфер по клику) и расчетный период регистрации в профиле пользователя.")));
+			Tr::Value(
+				QString::fromUtf8("Отображать числовой ID (с копированием в буфер по клику) и расчетный период регистрации в профиле пользователя."),
+				u"Display numeric ID (clickable to copy) and estimated registration period in user profile."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Отключить сторис")),
+			Tr::Value(
+				QString::fromUtf8("Отключить сторис"),
+				u"Disable Stories"_q),
 			MakuGram::Settings::instance().disableStories(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setDisableStories(checked);
 			},
-			rpl::single(QString::fromUtf8("Полностью скрывает истории пользователей и каналов: ободки на аватарках, верхнюю панель историй, раздел в профиле и в архиве.")));
+			Tr::Value(
+				QString::fromUtf8("Полностью скрывает истории пользователей и каналов: ободки на аватарках, верхнюю панель историй, раздел в профиле и в архиве."),
+				u"Completely hides user and channel stories: rings on avatars, top stories bar, profile and archive sections."_q));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -453,61 +544,87 @@ void ShowMediaBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
 		box->setMaxHeight(kBoxMaxHeight);
-		box->setTitle(tr::lng_settings_makugram_section_media());
+		box->setTitle(Tr::Value(
+			QString::fromUtf8("Медиа"),
+			u"Media"_q));
 
 		AddCheckboxRow(
 			box,
-			tr::lng_settings_makugram_always_zoom(),
+			Tr::Value(
+				QString::fromUtf8("Всегда открывать медиа по размеру экрана"),
+				u"Always open media fit to window"_q),
 			MakuGram::Settings::instance().alwaysZoomMediaToScreen(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setAlwaysZoomMediaToScreen(checked);
 			},
-			tr::lng_settings_makugram_always_zoom_about());
+			Tr::Value(
+				QString::fromUtf8("Автоматически растягивать изображения и медиафайлы до границ окна по соотношению сторон при открытии (аналогично нажатию на колёсико мыши)."),
+				u"Automatically fit images and media to window borders on open (like clicking mouse wheel)."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Регулировка громкости колесиком мыши")),
+			Tr::Value(
+				QString::fromUtf8("Регулировка громкости колесиком мыши"),
+				u"Mouse wheel volume control"_q),
 			MakuGram::Settings::instance().videoVolumeWheel(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setVideoVolumeWheel(checked);
 			},
-			rpl::single(QString::fromUtf8("При просмотре видео в полноэкранном режиме колесико мыши регулирует громкость звука вместо переключения на следующее или предыдущее медиа.")));
+			Tr::Value(
+				QString::fromUtf8("При просмотре видео в полноэкранном режиме колесико мыши регулирует громкость звука вместо переключения на следующее или предыдущее медиа."),
+				u"When viewing video in fullscreen, mouse wheel adjusts volume instead of switching to next/previous media."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Отправлять медиа в высоком качестве")),
+			Tr::Value(
+				QString::fromUtf8("Отправлять медиа в высоком качестве"),
+				u"Send media in high quality"_q),
 			MakuGram::Settings::instance().sendMediaHighQuality(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setSendMediaHighQuality(checked);
 			},
-			rpl::single(QString::fromUtf8("Автоматически включает отправку фото и медиа в максимальном HD-качестве (до 2560px) по умолчанию без необходимости каждый раз переключать режим.")));
+			Tr::Value(
+				QString::fromUtf8("Автоматически включает отправку фото и медиа в максимальном HD-качестве (до 2560px) по умолчанию без необходимости каждый раз переключать режим."),
+				u"Automatically enables sending photos in max HD quality (up to 2560px) by default without switching every time."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Показывать разрешение")),
+			Tr::Value(
+				QString::fromUtf8("Показывать разрешение"),
+				u"Show media resolution"_q),
 			MakuGram::Settings::instance().showMediaResolution(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setShowMediaResolution(checked);
 			},
-			rpl::single(QString::fromUtf8("Отображает разрешение изображения или видео в полноэкранном режиме просмотра медиа.")));
+			Tr::Value(
+				QString::fromUtf8("Отображает разрешение изображения или видео в полноэкранном режиме просмотра медиа."),
+				u"Displays image or video resolution in fullscreen media viewer."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Добавить выделение медиа в полноэкранном режиме")),
+			Tr::Value(
+				QString::fromUtf8("Добавить выделение медиа в полноэкранном режиме"),
+				u"Enable media selection in fullscreen"_q),
 			MakuGram::Settings::instance().fullscreenMediaSelection(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setFullscreenMediaSelection(checked);
 			},
-			rpl::single(QString::fromUtf8("Позволяет выделять и пересылать медиа при полноэкранном просмотре, сохраняя выделение при возврате в чат.")));
+			Tr::Value(
+				QString::fromUtf8("Позволяет выделять и пересылать медиа при полноэкранном просмотре, сохраняя выделение при возврате в чат."),
+				u"Allows selecting and forwarding media in fullscreen, preserving selection when returning to chat."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Расширить окно отправки медиа")),
+			Tr::Value(
+				QString::fromUtf8("Расширить окно отправки медиа"),
+				u"Expand media send dialog"_q),
 			MakuGram::Settings::instance().expandMediaSendDialog(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setExpandMediaSendDialog(checked);
 			},
-			rpl::single(QString::fromUtf8("Увеличивает ширину окна предпросмотра при отправке фото и видео, а также расширяет поле ввода подписи по высоте для комфортного написания длинного текста.")));
+			Tr::Value(
+				QString::fromUtf8("Увеличивает ширину окна предпросмотра при отправке фото и видео, а также расширяет поле ввода подписи по высоте для комфортного написания длинного текста."),
+				u"Increases preview dialog width when sending media and expands caption input height for writing long text."_q));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -519,25 +636,35 @@ void ShowAppearanceBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
 		box->setMaxHeight(kBoxMaxHeight);
-		box->setTitle(QString::fromUtf8("Внешний вид"));
+		box->setTitle(Tr::Value(
+			QString::fromUtf8("Внешний вид"),
+			u"Appearance"_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Компактный список чатов")),
+			Tr::Value(
+				QString::fromUtf8("Компактный список чатов"),
+				u"Compact chat list"_q),
 			MakuGram::Settings::instance().compactChatList(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setCompactChatList(checked);
 			},
-			rpl::single(QString::fromUtf8("Скрывает строку предпросмотра последнего сообщения и уменьшает высоту строк чатов, умещая в два раза больше диалогов на экране.")));
+			Tr::Value(
+				QString::fromUtf8("Скрывает строку предпросмотра последнего сообщения и уменьшает высоту строк чатов, умещая в два раза больше диалогов на экране."),
+				u"Hides last message preview line and reduces chat row height, fitting twice as many chats on screen."_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Отключить анимацию реакций и конфетти")),
+			Tr::Value(
+				QString::fromUtf8("Отключить анимацию реакций и конфетти"),
+				u"Disable reaction animations and confetti"_q),
 			MakuGram::Settings::instance().disableReactionAnimations(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setDisableReactionAnimations(checked);
 			},
-			rpl::single(QString::fromUtf8("Отключает летающие большие эмодзи, эффекты и конфетти при установке реакций для максимальной плавности.")));
+			Tr::Value(
+				QString::fromUtf8("Отключает летающие большие эмодзи, эффекты и конфетти при установке реакций для максимальной плавности."),
+				u"Disables floating emoji effects and confetti when reacting for maximum smoothness."_q));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -549,16 +676,22 @@ void ShowStreamerModeBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
 		box->setMaxHeight(kBoxMaxHeight);
-		box->setTitle(rpl::single(QString::fromUtf8("Режим стримера")));
+		box->setTitle(Tr::Value(
+			QString::fromUtf8("Режим стримера"),
+			u"Streamer Mode"_q));
 
 		AddCheckboxRow(
 			box,
-			rpl::single(QString::fromUtf8("Включить режим стримера")),
+			Tr::Value(
+				QString::fromUtf8("Включить режим стримера"),
+				u"Enable Streamer Mode"_q),
 			MakuGram::Settings::instance().streamerMode(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setStreamerMode(checked);
 			},
-			rpl::single(QString::fromUtf8("Скрывает номера телефонов, расчетную дату регистрации и числовой ID профилей, а также размывает все аватарки пользователей и каналов во всем приложении для защиты личных данных при записи видео, демонстрации экрана или стриминге.")));
+			Tr::Value(
+				QString::fromUtf8("Скрывает номера телефонов, расчетную дату регистрации и числовой ID профилей, а также размывает все аватарки пользователей и каналов во всем приложении для защиты личных данных при записи видео, демонстрации экрана или стриминге."),
+				u"Hides phone numbers, estimated registration date, and profile IDs, and blurs all user and channel avatars across the app to protect personal data during streaming or screen recording."_q));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();
@@ -570,12 +703,16 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(kBoxContentWidth);
 		box->setMaxHeight(kBoxMaxHeight);
-		box->setTitle(QString::fromUtf8("О клиенте MakuGram"));
+		box->setTitle(Tr::Value(
+			QString::fromUtf8("О клиенте MakuGram"),
+			u"About MakuGram"_q));
 
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
-				tr::lng_settings_makugram_about(),
+				Tr::Value(
+					QString::fromUtf8("MakuGram - форк Telegram с расширенными возможностями модерации, приватности и удобства."),
+					u"MakuGram is a Telegram fork with advanced moderation, privacy, and convenience features."_q),
 				st::boxLabel),
 			st::boxRowPadding);
 
@@ -584,7 +721,9 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
-				QString::fromUtf8("Версия: %1\nАвтор - Марк Аддерли").arg(MakuGram::kVersion),
+				Tr::Value(
+					QString::fromUtf8("Версия: %1\nАвтор - Марк Аддерли").arg(MakuGram::kVersion),
+					QString::fromUtf8("Version: %1\nAuthor - Mark Adderly").arg(MakuGram::kVersion)),
 				st::boxLabel),
 			st::boxRowPadding);
 
@@ -597,7 +736,9 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 		const auto checkUpdateBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
 				box,
-				rpl::single(QString::fromUtf8("Проверить обновления")),
+				Tr::Value(
+					QString::fromUtf8("Проверить обновления"),
+					u"Check for updates"_q),
 				st::defaultBoxButton),
 			style::margins(
 				st::boxRowPadding.left(),
@@ -613,7 +754,9 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 		const auto ghBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
 				box,
-				rpl::single(QString::fromUtf8("GitHub репозиторий проекта")),
+				Tr::Value(
+					QString::fromUtf8("GitHub репозиторий проекта"),
+					u"Project GitHub Repository"_q),
 				st::defaultBoxButton),
 			style::margins(
 				st::boxRowPadding.left(),
@@ -629,7 +772,9 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 		const auto tgBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
 				box,
-				rpl::single(QString::fromUtf8("Telegram канал автора")),
+				Tr::Value(
+					QString::fromUtf8("Telegram канал автора"),
+					u"Author's Telegram Channel"_q),
 				TelegramButtonStyle()),
 			style::margins(
 				st::boxRowPadding.left(),
@@ -649,7 +794,9 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 		const auto ytBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
 				box,
-				rpl::single(QString::fromUtf8("YouTube канал автора")),
+				Tr::Value(
+					QString::fromUtf8("YouTube канал автора"),
+					u"Author's YouTube Channel"_q),
 				YouTubeButtonStyle()),
 			style::margins(
 				st::boxRowPadding.left(),
@@ -665,7 +812,9 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 		const auto boostyBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
 				box,
-				rpl::single(QString::fromUtf8("Поддержать разработку")),
+				Tr::Value(
+					QString::fromUtf8("Поддержать разработку"),
+					u"Support Development"_q),
 				BoostyButtonStyle()),
 			style::margins(
 				st::boxRowPadding.left(),
@@ -696,73 +845,77 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		MakuGram::CheckForUpdates(controller, /*silent=*/true);
 	}
 
-	builder.addSubsectionTitle(rpl::single(QString::fromUtf8("Категории настроек")));
+	builder.addSubsectionTitle(Tr::Value(
+		QString::fromUtf8("Категории настроек"),
+		u"Setting Categories"_q));
 
 	builder.addButton({
-		.title = rpl::single(QString::fromUtf8("Сообщения")),
+		.title = Tr::Value(QString::fromUtf8("Сообщения"), u"Messages"_q),
 		.icon = { &st::menuIconChats },
 		.onClick = [=] { ShowMessagesBox(controller); },
-		.keywords = { u"currency"_q, u"валюта"_q, u"конвертер"_q, u"time"_q, u"seconds"_q, u"unread"_q, u"spam"_q, u"words"_q, u"время"_q, u"секунды"_q, u"непрочитанные"_q, u"спам"_q, u"слова"_q, u"сообщения"_q },
+		.keywords = { u"currency"_q, u"messages"_q, u"unread"_q, u"spam"_q, u"time"_q, u"seconds"_q, u"валюта"_q, u"сообщения"_q, u"спам"_q, u"время"_q, u"секунды"_q },
 	});
 
 	builder.addButton({
-		.title = rpl::single(QString::fromUtf8("Приватность и безопасность")),
+		.title = Tr::Value(QString::fromUtf8("Приватность и безопасность"), u"Privacy & Security"_q),
 		.icon = { &st::menuIconLock },
 		.onClick = [=] { ShowPrivacyBox(controller); },
 		.keywords = { u"privacy"_q, u"typing"_q, u"copy"_q, u"delete"_q, u"phone"_q, u"blocked"_q, u"приватность"_q, u"тайпинг"_q, u"копирование"_q, u"удаление"_q, u"телефон"_q, u"номер"_q, u"блок"_q },
 	});
 
 	builder.addButton({
-		.title = rpl::single(QString::fromUtf8("Модерация чатов")),
+		.title = Tr::Value(QString::fromUtf8("Модерация чатов"), u"Chat Moderation"_q),
 		.icon = { &st::menuIconAdmin },
 		.onClick = [=] { ShowModerationBox(controller); },
-		.keywords = { u"ban"_q, u"badge"_q, u"requests"_q, u"search"_q, u"бан"_q, u"новичок"_q, u"заявки"_q, u"модерация"_q, u"поиск"_q },
+		.keywords = { u"moderation"_q, u"ban"_q, u"badge"_q, u"requests"_q, u"search"_q, u"бан"_q, u"новичок"_q, u"заявки"_q, u"модерация"_q, u"поиск"_q },
 	});
 
 	builder.addButton({
-		.title = tr::lng_settings_makugram_section_profile(),
+		.title = Tr::Value(QString::fromUtf8("Профиль и информация"), u"Profile & Info"_q),
 		.icon = { &st::menuIconProfile },
 		.onClick = [=] { ShowProfileBox(controller); },
 		.keywords = { u"id"_q, u"profile"_q, u"registration"_q, u"stories"_q, u"профиль"_q, u"возраст"_q, u"регистрация"_q, u"сторис"_q, u"истории"_q },
 	});
 
 	builder.addButton({
-		.title = rpl::single(QString::fromUtf8("Внешний вид")),
+		.title = Tr::Value(QString::fromUtf8("Внешний вид"), u"Appearance"_q),
 		.icon = { &st::menuIconChangeColors },
 		.onClick = [=] { ShowAppearanceBox(controller); },
 		.keywords = { u"appearance"_q, u"compact"_q, u"reactions"_q, u"вид"_q, u"компактный"_q, u"реакции"_q },
 	});
 
 	builder.addButton({
-		.title = tr::lng_settings_makugram_section_media(),
+		.title = Tr::Value(QString::fromUtf8("Медиа"), u"Media"_q),
 		.icon = { &st::menuIconPhoto },
 		.onClick = [=] { ShowMediaBox(controller); },
-		.keywords = { u"media"_q, u"zoom"_q, u"медиа"_q, u"масштаб"_q, u"экран"_q },
+		.keywords = { u"media"_q, u"zoom"_q, u"volume"_q, u"медиа"_q, u"масштаб"_q, u"экран"_q },
 	});
 
 	builder.addButton({
-		.title = rpl::single(QString::fromUtf8("Настройки прокси")),
+		.title = Tr::Value(QString::fromUtf8("Настройки прокси"), u"Proxy Settings"_q),
 		.icon = { &st::menuIconNetwork },
 		.onClick = [=] { ProxiesBoxController::Show(controller); },
 		.keywords = { u"proxy"_q, u"прокси"_q, u"vpn"_q, u"впн"_q, u"network"_q, u"сеть"_q },
 	});
 
 	builder.addButton({
-		.title = rpl::single(QString::fromUtf8("Режим стримера")),
+		.title = Tr::Value(QString::fromUtf8("Режим стримера"), u"Streamer Mode"_q),
 		.icon = { &st::menuIconPermissions },
 		.onClick = [=] { ShowStreamerModeBox(controller); },
 		.keywords = { u"stream"_q, u"streamer"_q, u"blur"_q, u"стрим"_q, u"стример"_q, u"блюр"_q, u"аватарки"_q, u"приватность"_q },
 	});
 
 	builder.addButton({
-		.title = rpl::single(QString::fromUtf8("О клиенте")),
+		.title = Tr::Value(QString::fromUtf8("О клиенте"), u"About MakuGram"_q),
 		.icon = { &st::menuIconInfo },
 		.onClick = [=] { ShowAboutBox(controller); },
-		.keywords = { u"about"_q, u"makugram"_q, u"версия"_q, u"информация"_q },
+		.keywords = { u"about"_q, u"makugram"_q, u"version"_q, u"версия"_q, u"информация"_q },
 	});
 
 	builder.addDivider();
-	builder.addDividerText(rpl::single(QString::fromUtf8("Нажмите на категорию для настройки параметров MakuGram.")));
+	builder.addDividerText(Tr::Value(
+		QString::fromUtf8("Нажмите на категорию для настройки параметров MakuGram."),
+		u"Click a category to configure MakuGram settings."_q));
 }
 
 const auto kMeta = BuildHelper({
@@ -782,7 +935,7 @@ MakuGramSection::MakuGramSection(
 }
 
 rpl::producer<QString> MakuGramSection::title() {
-	return tr::lng_settings_makugram();
+	return Tr::Value(QString::fromUtf8("Функции MakuGram"), u"MakuGram Features"_q);
 }
 
 void MakuGramSection::setupContent() {

@@ -3,6 +3,7 @@ This file is part of MakuGram,
 a custom Telegram Desktop client fork.
 */
 #include "makugram/makugram_details.h"
+#include "makugram/makugram_lang.h"
 
 #include "data/data_peer.h"
 #include "data/data_user.h"
@@ -22,19 +23,23 @@ QString EstimatedRegistrationDate(uint64 userId) {
 	if (userId == 0) {
 		return QString();
 	}
-	if (userId < 50'000'000ULL) return QString::fromUtf8("2013-2014 г.");
-	if (userId < 150'000'000ULL) return QString::fromUtf8("~2015 г.");
-	if (userId < 300'000'000ULL) return QString::fromUtf8("~2016 г.");
-	if (userId < 500'000'000ULL) return QString::fromUtf8("~2017 г.");
-	if (userId < 800'000'000ULL) return QString::fromUtf8("~2018 г.");
-	if (userId < 1'100'000'000ULL) return QString::fromUtf8("~2019 г.");
-	if (userId < 1'500'000'000ULL) return QString::fromUtf8("~2020 г.");
-	if (userId < 2'000'000'000ULL) return QString::fromUtf8("~2021 г.");
-	if (userId < 2'400'000'000ULL) return QString::fromUtf8("~2022 г.");
-	if (userId < 2'800'000'000ULL) return QString::fromUtf8("~2023 г.");
-	if (userId < 3'300'000'000ULL) return QString::fromUtf8("~2024 г.");
-	if (userId < 3'800'000'000ULL) return QString::fromUtf8("~2025 г.");
-	return QString::fromUtf8("~2026 г. (Свежий аккаунт)");
+	const auto ru = Tr::IsRussian();
+	const auto y = ru ? QString::fromUtf8(" г.") : QString();
+	if (userId < 50'000'000ULL) return "2013-2014" + y;
+	if (userId < 150'000'000ULL) return "~2015" + y;
+	if (userId < 300'000'000ULL) return "~2016" + y;
+	if (userId < 500'000'000ULL) return "~2017" + y;
+	if (userId < 800'000'000ULL) return "~2018" + y;
+	if (userId < 1'100'000'000ULL) return "~2019" + y;
+	if (userId < 1'500'000'000ULL) return "~2020" + y;
+	if (userId < 2'000'000'000ULL) return "~2021" + y;
+	if (userId < 2'400'000'000ULL) return "~2022" + y;
+	if (userId < 2'800'000'000ULL) return "~2023" + y;
+	if (userId < 3'300'000'000ULL) return "~2024" + y;
+	if (userId < 3'800'000'000ULL) return "~2025" + y;
+	return ru
+		? QString::fromUtf8("~2026 г. (Свежий аккаунт)")
+		: QString::fromUtf8("~2026 (New account)");
 }
 
 void RecordChatJoinDate(uint64 peerId, uint64 userId, TimeId date) {

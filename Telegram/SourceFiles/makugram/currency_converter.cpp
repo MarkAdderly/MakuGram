@@ -3,6 +3,7 @@ This file is part of MakuGram,
 a custom Telegram Desktop client fork.
 */
 #include "makugram/currency_converter.h"
+#include "makugram/makugram_lang.h"
 
 #include "makugram/makugram_settings.h"
 #include "core/click_handler_types.h"
@@ -299,7 +300,7 @@ void CurrencyClickHandler::onClick(ClickContext context) const {
 		+ _text + u" ("_q + _currency + u")"_q;
 	const auto copyOriginal = [val = _text, show = controller->uiShow()] {
 		TextUtilities::SetClipboardText(TextForMimeData::Simple(val));
-		show->showToast(QString::fromUtf8("Скопировано: ") + val);
+		show->showToast(Tr::Get(u"Скопировано: "_q, u"Copied: "_q) + val);
 	};
 	menu->addAction(title, copyOriginal, &st::menuIconCopy);
 
@@ -320,7 +321,7 @@ void CurrencyClickHandler::onClick(ClickContext context) const {
 			const auto formatted = CurrencyRatesManager::instance().formatConverted(conv, target);
 			const auto copyThis = [val = formatted, show = controller->uiShow()] {
 				TextUtilities::SetClipboardText(TextForMimeData::Simple(val));
-				show->showToast(QString::fromUtf8("Скопировано: ") + val);
+				show->showToast(Tr::Get(u"Скопировано: "_q, u"Copied: "_q) + val);
 			};
 			menu->addAction(formatted, copyThis, &st::menuIconCopy);
 		}
@@ -329,7 +330,7 @@ void CurrencyClickHandler::onClick(ClickContext context) const {
 	menu->addSeparator();
 
 	menu->addAction(
-		QString::fromUtf8("+ Настроить валюты..."),
+		Tr::Get(u"+ Настроить валюты..."_q, u"+ Configure currencies..."_q),
 		[controller] { ShowCurrencyTargetsBox(controller); },
 		&st::menuIconSettings);
 
@@ -635,12 +636,12 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 		box->setWidth(540);
 		box->setMaxHeight(690);
-		box->setTitle(rpl::single(QString::fromUtf8("Выбор валют для конвертации")));
+		box->setTitle(Tr::Value(u"Выбор валют для конвертации"_q, u"Select currencies for conversion"_q));
 
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
-				rpl::single(QString::fromUtf8("Отметьте валюты, в которые переводить найденные в чате суммы:")),
+				Tr::Value(u"Отметьте валюты, в которые переводить найденные в чате суммы:"_q, u"Select currencies to convert amounts found in chat into:"_q),
 				st::boxDividerLabel),
 			style::margins(
 				st::boxRowPadding.left(),
@@ -653,16 +654,16 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 			QString name;
 		};
 		const auto options = std::vector<CurrencyOption>{
-			{ u"USD"_q, QString::fromUtf8("🇺🇸 Доллары (USD)") },
-			{ u"RUB"_q, QString::fromUtf8("🇷🇺 Рубли (RUB)") },
-			{ u"UAH"_q, QString::fromUtf8("🇺🇦 Гривны (UAH)") },
-			{ u"EUR"_q, QString::fromUtf8("🇪🇺 Евро (EUR)") },
-			{ u"KZT"_q, QString::fromUtf8("🇰🇿 Казахские тенге (KZT)") },
-			{ u"BYN"_q, QString::fromUtf8("🇧🇾 Белорусские рубли (BYN)") },
-			{ u"TRY"_q, QString::fromUtf8("🇹🇷 Турецкие лиры (TRY)") },
-			{ u"CNY"_q, QString::fromUtf8("🇨🇳 Китайские юани (CNY)") },
-			{ u"JPY"_q, QString::fromUtf8("🇯🇵 Японские йены (JPY)") },
-			{ u"IDR"_q, QString::fromUtf8("🇮🇩 Индонезийские рупии (IDR)") },
+			{ u"USD"_q, Tr::Get(u"🇺🇸 Доллары (USD)"_q, u"🇺🇸 US Dollars (USD)"_q) },
+			{ u"RUB"_q, Tr::Get(u"🇷🇺 Рубли (RUB)"_q, u"🇷🇺 Russian Rubles (RUB)"_q) },
+			{ u"UAH"_q, Tr::Get(u"🇺🇦 Гривны (UAH)"_q, u"🇺🇦 Ukrainian Hryvnias (UAH)"_q) },
+			{ u"EUR"_q, Tr::Get(u"🇪🇺 Евро (EUR)"_q, u"🇪🇺 Euros (EUR)"_q) },
+			{ u"KZT"_q, Tr::Get(u"🇰🇿 Казахские тенге (KZT)"_q, u"🇰🇿 Kazakhstani Tenge (KZT)"_q) },
+			{ u"BYN"_q, Tr::Get(u"🇧🇾 Белорусские рубли (BYN)"_q, u"🇧🇾 Belarusian Rubles (BYN)"_q) },
+			{ u"TRY"_q, Tr::Get(u"🇹🇷 Турецкие лиры (TRY)"_q, u"🇹🇷 Turkish Liras (TRY)"_q) },
+			{ u"CNY"_q, Tr::Get(u"🇨🇳 Китайские юани (CNY)"_q, u"🇨🇳 Chinese Yuan (CNY)"_q) },
+			{ u"JPY"_q, Tr::Get(u"🇯🇵 Японские йены (JPY)"_q, u"🇯🇵 Japanese Yen (JPY)"_q) },
+			{ u"IDR"_q, Tr::Get(u"🇮🇩 Индонезийские рупии (IDR)"_q, u"🇮🇩 Indonesian Rupiahs (IDR)"_q) },
 		};
 
 		const auto currentTargets = Settings::instance().currencyConverterTargets()
@@ -699,7 +700,7 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
-				rpl::single(QString::fromUtf8("Другие валюты (через запятую, например: GBP, PLN, THB, AED):")),
+				Tr::Value(u"Другие валюты (через запятую, например: GBP, PLN, THB, AED):"_q, u"Other currencies (comma-separated, e.g.: GBP, PLN, THB, AED):"_q),
 				st::boxDividerLabel),
 			style::margins(
 				st::boxRowPadding.left(),
@@ -711,7 +712,7 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 			object_ptr<Ui::InputField>(
 				box,
 				st::defaultInputField,
-				rpl::single(QString::fromUtf8("Коды валют")),
+				Tr::Value(u"Коды валют"_q, u"Currency codes"_q),
 				extraList.join(u", "_q)),
 			style::margins(
 				st::boxRowPadding.left(),
@@ -738,7 +739,7 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 			}
 			Settings::instance().setCurrencyConverterTargets(selected.join(','));
 			box->closeBox();
-			controller->showToast(QString::fromUtf8("Настройки валют сохранены"));
+			controller->showToast(Tr::Get(u"Настройки валют сохранены"_q, u"Currency settings saved"_q));
 		});
 
 		box->addButton(tr::lng_cancel(), [=] {
