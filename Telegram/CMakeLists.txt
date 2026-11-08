@@ -1987,6 +1987,8 @@ PRIVATE
     makugram/makugram_settings.h
     makugram/currency_converter.cpp
     makugram/currency_converter.h
+    makugram/makugram_updater.cpp
+    makugram/makugram_updater.h
     makugram/settings_makugram.cpp
     makugram/settings_makugram.h
     settings/sections/settings_main.cpp

@@ -4,6 +4,7 @@ a custom Telegram Desktop client fork.
 */
 #include "makugram/settings_makugram.h"
 #include "makugram/currency_converter.h"
+#include "makugram/makugram_updater.h"
 #include "boxes/connection_box.h"
 
 #include "makugram/makugram_settings.h"
@@ -583,7 +584,7 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 		box->addRow(
 			object_ptr<Ui::FlatLabel>(
 				box,
-				QString::fromUtf8("Автор - Марк Аддерли"),
+				QString::fromUtf8("Версия: %1\nАвтор - Марк Аддерли").arg(MakuGram::kVersion),
 				st::boxLabel),
 			st::boxRowPadding);
 
@@ -592,6 +593,38 @@ void ShowAboutBox(not_null<Window::SessionController*> controller) {
 		const auto buttonWidth = kBoxContentWidth
 			- st::boxRowPadding.left()
 			- st::boxRowPadding.right();
+
+		const auto checkUpdateBtn = box->addRow(
+			object_ptr<Ui::RoundButton>(
+				box,
+				rpl::single(QString::fromUtf8("Проверить обновления")),
+				st::defaultBoxButton),
+			style::margins(
+				st::boxRowPadding.left(),
+				4,
+				st::boxRowPadding.right(),
+				4));
+		checkUpdateBtn->setFullWidth(buttonWidth);
+		checkUpdateBtn->setFullRadius(true);
+		checkUpdateBtn->setClickedCallback([=] {
+			MakuGram::CheckForUpdates(controller, /*silent=*/false);
+		});
+
+		const auto ghBtn = box->addRow(
+			object_ptr<Ui::RoundButton>(
+				box,
+				rpl::single(QString::fromUtf8("GitHub репозиторий проекта")),
+				st::defaultBoxButton),
+			style::margins(
+				st::boxRowPadding.left(),
+				4,
+				st::boxRowPadding.right(),
+				4));
+		ghBtn->setFullWidth(buttonWidth);
+		ghBtn->setFullRadius(true);
+		ghBtn->setClickedCallback([=] {
+			UrlClickHandler::Open(u"https://github.com/MarkAdderly/MakuGram"_q);
+		});
 
 		const auto tgBtn = box->addRow(
 			object_ptr<Ui::RoundButton>(
@@ -655,6 +688,12 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 	const auto controller = builder.controller();
 	if (!controller) {
 		return;
+	}
+
+	static bool updateChecked = false;
+	if (!updateChecked) {
+		updateChecked = true;
+		MakuGram::CheckForUpdates(controller, /*silent=*/true);
 	}
 
 	builder.addSubsectionTitle(rpl::single(QString::fromUtf8("Категории настроек")));
