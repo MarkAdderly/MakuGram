@@ -647,9 +647,9 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 				st::boxDividerLabel),
 			style::margins(
 				st::boxRowPadding.left(),
-				9,
+				5,
 				st::boxRowPadding.right(),
-				st::boxMediumSkip));
+				5));
 
 		struct CurrencyOption {
 			QString code;
@@ -687,9 +687,9 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 					st::defaultBoxCheckbox),
 				style::margins(
 					st::boxRowPadding.left(),
-					3,
+					2,
 					st::boxRowPadding.right(),
-					3));
+					2));
 			cb->setCursor(style::cur_pointer);
 			checkBoxes.push_back({ opt.code, cb });
 		}
@@ -706,9 +706,9 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 				st::boxDividerLabel),
 			style::margins(
 				st::boxRowPadding.left(),
-				st::boxMediumSkip,
+				6,
 				st::boxRowPadding.right(),
-				4));
+				2));
 
 		const auto extraField = box->addRow(
 			object_ptr<Ui::InputField>(
@@ -720,9 +720,7 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 				st::boxRowPadding.left(),
 				0,
 				st::boxRowPadding.right(),
-				st::boxMediumSkip));
-
-		box->addSkip(30);
+				6));
 
 		box->addButton(tr::lng_settings_save(), [=] {
 			QStringList selected;
