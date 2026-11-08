@@ -193,6 +193,9 @@ double ParseAmount(QString numStr, const QString &multStr) {
 }
 
 QString FormatNumber(double amount) {
+	if (!std::isfinite(amount) || amount <= 0.0) {
+		return u"0"_q;
+	}
 	if (amount >= 1'000'000'000.0) {
 		return QString::number(amount / 1'000'000'000.0, 'f', 2) + u"B"_q;
 	} else if (amount >= 10'000'000.0) {
@@ -351,6 +354,7 @@ CurrencyRatesManager::CurrencyRatesManager() {
 }
 
 void CurrencyRatesManager::initFallbacks() {
+	const auto lock = std::lock_guard(_mutex);
 	_ratesFromUSD[u"USD"_q] = 1.0;
 	_ratesFromUSD[u"USDT"_q] = 1.0;
 	_ratesFromUSD[u"EUR"_q] = 0.92;
@@ -371,6 +375,7 @@ void CurrencyRatesManager::initFallbacks() {
 }
 
 void CurrencyRatesManager::loadCachedRates() {
+	const auto lock = std::lock_guard(_mutex);
 	QSettings s("MakuGram", "MakuGram");
 	_lastUpdateTime = s.value("currencyRatesLastUpdate", 0).toLongLong();
 	const auto cached = s.value("currencyRatesCache", QString()).toString();
@@ -390,6 +395,7 @@ void CurrencyRatesManager::loadCachedRates() {
 }
 
 void CurrencyRatesManager::saveCachedRates() {
+	const auto lock = std::lock_guard(_mutex);
 	QSettings s("MakuGram", "MakuGram");
 	s.setValue("currencyRatesLastUpdate", _lastUpdateTime);
 	QStringList pairs;
@@ -424,6 +430,7 @@ void CurrencyRatesManager::parseRatesJson(const QByteArray &json) {
 	QJsonParseError err;
 	const auto doc = QJsonDocument::fromJson(json, &err);
 	if (err.error == QJsonParseError::NoError && doc.isObject()) {
+		const auto lock = std::lock_guard(_mutex);
 		const auto obj = doc.object();
 		const auto ratesObj = obj.value(u"rates"_q).toObject();
 		for (auto it = ratesObj.begin(); it != ratesObj.end(); ++it) {
@@ -443,7 +450,7 @@ double CurrencyRatesManager::convert(
 		double amount,
 		const QString &from,
 		const QString &to) const {
-	if (amount <= 0.0) {
+	if (!std::isfinite(amount) || amount <= 0.0) {
 		return 0.0;
 	}
 	const auto fromCode = from.toUpper();
@@ -451,6 +458,7 @@ double CurrencyRatesManager::convert(
 	if (fromCode == toCode) {
 		return amount;
 	}
+	const auto lock = std::lock_guard(_mutex);
 	const auto fromIt = _ratesFromUSD.find(fromCode);
 	const auto toIt = _ratesFromUSD.find(toCode);
 	if (fromIt == _ratesFromUSD.end() || toIt == _ratesFromUSD.end()) {
@@ -461,7 +469,8 @@ double CurrencyRatesManager::convert(
 	if (fromRate <= 0.0 || toRate <= 0.0) {
 		return 0.0;
 	}
-	return (amount / fromRate) * toRate;
+	const auto res = (amount / fromRate) * toRate;
+	return std::isfinite(res) ? res : 0.0;
 }
 
 QString CurrencyRatesManager::formatConverted(
@@ -582,32 +591,19 @@ TextWithEntities AddCurrencyLinks(TextWithEntities text) {
 
 	auto &entities = text.entities;
 	for (const auto &c : nonOverlapping) {
-		auto it = ranges::lower_bound(
-			entities,
-			c.from,
-			std::less<>(),
-			&EntityInText::offset);
-
-		const auto allowsCurrencyLink = [](const EntityInText &entity) {
-			return (entity.type() == EntityType::Spoiler)
-				|| (entity.type() == EntityType::Blockquote);
-		};
-		while (it != entities.end()
-			&& it->offset() < c.till
-			&& allowsCurrencyLink(*it)) {
-			++it;
+		bool overlaps = false;
+		for (const auto &existing : entities) {
+			const auto existingEnd = existing.offset() + existing.length();
+			if (existing.offset() < c.till && existingEnd > c.from) {
+				if ((existing.type() == EntityType::Spoiler || existing.type() == EntityType::Blockquote)
+					&& existing.offset() <= c.from && existingEnd >= c.till) {
+					continue;
+				}
+				overlaps = true;
+				break;
+			}
 		}
-		if (it != entities.end() && it->offset() < c.till) {
-			continue;
-		}
-
-		const auto intersects = [&](const EntityInText &entity) {
-			return (entity.offset() + entity.length() > c.from)
-				&& !allowsCurrencyLink(entity);
-		};
-		auto r_it = std::make_reverse_iterator(it);
-		const auto r_end = std::make_reverse_iterator(entities.begin());
-		if (std::find_if(r_it, r_end, intersects) != r_end) {
+		if (overlaps) {
 			continue;
 		}
 
@@ -616,14 +612,15 @@ TextWithEntities AddCurrencyLinks(TextWithEntities text) {
 			+ u":"_q
 			+ c.currency;
 
-		entities.insert(
-			it,
+		entities.push_back(
 			EntityInText(
 				EntityType::CustomUrl,
 				c.from,
 				c.till - c.from,
 				url));
 	}
+
+	ranges::sort(entities, std::less<>(), &EntityInText::offset);
 
 	return text;
 }

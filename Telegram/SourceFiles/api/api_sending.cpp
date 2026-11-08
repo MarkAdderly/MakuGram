@@ -1405,13 +1405,15 @@ void SendCopiedMessages(
 			}
 		};
 
-		const auto finish = [ctx, doSend] {
-			if (ctx->finished) {
+		const auto finish = [weak = std::weak_ptr(ctx), doSend] {
+			const auto strong = weak.lock();
+			if (!strong || strong->finished) {
 				return;
 			}
-			ctx->finished = true;
-			ctx->timer.cancel();
-			ctx->lifetime.destroy();
+			strong->finished = true;
+			strong->timer.cancel();
+			strong->timer.setCallback(nullptr);
+			strong->lifetime.destroy();
 			doSend();
 		};
 

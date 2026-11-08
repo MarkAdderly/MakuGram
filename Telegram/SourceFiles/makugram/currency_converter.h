@@ -14,6 +14,7 @@ a custom Telegram Desktop client fork.
 #include <QtNetwork/QNetworkAccessManager>
 #include <memory>
 #include <unordered_map>
+#include <mutex>
 
 namespace Window {
 class SessionController;
@@ -57,6 +58,7 @@ private:
 	void saveCachedRates();
 	void parseRatesJson(const QByteArray &json);
 
+	mutable std::mutex _mutex;
 	std::unique_ptr<QNetworkAccessManager> _network;
 	std::unordered_map<QString, double> _ratesFromUSD;
 	qint64 _lastUpdateTime = 0;

@@ -150,7 +150,7 @@ Settings::Settings() {
 	_sendMediaHighQuality = s.value("sendMediaHighQuality", false).toBool();
 	_streamerMode = s.value("streamerMode", false).toBool();
 	_currencyConverter = s.value("currencyConverter", false).toBool();
-	_currencyConverterTargets = s.value("currencyConverterTargets", QString("USD,EUR,RUB,IDR")).toString();
+	_currencyConverterTargets = s.value("currencyConverterTargets", QString("USD,RUB,UAH,EUR,KZT,BYN,TRY,CNY,JPY,IDR")).toString();
 
 	parseSpamKeywords();
 }
@@ -724,7 +724,7 @@ rpl::producer<QString> Settings::currencyConverterTargetsChanges() const {
 }
 
 void BlurImageStrong(QImage &image) {
-	if (image.isNull()) {
+	if (image.isNull() || image.width() <= 0 || image.height() <= 0) {
 		return;
 	}
 	const auto origSize = image.size();

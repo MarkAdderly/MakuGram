@@ -5523,10 +5523,16 @@ void InnerWidget::refreshUnreadOnly() {
 			const auto history = entry->asHistory();
 			const auto isUnread = badges.unread || badges.mention || (history && history->fakeUnreadWhileOpened());
 			if (isUnread) {
-				_filterResults.emplace_back(row.get());
-				_filterResults.back().top = top;
-				_filterResults.back().row->recountHeight(_narrowRatio, _filterId);
-				top += row->height();
+				const auto exists = std::any_of(
+					_filterResults.begin(),
+					_filterResults.end(),
+					[&](const auto &r) { return r.row == row.get(); });
+				if (!exists) {
+					_filterResults.emplace_back(row.get());
+					_filterResults.back().top = top;
+					_filterResults.back().row->recountHeight(_narrowRatio, _filterId);
+					top += row->height();
+				}
 			}
 		}
 	};

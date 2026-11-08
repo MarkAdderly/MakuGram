@@ -8,10 +8,12 @@ a custom Telegram Desktop client fork.
 #include "data/data_user.h"
 #include "base/unixtime.h"
 #include <map>
+#include <mutex>
 
 namespace MakuGram {
 namespace {
 
+std::mutex gJoinDatesMutex;
 std::map<std::pair<uint64, uint64>, TimeId> gJoinDates;
 
 } // namespace
@@ -37,6 +39,10 @@ QString EstimatedRegistrationDate(uint64 userId) {
 
 void RecordChatJoinDate(uint64 peerId, uint64 userId, TimeId date) {
 	if (peerId && userId && date > 0) {
+		const auto lock = std::lock_guard(gJoinDatesMutex);
+		if (gJoinDates.size() > 10000) {
+			gJoinDates.clear();
+		}
 		gJoinDates[{peerId, userId}] = date;
 	}
 }
@@ -48,12 +54,17 @@ bool IsNewbieInChat(const PeerData *peer, const UserData *user) {
 	const auto peerId = peer->id.value;
 	const auto userId = user->id.value;
 
-	const auto it = gJoinDates.find({peerId, userId});
+	const auto joinDate = [&]() -> TimeId {
+		const auto lock = std::lock_guard(gJoinDatesMutex);
+		const auto it = gJoinDates.find({peerId, userId});
+		return (it != gJoinDates.end()) ? it->second : TimeId(0);
+	}();
+
 	const auto now = base::unixtime::now();
 	constexpr auto kThreeMonths = 90 * 86400;
 
-	if (it != gJoinDates.end()) {
-		return (now - it->second) < kThreeMonths;
+	if (joinDate > 0) {
+		return (now - joinDate) < kThreeMonths;
 	}
 
 	const auto rawUserId = userId & 0xFFFFFFFFULL;
