@@ -149,6 +149,8 @@ Settings::Settings() {
 	_videoVolumeWheel = s.value("videoVolumeWheel", false).toBool();
 	_sendMediaHighQuality = s.value("sendMediaHighQuality", false).toBool();
 	_streamerMode = s.value("streamerMode", false).toBool();
+	_currencyConverter = s.value("currencyConverter", false).toBool();
+	_currencyConverterTargets = s.value("currencyConverterTargets", QString("USD,EUR,RUB,IDR")).toString();
 
 	parseSpamKeywords();
 }
@@ -685,6 +687,40 @@ rpl::producer<bool> Settings::streamerModeChanges() const {
 
 rpl::producer<bool> Settings::streamerModeValue() const {
 	return rpl::single(_streamerMode) | rpl::then(_streamerModeChanges.events());
+}
+
+bool Settings::currencyConverter() const {
+	return _currencyConverter;
+}
+
+void Settings::setCurrencyConverter(bool enabled) {
+	if (_currencyConverter != enabled) {
+		_currencyConverter = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("currencyConverter", enabled);
+		_currencyConverterChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::currencyConverterChanges() const {
+	return _currencyConverterChanges.events();
+}
+
+QString Settings::currencyConverterTargets() const {
+	return _currencyConverterTargets;
+}
+
+void Settings::setCurrencyConverterTargets(const QString &targets) {
+	if (_currencyConverterTargets != targets) {
+		_currencyConverterTargets = targets;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("currencyConverterTargets", targets);
+		_currencyConverterTargetsChanges.fire_copy(targets);
+	}
+}
+
+rpl::producer<QString> Settings::currencyConverterTargetsChanges() const {
+	return _currencyConverterTargetsChanges.events();
 }
 
 void BlurImageStrong(QImage &image) {

@@ -3,6 +3,7 @@ This file is part of MakuGram,
 a custom Telegram Desktop client fork.
 */
 #include "makugram/settings_makugram.h"
+#include "makugram/currency_converter.h"
 #include "boxes/connection_box.h"
 
 #include "makugram/makugram_settings.h"
@@ -289,6 +290,30 @@ void ShowMessagesBox(not_null<Window::SessionController*> controller) {
 				st::boxMediumSkip));
 		spamSetupBtn->setClickedCallback([=] {
 			ShowSpamFilterBox(controller);
+		});
+
+		AddCheckboxRow(
+			box,
+			rpl::single(QString::fromUtf8("Конвертер валют")),
+			MakuGram::Settings::instance().currencyConverter(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setCurrencyConverter(checked);
+			},
+			rpl::single(QString::fromUtf8("Автоматически подсвечивает суммы в сообщениях (например, «15 рублей», «10M IDR», «100$») и показывает их конвертацию при наведении или клике.")),
+			0);
+
+		const auto curSetupBtn = box->addRow(
+			object_ptr<Ui::RoundButton>(
+				box,
+				rpl::single(QString::fromUtf8("Выбрать целевые валюты...")),
+				st::defaultBoxButton),
+			style::margins(
+				st::boxRowPadding.left(),
+				9,
+				st::boxRowPadding.right(),
+				st::boxMediumSkip));
+		curSetupBtn->setClickedCallback([=] {
+			MakuGram::ShowCurrencyTargetsBox(controller);
 		});
 
 		box->addButton(tr::lng_close(), [=] {
@@ -638,7 +663,7 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.title = rpl::single(QString::fromUtf8("Сообщения")),
 		.icon = { &st::menuIconChats },
 		.onClick = [=] { ShowMessagesBox(controller); },
-		.keywords = { u"time"_q, u"seconds"_q, u"unread"_q, u"spam"_q, u"words"_q, u"время"_q, u"секунды"_q, u"непрочитанные"_q, u"спам"_q, u"слова"_q, u"сообщения"_q },
+		.keywords = { u"currency"_q, u"валюта"_q, u"конвертер"_q, u"time"_q, u"seconds"_q, u"unread"_q, u"spam"_q, u"words"_q, u"время"_q, u"секунды"_q, u"непрочитанные"_q, u"спам"_q, u"слова"_q, u"сообщения"_q },
 	});
 
 	builder.addButton({

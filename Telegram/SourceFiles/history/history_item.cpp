@@ -6,6 +6,8 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/history_item.h"
+#include "makugram/currency_converter.h"
+#include "makugram/makugram_settings.h"
 
 #include "api/api_premium.h"
 #include "api/api_sensitive_content.h"
@@ -5449,26 +5451,25 @@ bool HistoryItem::generateLocalEntitiesByReply() const {
 TextWithEntities HistoryItem::withLocalEntities(
 		const TextWithEntities &textWithEntities) const {
 	using namespace HistoryView;
+	auto result = textWithEntities;
 	if (!generateLocalEntitiesByReply()) {
 		if (!_media) {
 		} else if (const auto document = _media->document()) {
 			if (const auto duration = DurationForTimestampLinks(document)) {
-				return AddTimestampLinks(
-					textWithEntities,
+				result = AddTimestampLinks(
+					std::move(result),
 					duration,
 					TimestampLinkBase(document, fullId()));
 			}
 		} else if (const auto webpage = _media->webpage()) {
 			if (const auto duration = DurationForTimestampLinks(webpage)) {
-				return AddTimestampLinks(
-					textWithEntities,
+				result = AddTimestampLinks(
+					std::move(result),
 					duration,
 					TimestampLinkBase(webpage, fullId()));
 			}
 		}
-		return textWithEntities;
-	}
-	if (const auto reply = Get<HistoryMessageReply>()) {
+	} else if (const auto reply = Get<HistoryMessageReply>()) {
 		const auto document = reply->replyToDocumentId
 			? _history->owner().document(reply->replyToDocumentId).get()
 			: nullptr;
@@ -5478,22 +5479,25 @@ TextWithEntities HistoryItem::withLocalEntities(
 		if (document) {
 			if (const auto duration = DurationForTimestampLinks(document)) {
 				const auto context = reply->resolvedMessage->fullId();
-				return AddTimestampLinks(
-					textWithEntities,
+				result = AddTimestampLinks(
+					std::move(result),
 					duration,
 					TimestampLinkBase(document, context));
 			}
 		} else if (webpage) {
 			if (const auto duration = DurationForTimestampLinks(webpage)) {
 				const auto context = reply->resolvedMessage->fullId();
-				return AddTimestampLinks(
-					textWithEntities,
+				result = AddTimestampLinks(
+					std::move(result),
 					duration,
 					TimestampLinkBase(webpage, context));
 			}
 		}
 	}
-	return textWithEntities;
+	if (MakuGram::Settings::instance().currencyConverter()) {
+		result = MakuGram::AddCurrencyLinks(std::move(result));
+	}
+	return result;
 }
 
 void HistoryItem::createComponentsHelper(HistoryItemCommonFields &&fields) {

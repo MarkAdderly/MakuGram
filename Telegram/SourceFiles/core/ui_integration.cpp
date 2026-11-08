@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "core/ui_integration.h"
+#include "makugram/currency_converter.h"
 
 #include "api/api_text_entities.h"
 #include "core/local_url_handlers.h"
@@ -369,6 +370,9 @@ std::shared_ptr<ClickHandler> UiIntegration::createLinkHandler(
 			: Integration::createLinkHandler(data, context);
 
 	case EntityType::CustomUrl:
+		if (data.data.startsWith(u"internal:makugram-currency:"_q)) {
+			return MakuGram::CreateCurrencyClickHandler(data.data, data.text);
+		}
 		return !data.data.isEmpty()
 			? std::make_shared<HiddenUrlClickHandler>(data.data)
 			: Integration::createLinkHandler(data, context);

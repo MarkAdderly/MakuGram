@@ -152,6 +152,14 @@ public:
 	[[nodiscard]] rpl::producer<bool> streamerModeChanges() const;
 	[[nodiscard]] rpl::producer<bool> streamerModeValue() const;
 
+	[[nodiscard]] bool currencyConverter() const;
+	void setCurrencyConverter(bool enabled);
+	[[nodiscard]] rpl::producer<bool> currencyConverterChanges() const;
+
+	[[nodiscard]] QString currencyConverterTargets() const;
+	void setCurrencyConverterTargets(const QString &targets);
+	[[nodiscard]] rpl::producer<QString> currencyConverterTargetsChanges() const;
+
 private:
 	Settings();
 	~Settings() = default;
@@ -190,6 +198,8 @@ private:
 	bool _videoVolumeWheel = false;
 	bool _sendMediaHighQuality = false;
 	bool _streamerMode = false;
+	bool _currencyConverter = false;
+	QString _currencyConverterTargets;
 
 	rpl::event_stream<bool> _hideMessagesFromBlockedChanges;
 	rpl::event_stream<bool> _quickBanInRequestsChanges;
@@ -218,6 +228,8 @@ private:
 	rpl::event_stream<bool> _videoVolumeWheelChanges;
 	rpl::event_stream<bool> _sendMediaHighQualityChanges;
 	rpl::event_stream<bool> _streamerModeChanges;
+	rpl::event_stream<bool> _currencyConverterChanges;
+	rpl::event_stream<QString> _currencyConverterTargetsChanges;
 };
 
 } // namespace MakuGram
