@@ -3,6 +3,7 @@ This file is part of MakuGram,
 a custom Telegram Desktop client fork.
 */
 #include "makugram/makugram_settings.h"
+#include "makugram/makugram_updater.h"
 #include "core/application.h"
 #include "core/core_settings.h"
 #include "rpl/then.h"
@@ -121,6 +122,7 @@ Settings &Settings::instance() {
 }
 
 Settings::Settings() {
+	CleanOldUpdateFiles();
 	QSettings s("MakuGram", "MakuGram");
 	_hideMessagesFromBlocked = s.value("hideMessagesFromBlocked", false).toBool();
 	_quickBanInRequests = s.value("quickBanInRequests", false).toBool();
