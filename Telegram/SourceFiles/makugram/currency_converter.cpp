@@ -631,37 +631,10 @@ ClickHandlerPtr CreateCurrencyClickHandler(
 	return std::make_shared<CurrencyClickHandler>(data, text);
 }
 
-class TwoColumnCheckboxRow final : public Ui::RpWidget {
-public:
-	using RpWidget::RpWidget;
-
-	void setChildren(Ui::Checkbox *left, Ui::Checkbox *right) {
-		_left = left;
-		_right = right;
-	}
-
-protected:
-	int resizeGetHeight(int newWidth) override {
-		if (!_left || !_right) {
-			return 0;
-		}
-		const auto gap = 16;
-		const auto half = (newWidth - gap) / 2;
-		_left->resizeToWidth(half);
-		_left->moveToLeft(0, 0);
-		_right->resizeToWidth(newWidth - half - gap);
-		_right->moveToLeft(half + gap, 0);
-		return std::max(_left->height(), _right->height());
-	}
-
-private:
-	Ui::Checkbox *_left = nullptr;
-	Ui::Checkbox *_right = nullptr;
-};
-
 void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 	controller->show(Box([=](not_null<Ui::GenericBox*> box) {
-		box->setWidth(560);
+		box->setWidth(540);
+		box->setMaxHeight(690);
 		box->setTitle(rpl::single(QString::fromUtf8("Выбор валют для конвертации")));
 
 		box->addRow(
@@ -673,7 +646,7 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 				st::boxRowPadding.left(),
 				5,
 				st::boxRowPadding.right(),
-				6));
+				5));
 
 		struct CurrencyOption {
 			QString code;
@@ -700,42 +673,22 @@ void ShowCurrencyTargetsBox(not_null<Window::SessionController*> controller) {
 		}
 
 		auto checkBoxes = std::vector<std::pair<QString, Ui::Checkbox*>>();
-		for (size_t i = 0; i < 5; ++i) {
-			const auto &opt1 = options[i];
-			const auto &opt2 = options[i + 5];
-
-			const auto isChecked1 = currentSet.contains(opt1.code);
-			currentSet.erase(opt1.code);
-			const auto isChecked2 = currentSet.contains(opt2.code);
-			currentSet.erase(opt2.code);
-
-			const auto rowWidget = box->addRow(
-				object_ptr<TwoColumnCheckboxRow>(box),
+		for (const auto &opt : options) {
+			const auto isChecked = currentSet.contains(opt.code);
+			currentSet.erase(opt.code);
+			const auto cb = box->addRow(
+				object_ptr<Ui::Checkbox>(
+					box,
+					opt.name,
+					isChecked,
+					st::defaultBoxCheckbox),
 				style::margins(
 					st::boxRowPadding.left(),
-					1,
+					2,
 					st::boxRowPadding.right(),
-					1),
-				style::al_justify);
-
-			const auto cb1 = Ui::CreateChild<Ui::Checkbox>(
-				rowWidget,
-				opt1.name,
-				isChecked1,
-				st::defaultBoxCheckbox);
-			cb1->setCursor(style::cur_pointer);
-
-			const auto cb2 = Ui::CreateChild<Ui::Checkbox>(
-				rowWidget,
-				opt2.name,
-				isChecked2,
-				st::defaultBoxCheckbox);
-			cb2->setCursor(style::cur_pointer);
-
-			rowWidget->setChildren(cb1, cb2);
-
-			checkBoxes.push_back({ opt1.code, cb1 });
-			checkBoxes.push_back({ opt2.code, cb2 });
+					2));
+			cb->setCursor(style::cur_pointer);
+			checkBoxes.push_back({ opt.code, cb });
 		}
 
 		QStringList extraList;
