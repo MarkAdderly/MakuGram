@@ -3,6 +3,7 @@ This file is part of MakuGram,
 a custom Telegram Desktop client fork.
 */
 #include "makugram/settings_makugram.h"
+#include "boxes/connection_box.h"
 
 #include "makugram/makugram_settings.h"
 #include "base/event_filter.h"
@@ -673,6 +674,13 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.icon = { &st::menuIconPhoto },
 		.onClick = [=] { ShowMediaBox(controller); },
 		.keywords = { u"media"_q, u"zoom"_q, u"медиа"_q, u"масштаб"_q, u"экран"_q },
+	});
+
+	builder.addButton({
+		.title = rpl::single(QString::fromUtf8("Настройки прокси")),
+		.icon = { &st::menuIconNetwork },
+		.onClick = [=] { ProxiesBoxController::Show(controller); },
+		.keywords = { u"proxy"_q, u"прокси"_q, u"vpn"_q, u"впн"_q, u"network"_q, u"сеть"_q },
 	});
 
 	builder.addButton({
