@@ -118,6 +118,7 @@ public:
 	[[nodiscard]] bool hidePhoneNumberInSettings() const;
 	void setHidePhoneNumberInSettings(bool enabled);
 	[[nodiscard]] rpl::producer<bool> hidePhoneNumberInSettingsChanges() const;
+	[[nodiscard]] rpl::producer<bool> hidePhoneNumberInSettingsValue() const;
 
 	[[nodiscard]] bool forwardWithoutAuthor() const;
 	void setForwardWithoutAuthor(bool enabled);

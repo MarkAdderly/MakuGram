@@ -431,15 +431,15 @@ void ShowPrivacyBox(not_null<Window::SessionController*> controller) {
 		AddCheckboxRow(
 			box,
 			Tr::Value(
-				QString::fromUtf8("Спрятать номер телефона из настроек"),
-				u"Hide phone number in settings"_q),
+				QString::fromUtf8("Спрятать номер телефона из профиля и настроек"),
+				u"Hide phone number in profile and settings"_q),
 			MakuGram::Settings::instance().hidePhoneNumberInSettings(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setHidePhoneNumberInSettings(checked);
 			},
 			Tr::Value(
-				QString::fromUtf8("Скрывает номер телефона в шапке настроек и в меню редактирования профиля для защиты от случайной демонстрации."),
-				u"Hides phone number in settings header and profile edit menu to protect against accidental exposure."_q));
+				QString::fromUtf8("Скрывает номер телефона в вашем профиле, в шапке настроек и в меню редактирования для защиты от случайной демонстрации."),
+				u"Hides your phone number in profile, settings header, and edit menu to protect against accidental exposure."_q));
 
 		box->addButton(tr::lng_close(), [=] {
 			box->closeBox();

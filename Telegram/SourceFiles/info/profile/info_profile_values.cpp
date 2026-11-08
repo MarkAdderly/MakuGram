@@ -171,9 +171,10 @@ rpl::producer<TextWithEntities> PhoneWithSpoilerValue(
 	return rpl::combine(
 		std::move(phone),
 		user->session().settings().phoneNumberHiddenValue(),
-		MakuGram::Settings::instance().streamerModeValue()
-	) | rpl::map([=](const TextWithEntities &phone, bool hidden, bool streamerMode) {
-		if (streamerMode) {
+		MakuGram::Settings::instance().streamerModeValue(),
+		MakuGram::Settings::instance().hidePhoneNumberInSettingsValue()
+	) | rpl::map([=](const TextWithEntities &phone, bool hidden, bool streamerMode, bool hidePhone) {
+		if (streamerMode || (user->isSelf() && hidePhone)) {
 			return TextWithEntities();
 		}
 		if (!user->isSelf()) {

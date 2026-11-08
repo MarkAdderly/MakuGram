@@ -543,6 +543,11 @@ rpl::producer<bool> Settings::hidePhoneNumberInSettingsChanges() const {
 	return _hidePhoneNumberInSettingsChanges.events();
 }
 
+rpl::producer<bool> Settings::hidePhoneNumberInSettingsValue() const {
+	return rpl::single(hidePhoneNumberInSettings())
+		| rpl::then(_hidePhoneNumberInSettingsChanges.events());
+}
+
 bool Settings::forwardWithoutAuthor() const {
 	return _forwardWithoutAuthor;
 }
