@@ -112,6 +112,7 @@ using GifPauseReasons = ChatHelpers::PauseReasons;
 
 class SectionMemento;
 class SectionWidget;
+class Columns;
 class Controller;
 class FiltersMenu;
 class ChatPreviewManager;
@@ -436,6 +437,7 @@ public:
 	[[nodiscard]] rpl::producer<> imeCompositionStarts() const;
 	[[nodiscard]] not_null<MainWidget*> content() const;
 	[[nodiscard]] Adaptive &adaptive() const;
+	[[nodiscard]] Columns &columns() const;
 	[[nodiscard]] ChatHelpers::EmojiInteractions &emojiInteractions() const {
 		return *_emojiInteractions;
 	}
@@ -782,8 +784,8 @@ private:
 	int countDialogsWidthFromRatio(int bodyWidth) const;
 	int countThirdColumnWidthFromRatio(int bodyWidth) const;
 	struct ShrinkResult {
-		int dialogsWidth;
-		int thirdWidth;
+		int dialogsWidth = 0;
+		int thirdWidth = 0;
 	};
 	ShrinkResult shrinkDialogsAndThirdColumns(
 		int dialogsWidth,
@@ -868,6 +870,7 @@ private:
 	std::deque<ChatEntryHistoryItem> _chatEntryHistory;
 	int _chatEntryHistoryPosition = -1;
 	bool _filtersActivated = false;
+	bool _extendingForThirdSection = false;
 
 	rpl::variable<Dialogs::EntryState> _dialogsEntryState;
 	// A topic or sublist can be freed without a destroyed() event.

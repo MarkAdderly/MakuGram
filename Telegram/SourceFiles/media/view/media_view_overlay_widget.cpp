@@ -74,6 +74,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "media/view/media_view_video_stream.h"
 #include "media/stories/media_stories_share.h"
 #include "media/stories/media_stories_view.h"
+#include "media/stories/media_stories_post.h"
 #include "media/streaming/media_streaming_document.h"
 #include "media/streaming/media_streaming_player.h"
 #include "media/player/media_player_instance.h"
@@ -91,6 +92,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_chat.h"
 #include "data/data_user.h"
 #include "data/data_media_rotation.h"
+#include "data/data_peer_values.h"
 #include "data/data_photo_media.h"
 #include "data/data_document_media.h"
 #include "data/data_document_resolver.h"
@@ -129,9 +131,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include <QGraphicsOpacityEffect>
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 #include "platform/mac/touchbar/mac_touchbar_media_view.h"
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS
 
 #include <QtWidgets/QApplication>
 #include <QtCore/QBuffer>
@@ -820,6 +822,7 @@ public:
 			std::move(layer),
 			options,
 			anim::type::normal);
+		_widget->_layerBg->raise();
 	}
 	not_null<QWidget*> toastParent() const override {
 		return _widget->_body;
@@ -952,6 +955,10 @@ OverlayWidget::OverlayWidget()
 }) {
 	_layerBg->setStyleOverrides(&st::groupCallBox, &st::groupCallLayerBox);
 	_layerBg->setHideByBackgroundClick(true);
+	_layerBg->layerShownValue(
+	) | rpl::filter(rpl::mappers::_1) | rpl::on_next([=] {
+		_layerBg->raise();
+	}, lifetime());
 
 	_recognition.setSources(&_recognitionResult, &_staticContent);
 
@@ -1228,7 +1235,7 @@ OverlayWidget::OverlayWidget()
 	updateGeometry();
 	updateControlsGeometry();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 	TouchBar::SetupMediaViewTouchBar(
 		_window->winId(),
 		tr::lng_mediaview_title(tr::now),
@@ -1236,7 +1243,7 @@ OverlayWidget::OverlayWidget()
 		_touchbarTrackState.events(),
 		_touchbarDisplay.events(),
 		_touchbarFullscreenToggled.events());
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS
 
 	using namespace rpl::mappers;
 	rpl::combine(
@@ -2664,6 +2671,46 @@ void OverlayWidget::fillContextMenuActions(
 	if (story && story->canShare()) {
 		addAction(tr::lng_mediaview_forward(tr::now), [=] {
 			_stories->shareRequested();
+		}, &st::mediaMenuIconForward);
+	}
+	if (story && Stories::CanEditStory(story)) {
+		const auto id = story->fullId();
+		addAction(tr::lng_story_edit(tr::now), [=] {
+			const auto window = findWindow();
+			if (!window || !_session) {
+				return;
+			}
+			const auto &stories = _session->data().stories();
+			if (const auto found = stories.lookup(id)) {
+				close();
+				Stories::EditStory(window, *found);
+			}
+		}, &st::mediaMenuIconEdit);
+	}
+	if (story && Stories::CanEditStoryPrivacy(story)) {
+		const auto id = story->fullId();
+		addAction(tr::lng_story_edit_privacy(tr::now), [=] {
+			if (!_session) {
+				return;
+			}
+			const auto &stories = _session->data().stories();
+			if (const auto found = stories.lookup(id)) {
+				Stories::EditStoryPrivacy(uiShow(), *found);
+			}
+		}, &st::mediaMenuIconPrivacy);
+	}
+	if (story && Stories::CanRepostStory(story)) {
+		const auto id = story->fullId();
+		addAction(tr::lng_story_repost(tr::now), [=] {
+			const auto window = findWindow();
+			if (!window || !_session) {
+				return;
+			}
+			const auto &stories = _session->data().stories();
+			if (const auto found = stories.lookup(id)) {
+				close();
+				Stories::RepostStory(window, *found);
+			}
 		}, &st::mediaMenuIconForward);
 	}
 	const auto canDelete = [&] {
@@ -4195,7 +4242,8 @@ auto OverlayWidget::sharedMediaKey() const -> std::optional<SharedMediaKey> {
 				: (_message->id - ServerMaxMsgId))
 		};
 	};
-	if (!_message->isRegular() && !isScheduled) {
+	if (!_message->isRegular()
+		&& (!isScheduled || _message->isSending() || _message->hasFailed())) {
 		return std::nullopt;
 	}
 	return sharedMediaType() | keyForType;
@@ -5945,6 +5993,8 @@ void OverlayWidget::restartAtProgress(float64 progress) {
 void OverlayWidget::restartAtSeekPosition(crl::time position) {
 	Expects(_streamed != nullptr);
 
+	// videoStart already reports the position of a new document
+	const auto reportSeek = _smtcSink && (_smtcDocument == _document);
 	if (videoShown()) {
 		_streamed->instance.saveFrameToCover();
 		const auto saved = base::take(_rotation);
@@ -5991,6 +6041,9 @@ void OverlayWidget::restartAtSeekPosition(crl::time position) {
 	_streamed->pausedBySeek = false;
 
 	updatePlaybackState();
+	if (reportSeek) {
+		_smtcSink->videoSeeked();
+	}
 }
 
 void OverlayWidget::playbackControlsSeekProgress(crl::time position) {
@@ -6477,9 +6530,14 @@ void OverlayWidget::refreshSystemMediaControls() {
 		.artist = channel ? filename : _fromName,
 		.position = std::max(state.position, int64(0)),
 		.duration = std::max(state.length, int64(0)),
+		.speed = _streamed->instance.speed(),
 		.playing = (!player.paused() && !player.finished()),
 		.nextAvailable = _rightNavVisible,
 		.previousAvailable = _leftNavVisible,
+		.seekable = !_stories,
+		.speedControllable = (_streamed->controls != nullptr)
+			&& !_stories
+			&& Media::Audio::SupportsSpeedControl(),
 	};
 	if (_smtcDocument != _document) {
 		_smtcDocument = _document;
@@ -6573,6 +6631,22 @@ void OverlayWidget::smtcSeek(crl::time position) {
 	_streamingStartPaused = _streamed->instance.player().paused();
 	restartAtSeekPosition(position);
 	activateControls();
+}
+
+void OverlayWidget::smtcSetVolume(float64 volume) {
+	if (_streamed && _streamed->controls) {
+		_streamed->controls->updatePlaybackVolume(volume);
+	} else {
+		playbackControlsVolumeChanged(volume);
+	}
+	playbackControlsVolumeChangeFinished();
+}
+
+void OverlayWidget::smtcSetSpeed(float64 speed) {
+	if (_streamed && _streamed->controls && !_stories && !_speedBoostActive) {
+		_streamed->controls->updatePlaybackSpeed(speed);
+		updatePlaybackState();
+	}
 }
 
 void OverlayWidget::validatePhotoImage(Image *image, bool blurred) {
@@ -8159,6 +8233,7 @@ void OverlayWidget::setContext(
 		ItemContext,
 		not_null<PeerData*>,
 		StoriesContext> context) {
+	_screenshotProtectionLifetime.destroy();
 	if (const auto item = std::get_if<ItemContext>(&context)) {
 		if (_message != item->item) {
 			checkSingleViewMediaBurn();
@@ -8213,7 +8288,23 @@ void OverlayWidget::setContext(
 	}
 	_user = _peer ? _peer->asUser() : nullptr;
 	++_displayGeneration;
-	refreshScreenshotProtection();
+	if (_history) {
+		Data::AllowsForwardingValue(
+			_history->peer
+		) | rpl::on_next([=] {
+			refreshScreenshotProtection();
+		}, _screenshotProtectionLifetime);
+	} else {
+		refreshScreenshotProtection();
+	}
+	if (_message) {
+		_message->history()->owner().itemDataChanges(
+		) | rpl::filter(
+			rpl::mappers::_1 == _message
+		) | rpl::on_next([=] {
+			refreshScreenshotProtection();
+		}, _screenshotProtectionLifetime);
+	}
 }
 
 void OverlayWidget::setStoriesPeer(PeerData *peer) {
@@ -8736,7 +8827,7 @@ bool OverlayWidget::updateOverState(Over newState) {
 
 void OverlayWidget::updateOver(QPoint pos) {
 	ClickHandlerPtr lnk;
-	ClickHandlerHost *lnkhost = nullptr;
+	auto lnkhost = (ClickHandlerHost*)nullptr;
 	if (isSaveMsgShown() && _saveMsg.contains(pos)) {
 		auto textState = _saveMsgText.getState(pos - _saveMsg.topLeft() - QPoint(st::mediaviewSaveMsgPadding.left(), st::mediaviewSaveMsgPadding.top()), _saveMsg.width() - st::mediaviewSaveMsgPadding.left() - st::mediaviewSaveMsgPadding.right());
 		lnk = textState.link;
@@ -9274,6 +9365,7 @@ Window::SessionController *OverlayWidget::findWindow(bool switchTo) const {
 
 // #TODO unite and check
 void OverlayWidget::clearBeforeHide() {
+	_screenshotProtectionLifetime.destroy();
 	checkSingleViewMediaBurn();
 	_message = nullptr;
 	_sharedMedia = nullptr;

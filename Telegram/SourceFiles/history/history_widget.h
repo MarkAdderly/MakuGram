@@ -199,6 +199,7 @@ public:
 	void delayedShowAt(MsgId showAtMsgId, const Window::SectionShow &params);
 
 	bool updateReplaceMediaButton();
+	void startMediaReplace();
 	void updateFieldPlaceholder();
 
 	bool confirmSendingFiles(const QStringList &files);
@@ -381,7 +382,7 @@ private:
 	};
 	struct ScrollChange {
 		ScrollChangeType type;
-		int value;
+		int value = 0;
 	};
 	struct ChooseMessagesForReport {
 		Data::ReportInput reportInput;
