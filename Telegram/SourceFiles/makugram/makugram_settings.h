@@ -49,6 +49,10 @@ public:
 	void setQuickBanInRequests(bool enabled);
 	[[nodiscard]] rpl::producer<bool> quickBanInRequestsChanges() const;
 
+	[[nodiscard]] bool massJoinRequests() const;
+	void setMassJoinRequests(bool enabled);
+	[[nodiscard]] rpl::producer<bool> massJoinRequestsChanges() const;
+
 	[[nodiscard]] bool alwaysZoomMediaToScreen() const;
 	void setAlwaysZoomMediaToScreen(bool enabled);
 	[[nodiscard]] rpl::producer<bool> alwaysZoomMediaToScreenChanges() const;
@@ -172,6 +176,7 @@ private:
 
 	bool _hideMessagesFromBlocked = false;
 	bool _quickBanInRequests = false;
+	bool _massJoinRequests = true;
 	bool _alwaysZoomMediaToScreen = true;
 	bool _showExactTime = false;
 	bool _spamFilterEnabled = false;
@@ -204,6 +209,7 @@ private:
 
 	rpl::event_stream<bool> _hideMessagesFromBlockedChanges;
 	rpl::event_stream<bool> _quickBanInRequestsChanges;
+	rpl::event_stream<bool> _massJoinRequestsChanges;
 	rpl::event_stream<bool> _alwaysZoomMediaToScreenChanges;
 	rpl::event_stream<bool> _showExactTimeChanges;
 	rpl::event_stream<bool> _spamFilterEnabledChanges;

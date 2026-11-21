@@ -8,6 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/history_view_message.h"
 #include "makugram/makugram_settings.h"
 #include "makugram/makugram_details.h"
+#include "makugram/makugram_lang.h"
 
 #include "api/api_suggest_post.h"
 #include "api/api_transcribes.h"
@@ -1622,7 +1623,7 @@ QSize Message::performCountOptimalSize() {
 					&& from
 					&& from->isUser()
 					&& MakuGram::IsNewbieInChat(history()->peer, from->asUser());
-				static const auto kNewbieText = QString::fromUtf8("[Новичок] ");
+				const auto kNewbieText = MakuGram::Tr::Get(QString::fromUtf8("[Новичок] "), u"[Newbie] "_q);
 				const auto newbieWidth = isNewbie ? st::msgNameFont->width(kNewbieText) : 0;
 				auto namew = st::msgPadding.left()
 					+ newbieWidth
@@ -2650,7 +2651,7 @@ void Message::paintFromName(
 		&& from
 		&& from->isUser()
 		&& MakuGram::IsNewbieInChat(history()->peer, from->asUser());
-	static const auto kNewbieText = QString::fromUtf8("[Новичок] ");
+	const auto kNewbieText = MakuGram::Tr::Get(QString::fromUtf8("[Новичок] "), u"[Newbie] "_q);
 	const auto newbieWidth = isNewbie ? st::msgNameFont->width(kNewbieText) : 0;
 	if (newbieWidth > 0 && availableWidth > newbieWidth) {
 		static const auto kNewbieYellow = QColor(235, 170, 25);
@@ -4386,7 +4387,7 @@ bool Message::getStateFromName(
 			&& from
 			&& from->isUser()
 			&& MakuGram::IsNewbieInChat(history()->peer, from->asUser());
-		static const auto kNewbieText = QString::fromUtf8("[Новичок] ");
+		const auto kNewbieText = MakuGram::Tr::Get(QString::fromUtf8("[Новичок] "), u"[Newbie] "_q);
 		const auto newbieWidth = isNewbie ? st::msgNameFont->width(kNewbieText) : 0;
 		if (newbieWidth > 0 && availableWidth > newbieWidth) {
 			if (point.x() >= availableLeft && point.x() < availableLeft + newbieWidth) {
@@ -6512,7 +6513,7 @@ void Message::fromNameUpdated(int width) const {
 		&& from
 		&& from->isUser()
 		&& MakuGram::IsNewbieInChat(history()->peer, from->asUser());
-	static const auto kNewbieText = QString::fromUtf8("[Новичок] ");
+	const auto kNewbieText = MakuGram::Tr::Get(QString::fromUtf8("[Новичок] "), u"[Newbie] "_q);
 	const auto newbieWidth = isNewbie ? st::msgNameFont->width(kNewbieText) : 0;
 	const auto nameLineWidth = width
 		- st::msgPadding.left()

@@ -87,7 +87,7 @@ void VideoUserpic::paintLeft(
 	if (rtl()) {
 		x = w - x - size;
 	}
-	if (_video && _video->ready()) {
+	if (!MakuGram::Settings::instance().streamerMode() && _video && _video->ready()) {
 		startReady();
 
 		const auto now = paused ? crl::time(0) : crl::now();

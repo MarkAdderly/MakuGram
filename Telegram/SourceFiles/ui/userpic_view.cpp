@@ -7,6 +7,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/userpic_view.h"
 
+#include "makugram/makugram_settings.h"
+#include "makugram/makugram_filter.h"
+
 #include "ui/empty_userpic.h"
 #include "ui/painter.h"
 #include "ui/image/image_prepare.h"
@@ -142,8 +145,11 @@ void ValidateUserpicCache(
 	const auto full = QSize(size, size);
 	const auto version = style::PaletteVersion();
 	const auto shapeValue = static_cast<uint32>(shape) & 3;
+	const auto streamer = MakuGram::Settings::instance().streamerMode();
+	const auto streamerBit = streamer ? 1 : 0;
 	const auto regenerate = (view.cached.size() != QSize(size, size))
 		|| (view.shape != shapeValue)
+		|| (view.streamerMode != streamerBit)
 		|| (cloud && !view.empty.null())
 		|| (empty && empty != view.empty.get())
 		|| (empty && view.paletteVersion != version);
@@ -152,6 +158,7 @@ void ValidateUserpicCache(
 	}
 	view.empty = empty;
 	view.shape = shapeValue;
+	view.streamerMode = streamerBit;
 	view.paletteVersion = version;
 
 	if (cloud) {
@@ -190,6 +197,9 @@ void ValidateUserpicCache(
 		} else {
 			empty->paintCircle(p, 0, 0, size, size);
 		}
+	}
+	if (streamer) {
+		MakuGram::BlurImageStrong(view.cached);
 	}
 }
 

@@ -56,6 +56,18 @@ include(cmake/target_prepare_qrc.cmake)
 
 include(cmake/options.cmake)
 
+if (WIN32 AND NOT DESKTOP_APP_USE_PACKAGED)
+    set(OPENSSL_FOUND 1)
+    set(OPENSSL_INCLUDE_DIR ${libs_loc}/openssl3/include)
+    set(LIB_EAY_DEBUG ${libs_loc}/openssl3/out.dbg/libcrypto.lib)
+    set(SSL_EAY_DEBUG ${libs_loc}/openssl3/out.dbg/libssl.lib)
+    set(LIB_EAY_RELEASE ${libs_loc}/openssl3/out/libcrypto.lib)
+    set(SSL_EAY_RELEASE ${libs_loc}/openssl3/out/libssl.lib)
+    set(OPENSSL_ROOT_DIR ${libs_loc}/openssl3)
+    set(OPENSSL_CRYPTO_LIBRARY ${libs_loc}/openssl3/out/libcrypto.lib)
+    set(OPENSSL_SSL_LIBRARY ${libs_loc}/openssl3/out/libssl.lib)
+endif()
+
 include(cmake/external/qt/package.cmake)
 
 set(desktop_app_skip_libs

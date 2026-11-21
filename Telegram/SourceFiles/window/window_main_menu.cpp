@@ -11,6 +11,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/event_filter.h"
 #include "base/qt_signal_producer.h"
 #include "boxes/about_box.h"
+#include "boxes/connection_box.h"
 #include "core/update_channel.h"
 #include "boxes/contacts_box.h"
 #include "boxes/premium_preview_box.h"
@@ -677,6 +678,16 @@ void MainMenu::setupMenu() {
 		)->setClickedCallback([=] {
 			controller->showSection(
 				Info::Stories::MakeMyProfile(controller->session().user()));
+		});
+
+		_menu->add(
+			CreateButtonWithIcon(
+				_menu,
+				tr::lng_proxy_settings(),
+				st::mainMenuButton,
+				{ &st::menuIconNetwork })
+		)->setClickedCallback([=] {
+			ProxiesBoxController::Show(controller);
 		});
 
 		SetupMenuBots(_menu, controller);

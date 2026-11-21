@@ -246,17 +246,11 @@ base::options::toggle ShowChannelJoinedBelowAbout({
 			if (!value.empty()) {
 				value.append("\n\n");
 			}
-			value.append(Italic(u"id: "_q));
+			value.append(Italic(u"ID: "_q));
 			const auto raw = peer->id.value & PeerId::kChatTypeMask;
 			value.append(Link(
 				Italic(QString::number(raw)),
 				kPeerIdLinkIndex));
-			if (peer->isUser()) {
-				const auto reg = MakuGram::EstimatedRegistrationDate(raw);
-				if (!reg.isEmpty()) {
-					value.append(Italic(QString::fromUtf8("\nРегистрация: ") + reg));
-				}
-			}
 		}
 		if (ShowChannelJoinedBelowAbout.value()) {
 			if (const auto channel = peer->asChannel()) {

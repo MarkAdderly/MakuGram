@@ -754,11 +754,13 @@ void Row::paintUserpic(
 		? ((peer->isUser() || peer->isChannel()) ? peer : nullptr)
 		: nullptr;
 	const auto storiesFolder = peer ? nullptr : _id.folder();
-	const auto storiesHas = !MakuGram::Settings::instance().disableStories() && (storiesPeer
-		? storiesPeer->hasActiveStories()
-		: storiesFolder
-		? (storiesFolder->storiesCount() > 0)
-		: false);
+	const auto storiesHas = !compact
+		&& !MakuGram::Settings::instance().disableStories()
+		&& (storiesPeer
+			? storiesPeer->hasActiveStories()
+			: storiesFolder
+			? (storiesFolder->storiesCount() > 0)
+			: false);
 	if (!cornerBadgeShown && !storiesHas) {
 		BasicRow::paintUserpic(p, entry, peer, videoUserpic, context, false);
 		if (!peer || !_cornerBadgeShown) {
@@ -800,7 +802,8 @@ void Row::paintUserpic(
 	const auto limit = Ui::kOutlineSegmentsMax;
 	const auto storiesCount = std::min(storiesCountReal, limit);
 	const auto storiesUnreadCount = std::min(storiesUnreadCountReal, limit);
-	if (_cornerBadgeUserpic->frame.size() != frameSize) {
+	const auto frameReallocated = (_cornerBadgeUserpic->frame.size() != frameSize);
+	if (frameReallocated) {
 		_cornerBadgeUserpic->frame = QImage(
 			frameSize,
 			QImage::Format_ARGB32_Premultiplied);
@@ -833,6 +836,7 @@ void Row::paintUserpic(
 	const auto activeMatters = storiesCount
 		|| !(subscribed || communityMember);
 	if (keyChanged
+		|| frameReallocated
 		|| !_cornerBadgeUserpic->layersManager.isFinished()
 		|| (activeMatters && _cornerBadgeUserpic->active != active)
 		|| _cornerBadgeUserpic->hidden != (hidden ? 1 : 0)

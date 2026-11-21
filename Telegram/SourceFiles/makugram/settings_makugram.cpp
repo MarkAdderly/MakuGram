@@ -484,6 +484,19 @@ void ShowModerationBox(not_null<Window::SessionController*> controller) {
 		AddCheckboxRow(
 			box,
 			Tr::Value(
+				QString::fromUtf8("Кнопки \"Принять всех\" и \"Отклонить всех\""),
+				u"\"Accept all\" and \"Decline all\" buttons"_q),
+			MakuGram::Settings::instance().massJoinRequests(),
+			[=](bool checked) {
+				MakuGram::Settings::instance().setMassJoinRequests(checked);
+			},
+			Tr::Value(
+				QString::fromUtf8("Отображать кнопки для массового одобрения или отклонения всех заявок на вступление в группу или канал."),
+				u"Show buttons to mass approve or decline all join requests in a group or channel."_q));
+
+		AddCheckboxRow(
+			box,
+			Tr::Value(
 				QString::fromUtf8("Бейдж \"Новичок\" в чатах"),
 				u"\"Newbie\" badge in chats"_q),
 			MakuGram::Settings::instance().showNewbieBadge(),
@@ -511,15 +524,15 @@ void ShowProfileBox(not_null<Window::SessionController*> controller) {
 		AddCheckboxRow(
 			box,
 			Tr::Value(
-				QString::fromUtf8("Показывать ID и дату регистрации аккаунта"),
-				u"Show account ID and registration date"_q),
+				QString::fromUtf8("Показывать ID аккаунта"),
+				u"Show account ID"_q),
 			MakuGram::Settings::instance().showProfileDetails(),
 			[=](bool checked) {
 				MakuGram::Settings::instance().setShowProfileDetails(checked);
 			},
 			Tr::Value(
-				QString::fromUtf8("Отображать числовой ID (с копированием в буфер по клику) и расчетный период регистрации в профиле пользователя."),
-				u"Display numeric ID (clickable to copy) and estimated registration period in user profile."_q));
+				QString::fromUtf8("Отображать числовой ID (с копированием в буфер по клику) в профиле пользователя."),
+				u"Display numeric ID (clickable to copy) in user profile."_q));
 
 		AddCheckboxRow(
 			box,
@@ -874,7 +887,7 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.title = Tr::Value(QString::fromUtf8("Профиль и информация"), u"Profile & Info"_q),
 		.icon = { &st::menuIconProfile },
 		.onClick = [=] { ShowProfileBox(controller); },
-		.keywords = { u"id"_q, u"profile"_q, u"registration"_q, u"stories"_q, u"профиль"_q, u"возраст"_q, u"регистрация"_q, u"сторис"_q, u"истории"_q },
+		.keywords = { u"id"_q, u"profile"_q, u"stories"_q, u"профиль"_q, u"айди"_q, u"сторис"_q, u"истории"_q },
 	});
 
 	builder.addButton({
@@ -889,13 +902,6 @@ void BuildMakuGramSection(SectionBuilder &builder) {
 		.icon = { &st::menuIconPhoto },
 		.onClick = [=] { ShowMediaBox(controller); },
 		.keywords = { u"media"_q, u"zoom"_q, u"volume"_q, u"медиа"_q, u"масштаб"_q, u"экран"_q },
-	});
-
-	builder.addButton({
-		.title = Tr::Value(QString::fromUtf8("Настройки прокси"), u"Proxy Settings"_q),
-		.icon = { &st::menuIconNetwork },
-		.onClick = [=] { ProxiesBoxController::Show(controller); },
-		.keywords = { u"proxy"_q, u"прокси"_q, u"vpn"_q, u"впн"_q, u"network"_q, u"сеть"_q },
 	});
 
 	builder.addButton({

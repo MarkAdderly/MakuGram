@@ -1292,6 +1292,9 @@ void UserpicButton::prepareUserpicPixmap() {
 							Images::CornersMask(size
 								* Ui::ForumUserpicRadiusMultiplier()))
 						: Images::Circle(std::move(image));
+					if (MakuGram::Settings::instance().streamerMode()) {
+						MakuGram::BlurImageStrong(image);
+					}
 					image.setDevicePixelRatio(style::DevicePixelRatio());
 					p.drawImage(0, 0, image);
 				}

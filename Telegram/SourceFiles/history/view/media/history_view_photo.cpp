@@ -7,6 +7,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/media/history_view_photo.h"
 
+#include "makugram/makugram_settings.h"
+#include "makugram/makugram_filter.h"
+
 #include "boxes/send_credits_box.h"
 #include "history/history_item_components.h"
 #include "history/history_item.h"
@@ -654,6 +657,9 @@ void Photo::validateUserpicImageCache(QSize size, bool forum) const {
 	} else {
 		original = Images::Circle(std::move(original));
 	}
+	if (MakuGram::Settings::instance().streamerMode()) {
+		MakuGram::BlurImageStrong(original);
+	}
 	_imageCache = std::move(original);
 	_imageCacheForum = forumValue;
 	_imageCacheBlurred = blurredValue;
@@ -765,11 +771,18 @@ void Photo::paintUserpicFrame(
 				|| _streamed->frozenRequest != request) {
 				_streamed->frozenRequest = request;
 				_streamed->frozenFrame = _streamed->instance.frame(request);
+				if (MakuGram::Settings::instance().streamerMode()) {
+					MakuGram::BlurImageStrong(_streamed->frozenFrame);
+				}
 			}
 			p.drawImage(rect, _streamed->frozenFrame);
 		} else {
 			_streamed->frozenFrame = QImage();
-			p.drawImage(rect, _streamed->instance.frame(request));
+			auto frame = _streamed->instance.frame(request);
+			if (MakuGram::Settings::instance().streamerMode()) {
+				MakuGram::BlurImageStrong(frame);
+			}
+			p.drawImage(rect, frame);
 			if (markFrameShown) {
 				_streamed->instance.markFrameShown();
 			}

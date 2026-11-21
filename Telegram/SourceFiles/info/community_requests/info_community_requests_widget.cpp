@@ -7,6 +7,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "info/community_requests/info_community_requests_widget.h"
 
+#include "makugram/makugram_settings.h"
+#include "makugram/makugram_lang.h"
+
 #include "api/api_communities.h"
 #include "apiwrap.h"
 #include "base/timer.h"
@@ -1375,6 +1378,9 @@ Widget::~Widget() {
 }
 
 std::unique_ptr<Ui::RpWidget> Widget::setupBottomBar() {
+	if (!MakuGram::Settings::instance().massJoinRequests()) {
+		return nullptr;
+	}
 	auto result = std::make_unique<Ui::VerticalLayout>(this);
 	const auto wrap = result.get();
 
@@ -1383,11 +1389,11 @@ std::unique_ptr<Ui::RpWidget> Widget::setupBottomBar() {
 		st::requestsSectionBottomMargin);
 	const auto declineAll = Ui::CreateChild<Ui::RoundButton>(
 		row,
-		rpl::single(QString::fromUtf8("Отклонить всех")),
+		MakuGram::Tr::Value(QString::fromUtf8("Отклонить всех"), u"Dismiss all"_q),
 		st::requestsDeclineAllButton);
 	const auto addAll = Ui::CreateChild<Ui::RoundButton>(
 		row,
-		rpl::single(QString::fromUtf8("Принять всех")),
+		MakuGram::Tr::Value(QString::fromUtf8("Принять всех"), u"Accept all"_q),
 		st::requestsAddAllButton);
 	declineAll->setClickedCallback([=] { processAll(true); });
 	addAll->setClickedCallback([=] { processAll(false); });

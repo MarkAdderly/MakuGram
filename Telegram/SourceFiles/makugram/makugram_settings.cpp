@@ -126,6 +126,7 @@ Settings::Settings() {
 	QSettings s("MakuGram", "MakuGram");
 	_hideMessagesFromBlocked = s.value("hideMessagesFromBlocked", false).toBool();
 	_quickBanInRequests = s.value("quickBanInRequests", false).toBool();
+	_massJoinRequests = s.value("massJoinRequests", true).toBool();
 	_alwaysZoomMediaToScreen = s.value("alwaysZoomMediaToScreen", true).toBool();
 	_showExactTime = s.value("showExactTime", false).toBool();
 	_spamFilterEnabled = s.value("spamFilterEnabled", false).toBool();
@@ -247,6 +248,23 @@ void Settings::setQuickBanInRequests(bool enabled) {
 
 rpl::producer<bool> Settings::quickBanInRequestsChanges() const {
 	return _quickBanInRequestsChanges.events();
+}
+
+bool Settings::massJoinRequests() const {
+	return _massJoinRequests;
+}
+
+void Settings::setMassJoinRequests(bool enabled) {
+	if (_massJoinRequests != enabled) {
+		_massJoinRequests = enabled;
+		QSettings s("MakuGram", "MakuGram");
+		s.setValue("massJoinRequests", enabled);
+		_massJoinRequestsChanges.fire_copy(enabled);
+	}
+}
+
+rpl::producer<bool> Settings::massJoinRequestsChanges() const {
+	return _massJoinRequestsChanges.events();
 }
 
 bool Settings::alwaysZoomMediaToScreen() const {
@@ -512,7 +530,7 @@ rpl::producer<bool> Settings::disableReactionAnimationsChanges() const {
 }
 
 bool Settings::disableStories() const {
-	return _disableStories;
+	return _disableStories || _streamerMode;
 }
 
 void Settings::setDisableStories(bool enabled) {
@@ -685,6 +703,7 @@ void Settings::setStreamerMode(bool enabled) {
 		_streamerModeChanges.fire_copy(enabled);
 		_hidePhoneNumberInSettingsChanges.fire_copy(hidePhoneNumberInSettings());
 		_showProfileDetailsChanges.fire_copy(showProfileDetails());
+		_disableStoriesChanges.fire_copy(disableStories());
 	}
 }
 

@@ -91,6 +91,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_channel.h"
 #include "api/api_chat_participants.h"
 #include "makugram/makugram_settings.h"
+#include "makugram/makugram_lang.h"
 #include "data/data_chat.h"
 #include "data/data_file_click_handler.h"
 #include "data/data_message_reactions.h"
@@ -571,7 +572,7 @@ bool AddForwardSelectedAction(
 	}
 
 	if (MakuGram::Settings::instance().forwardWithoutAuthor()) {
-		menu->addAction(QString::fromUtf8("Переслать без автора"), [=] {
+		menu->addAction(MakuGram::Tr::Get(QString::fromUtf8("Переслать без автора"), u"Forward without author"_q), [=] {
 			const auto weak = base::make_weak(list);
 			const auto callback = [=] {
 				if (const auto strong = weak.get()) {
@@ -625,7 +626,7 @@ bool AddForwardMessageAction(
 	}
 	const auto itemId = item->fullId();
 	if (MakuGram::Settings::instance().forwardWithoutAuthor()) {
-		menu->addAction(QString::fromUtf8("Переслать без автора"), [=] {
+		menu->addAction(MakuGram::Tr::Get(QString::fromUtf8("Переслать без автора"), u"Forward without author"_q), [=] {
 			if (const auto item = owner->message(itemId)) {
 				Window::ShowForwardMessagesBox(
 					request.navigation,
@@ -1226,7 +1227,7 @@ bool AddDeleteMessageAction(
 		if (const auto from = item->from()) {
 			const auto chat = item->history()->peer;
 			if (chat && (chat->isChat() || chat->isMegagroup() || chat->isChannel())) {
-				menu->addAction(QString::fromUtf8("Найти сообщения этого автора"), crl::guard(controller, [=] {
+				menu->addAction(MakuGram::Tr::Get(QString::fromUtf8("Найти сообщения этого автора"), u"Find messages from this user"_q), crl::guard(controller, [=] {
 					if (const auto item = owner->message(itemId)) {
 						if (const auto from = item->from()) {
 							controller->searchInChat(item->history(), from);
