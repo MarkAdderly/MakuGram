@@ -12,7 +12,7 @@ class SessionController;
 
 namespace MakuGram {
 
-inline constexpr auto kVersion = "1.0.6";
+inline constexpr auto kVersion = "1.0.7";
 inline constexpr auto kGitHubRepo = "MarkAdderly/MakuGram";
 
 void CheckForUpdates(Window::SessionController *controller, bool silent = false);

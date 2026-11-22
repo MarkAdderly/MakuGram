@@ -90,29 +90,6 @@ struct ReleaseInfo {
 };
 
 bool ApplyUpdateAndRestart(const QString &newExePath, QString *outError = nullptr) {
-	const auto isInstaller = newExePath.endsWith(u".exe"_q, Qt::CaseInsensitive)
-		&& (newExePath.contains(u"setup"_q, Qt::CaseInsensitive)
-			|| newExePath.contains(u"installer"_q, Qt::CaseInsensitive));
-
-#ifdef Q_OS_WIN
-	if (isInstaller) {
-		const auto nativeInstaller = QDir::toNativeSeparators(newExePath);
-		const auto res = ShellExecuteW(
-			nullptr,
-			L"runas",
-			reinterpret_cast<const wchar_t*>(nativeInstaller.utf16()),
-			L"/SILENT /CLOSEAPPLICATIONS",
-			nullptr,
-			SW_SHOWNORMAL);
-		if (reinterpret_cast<INT_PTR>(res) > 32) {
-			cSetRestarting(true);
-			cSetRestartingToSettings(false);
-			Core::Quit();
-			return true;
-		}
-	}
-#endif
-
 	const auto currentExe = cExeDir() + cExeName();
 	const auto oldExe = currentExe + u".old"_q;
 
@@ -163,7 +140,7 @@ bool ApplyUpdateAndRestart(const QString &newExePath, QString *outError = nullpt
 	const auto exeNameWithoutExt = QFileInfo(currentExe).baseName();
 
 	const auto script = QString(
-		"Start-Sleep -Milliseconds 800; "
+		"Start-Sleep -Milliseconds 1200; "
 		"Stop-Process -Name '%1' -Force -ErrorAction SilentlyContinue; "
 		"if (Test-Path -LiteralPath '%3') { Remove-Item -LiteralPath '%3' -Force -ErrorAction SilentlyContinue }; "
 		"Move-Item -LiteralPath '%2' -Destination '%3' -Force; "
@@ -174,17 +151,20 @@ bool ApplyUpdateAndRestart(const QString &newExePath, QString *outError = nullpt
 		.arg(nativeOld)
 		.arg(nativeNew);
 
-	const auto elevated = QProcess::startDetached(
-		u"powershell.exe"_q,
-		{
-			u"-NoProfile"_q,
-			u"-WindowStyle"_q,
-			u"Hidden"_q,
-			u"-Command"_q,
-			QString("Start-Process powershell -Verb runAs -ArgumentList '-NoProfile -WindowStyle Hidden -Command \"\"\"%1\"\"\"'").arg(script)
-		});
+	const auto utf16 = script.toStdWString();
+	const auto bytes = QByteArray(reinterpret_cast<const char*>(utf16.data()), int(utf16.size() * sizeof(wchar_t)));
+	const auto encodedScript = QString::fromLatin1(bytes.toBase64());
+	const auto args = QString("-NoProfile -WindowStyle Hidden -EncodedCommand %1").arg(encodedScript);
 
-	if (elevated) {
+	const auto res = ShellExecuteW(
+		nullptr,
+		L"runas",
+		L"powershell.exe",
+		reinterpret_cast<const wchar_t*>(args.utf16()),
+		nullptr,
+		SW_HIDE);
+
+	if (reinterpret_cast<INT_PTR>(res) > 32) {
 		cSetRestarting(true);
 		cSetRestartingToSettings(false);
 		Core::Quit();
@@ -206,7 +186,6 @@ struct DownloadSession {
 	QString downloadPath;
 	QString extractedExePath;
 	bool isZip = false;
-	bool isInstaller = false;
 	bool readyToRestart = false;
 };
 
@@ -277,26 +256,23 @@ public:
 			info.htmlUrl = obj.value(u"html_url"_q).toString();
 			info.body = obj.value(u"body"_q).toString();
 
-			const auto inProgramFiles = QDir::toNativeSeparators(cExeDir()).contains(u"Program Files"_q, Qt::CaseInsensitive);
 			const auto assets = obj.value(u"assets"_q).toArray();
 
-			// 1. If installed in Program Files, prefer Setup installer (.exe)
-			if (inProgramFiles) {
-				for (const auto &val : assets) {
-					const auto a = val.toObject();
-					const auto aName = a.value(u"name"_q).toString();
-					if (aName.endsWith(u".exe"_q, Qt::CaseInsensitive)
-						&& (aName.contains(u"setup"_q, Qt::CaseInsensitive)
-							|| aName.contains(u"installer"_q, Qt::CaseInsensitive))) {
-						info.asset.name = aName;
-						info.asset.url = a.value(u"browser_download_url"_q).toString();
-						info.asset.size = a.value(u"size"_q).toVariant().toLongLong();
-						break;
-					}
+			// 1. Prefer portable .zip (contains clean MakuGram.exe for seamless in-place update)
+			for (const auto &val : assets) {
+				const auto a = val.toObject();
+				const auto aName = a.value(u"name"_q).toString();
+				if (aName.endsWith(u".zip"_q, Qt::CaseInsensitive)
+					&& !aName.contains(u"setup"_q, Qt::CaseInsensitive)
+					&& !aName.contains(u"installer"_q, Qt::CaseInsensitive)) {
+					info.asset.name = aName;
+					info.asset.url = a.value(u"browser_download_url"_q).toString();
+					info.asset.size = a.value(u"size"_q).toVariant().toLongLong();
+					break;
 				}
 			}
 
-			// 2. Otherwise (or if setup not found), prefer portable .zip
+			// 2. Fallback: any .zip
 			if (info.asset.url.isEmpty()) {
 				for (const auto &val : assets) {
 					const auto a = val.toObject();
@@ -310,12 +286,14 @@ public:
 				}
 			}
 
-			// 3. Fallback: any .exe
+			// 3. Fallback: direct MakuGram.exe (NEVER setup or installer!)
 			if (info.asset.url.isEmpty()) {
 				for (const auto &val : assets) {
 					const auto a = val.toObject();
 					const auto aName = a.value(u"name"_q).toString();
-					if (aName.endsWith(u".exe"_q, Qt::CaseInsensitive)) {
+					if (aName.endsWith(u".exe"_q, Qt::CaseInsensitive)
+						&& !aName.contains(u"setup"_q, Qt::CaseInsensitive)
+						&& !aName.contains(u"installer"_q, Qt::CaseInsensitive)) {
 						info.asset.name = aName;
 						info.asset.url = a.value(u"browser_download_url"_q).toString();
 						info.asset.size = a.value(u"size"_q).toVariant().toLongLong();
@@ -451,10 +429,7 @@ private:
 					QDir().mkpath(updateDir);
 
 					session->isZip = release.asset.name.endsWith(u".zip"_q, Qt::CaseInsensitive);
-					session->isInstaller = release.asset.name.endsWith(u".exe"_q, Qt::CaseInsensitive)
-						&& (release.asset.name.contains(u"setup"_q, Qt::CaseInsensitive)
-							|| release.asset.name.contains(u"installer"_q, Qt::CaseInsensitive));
-					session->downloadPath = updateDir + (session->isZip ? u"update.zip"_q : (session->isInstaller ? release.asset.name : u"MakuGram_new.exe"_q));
+					session->downloadPath = updateDir + (session->isZip ? u"update.zip"_q : u"MakuGram_new.exe"_q);
 
 					QFile::remove(session->downloadPath);
 					session->file = std::make_unique<QFile>(session->downloadPath);
