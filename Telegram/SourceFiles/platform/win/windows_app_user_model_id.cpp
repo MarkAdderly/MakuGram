@@ -11,9 +11,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "platform/win/windows_toast_activator.h"
 #include "base/platform/win/base_windows_winrt.h"
 #include "core/launcher.h"
+#include "core/version.h"
 
 #include <propvarutil.h>
 #include <propkey.h>
+#include <shlobj.h>
 
 namespace Platform {
 namespace AppUserModelId {
@@ -26,9 +28,9 @@ const PROPERTYKEY pkey_AppUserModel_StartPinOption = { { 0x9F4C2855, 0x9F79, 0x4
 const PROPERTYKEY pkey_AppUserModel_ToastActivator = { { 0x9F4C2855, 0x9F79, 0x4B39, { 0xA8, 0xD0, 0xE1, 0xD4, 0x2D, 0xE1, 0xD5, 0xF3 } }, 26 };
 
 #ifdef OS_WIN_STORE
-const WCHAR AppUserModelIdBase[] = L"Telegram.TelegramDesktop.Store";
+const WCHAR AppUserModelIdBase[] = L"MakuGram.MakuGramDesktop.Store";
 #else // OS_WIN_STORE
-const WCHAR AppUserModelIdBase[] = L"Telegram.TelegramDesktop";
+const WCHAR AppUserModelIdBase[] = L"MakuGram.MakuGramDesktop";
 #endif // OS_WIN_STORE
 
 [[nodiscard]] QString PinnedIconsPath() {
@@ -207,38 +209,53 @@ QString systemShortcutPath() {
 	return QString();
 }
 
+QString commonShortcutPath() {
+	PWSTR commonProgramsFolder = nullptr;
+	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_CommonPrograms, 0, nullptr, &commonProgramsFolder))) {
+		const auto path = QDir(QString::fromWCharArray(commonProgramsFolder)).absolutePath() + u'/';
+		CoTaskMemFree(commonProgramsFolder);
+		return path;
+	}
+	WCHAR wstrPath[kMaxFileLen] = {};
+	if (GetEnvironmentVariable(L"ProgramData", wstrPath, kMaxFileLen)) {
+		auto programData = QDir(QString::fromStdWString(std::wstring(wstrPath)));
+		return programData.absolutePath() + u"/Microsoft/Windows/Start Menu/Programs/"_q;
+	}
+	return QString();
+}
+
 void CleanupShortcut() {
 	const auto myid = MyExecutablePathId();
 	if (!myid) {
 		return;
 	}
 
-	QString path = systemShortcutPath() + u"Telegram.lnk"_q;
-	std::wstring p = QDir::toNativeSeparators(path).toStdWString();
+	for (const auto &basePath : { systemShortcutPath(), commonShortcutPath() }) {
+		if (basePath.isEmpty()) continue;
+		for (const auto &name : { AppFile.utf16() + u".lnk"_q, QString(u"Telegram.lnk"_q) }) {
+			const auto path = basePath + name;
+			const auto p = QDir::toNativeSeparators(path).toStdWString();
 
-	DWORD attributes = GetFileAttributes(p.c_str());
-	if (attributes >= 0xFFFFFFF) return; // file does not exist
+			DWORD attributes = GetFileAttributes(p.c_str());
+			if (attributes >= 0xFFFFFFF) continue; // file does not exist
 
-	auto shellLink = base::WinRT::TryCreateInstance<IShellLink>(
-		CLSID_ShellLink);
-	if (!shellLink) {
-		return;
-	}
+			auto shellLink = base::WinRT::TryCreateInstance<IShellLink>(CLSID_ShellLink);
+			if (!shellLink) continue;
 
-	auto persistFile = shellLink.try_as<IPersistFile>();
-	if (!persistFile) {
-		return;
-	}
+			auto persistFile = shellLink.try_as<IPersistFile>();
+			if (!persistFile) continue;
 
-	auto hr = persistFile->Load(p.c_str(), STGM_READWRITE);
-	if (!SUCCEEDED(hr)) return;
+			auto hr = persistFile->Load(p.c_str(), STGM_READWRITE);
+			if (!SUCCEEDED(hr)) continue;
 
-	WCHAR szGotPath[MAX_PATH];
-	hr = shellLink->GetPath(szGotPath, MAX_PATH, nullptr, 0);
-	if (!SUCCEEDED(hr)) return;
+			WCHAR szGotPath[MAX_PATH];
+			hr = shellLink->GetPath(szGotPath, MAX_PATH, nullptr, 0);
+			if (!SUCCEEDED(hr)) continue;
 
-	if (GetUniqueFileId(szGotPath) == myid) {
-		QFile().remove(path);
+			if (GetUniqueFileId(szGotPath) == myid) {
+				QFile::remove(path);
+			}
+		}
 	}
 }
 
@@ -330,7 +347,12 @@ bool validateShortcutAt(const QString &path) {
 
 	if (persistFile->IsDirty() == S_OK) {
 		hr = persistFile->Save(native.c_str(), TRUE);
-		if (!SUCCEEDED(hr)) return false;
+		if (!SUCCEEDED(hr)) {
+			// If shortcut already points to our executable, but cannot be modified
+			// (e.g. read-only CommonPrograms directory for standard user), treat as valid.
+			LOG(("App Info: Shortcut points to executable but cannot be saved (read-only/admin) at \"%1\"").arg(path));
+			return true;
+		}
 	}
 
 	LOG(("App Info: Shortcut set and validated at \"%1\"").arg(path));
@@ -340,15 +362,26 @@ bool validateShortcutAt(const QString &path) {
 bool checkInstalled(QString path = {}) {
 	if (path.isEmpty()) {
 		path = systemShortcutPath();
-		if (path.isEmpty()) {
-			return false;
+	}
+
+	const auto makugram = AppFile.utf16() + u".lnk"_q;
+	const auto makugramSubdir = AppFile.utf16() + u'/' + AppFile.utf16() + u".lnk"_q;
+
+	if (!path.isEmpty()) {
+		if (validateShortcutAt(path + makugram)
+			|| validateShortcutAt(path + makugramSubdir)) {
+			return true;
 		}
 	}
 
-	const auto installed = u"Telegram Desktop/Telegram.lnk"_q;
-	const auto old = u"Telegram Win (Unofficial)/Telegram.lnk"_q;
-	return validateShortcutAt(path + installed)
-		|| validateShortcutAt(path + old);
+	const auto common = commonShortcutPath();
+	if (!common.isEmpty()) {
+		if (validateShortcutAt(common + makugram)
+			|| validateShortcutAt(common + makugramSubdir)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 bool ValidateShortcut() {
@@ -357,8 +390,30 @@ bool ValidateShortcut() {
 		return false;
 	}
 
+	// Clean up any stale Telegram.lnk if it was pointing to our executable
+	for (const auto &basePath : { systemShortcutPath(), commonShortcutPath() }) {
+		if (basePath.isEmpty()) continue;
+		const auto stalePath = basePath + u"Telegram.lnk"_q;
+		const auto staleNative = QDir::toNativeSeparators(stalePath).toStdWString();
+		if (GetFileAttributes(staleNative.c_str()) < 0xFFFFFFF) {
+			if (auto link = base::WinRT::TryCreateInstance<IShellLink>(CLSID_ShellLink)) {
+				if (auto persist = link.try_as<IPersistFile>()) {
+					if (SUCCEEDED(persist->Load(staleNative.c_str(), STGM_READWRITE))) {
+						WCHAR szPath[kMaxFileLen] = { 0 };
+						if (SUCCEEDED(link->GetPath(szPath, kMaxFileLen, nullptr, 0))) {
+							if (GetUniqueFileId(szPath) == MyExecutablePathId()) {
+								QFile::remove(stalePath);
+								LOG(("App Info: Removed stale shortcut at \"%1\"").arg(stalePath));
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	if (cAlphaVersion()) {
-		path += u"TelegramAlpha.lnk"_q;
+		path += AppFile.utf16() + u"Alpha.lnk"_q;
 		if (validateShortcutAt(path)) {
 			return true;
 		}
@@ -367,7 +422,7 @@ bool ValidateShortcut() {
 			return true;
 		}
 
-		path += u"Telegram.lnk"_q;
+		path += AppFile.utf16() + u".lnk"_q;
 		if (validateShortcutAt(path)) {
 			return true;
 		}

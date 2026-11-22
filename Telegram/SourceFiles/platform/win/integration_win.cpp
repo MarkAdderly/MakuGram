@@ -11,6 +11,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/application.h"
 #include "core/core_settings.h"
 #include "core/sandbox.h"
+#include "core/version.h"
 #include "lang/lang_keys.h"
 #include "platform/win/windows_app_user_model_id.h"
 #include "platform/win/windows_taskbar_buttons.h"
@@ -134,8 +135,10 @@ void WindowsIntegration::refreshCustomJumpList() {
 			PropVariantClear(&appIdPropVar);
 		}
 		auto titlePropVar = PROPVARIANT();
+		auto quitText = tr::lng_quit_from_tray(tr::now);
+		quitText.replace(u"Telegram"_q, AppName.utf16());
 		hr = InitPropVariantFromString(
-			tr::lng_quit_from_tray(tr::now).toStdWString().c_str(),
+			quitText.toStdWString().c_str(),
 			&titlePropVar);
 		if (SUCCEEDED(hr)) {
 			hr = propertyStore->SetValue(PKEY_Title, titlePropVar);
