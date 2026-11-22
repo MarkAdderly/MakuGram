@@ -30,6 +30,11 @@ a custom Telegram Desktop client fork.
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkReply>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <shellapi.h>
+#endif
+
 namespace MakuGram {
 
 void CleanOldUpdateFiles() {
@@ -85,73 +90,114 @@ struct ReleaseInfo {
 };
 
 bool ApplyUpdateAndRestart(const QString &newExePath, QString *outError = nullptr) {
+	const auto isInstaller = newExePath.endsWith(u".exe"_q, Qt::CaseInsensitive)
+		&& (newExePath.contains(u"setup"_q, Qt::CaseInsensitive)
+			|| newExePath.contains(u"installer"_q, Qt::CaseInsensitive));
+
+#ifdef Q_OS_WIN
+	if (isInstaller) {
+		const auto nativeInstaller = QDir::toNativeSeparators(newExePath);
+		const auto res = ShellExecuteW(
+			nullptr,
+			L"runas",
+			reinterpret_cast<const wchar_t*>(nativeInstaller.utf16()),
+			L"/SILENT /CLOSEAPPLICATIONS",
+			nullptr,
+			SW_SHOWNORMAL);
+		if (reinterpret_cast<INT_PTR>(res) > 32) {
+			cSetRestarting(true);
+			cSetRestartingToSettings(false);
+			Core::Quit();
+			return true;
+		}
+	}
+#endif
+
 	const auto currentExe = cExeDir() + cExeName();
 	const auto oldExe = currentExe + u".old"_q;
 
 	// 1. Remove previous .old if exists
 	if (QFile::exists(oldExe)) {
-		if (!QFile::remove(oldExe)) {
-			if (outError) {
-				*outError = Tr::Get(
-					u"Не удалось удалить старую резервную копию MakuGram.exe.old."_q,
-					u"Failed to delete old backup file MakuGram.exe.old."_q);
-			}
-			return false;
+		QFile::remove(oldExe);
+	}
+
+	// 2. Try direct rename (succeeds in portable / writable folders)
+	if (QFile::rename(currentExe, oldExe)) {
+		bool placed = false;
+		if (QFile::rename(newExePath, currentExe)) {
+			placed = true;
+		} else if (QFile::copy(newExePath, currentExe)) {
+			placed = true;
 		}
-	}
 
-	// 2. Rename running exe to .old (allowed on Windows)
-	if (!QFile::rename(currentExe, oldExe)) {
-		if (outError) {
-			*outError = Tr::Get(
-				u"Не удалось переименовать текущий MakuGram.exe (нет прав доступа)."_q,
-				u"Failed to rename current MakuGram.exe (access denied)."_q);
-		}
-		return false;
-	}
-
-	// 3. Move/Copy new exe to original spot
-	bool placed = false;
-	if (QFile::rename(newExePath, currentExe)) {
-		placed = true;
-	} else if (QFile::copy(newExePath, currentExe)) {
-		placed = true;
-	}
-
-	if (!placed) {
-		// Rollback immediately!
-		QFile::rename(oldExe, currentExe);
-		if (outError) {
-			*outError = Tr::Get(
-				u"Не удалось разместить новый MakuGram.exe. Исходный файл восстановлен."_q,
-				u"Failed to place new MakuGram.exe. Original file restored."_q);
-		}
-		return false;
-	}
-
-	// 4. Clean update directory
-	const auto updateDir = cWorkingDir() + u"tupdates/makugram"_q;
-	QDir(updateDir).removeRecursively();
+		if (placed) {
+			const auto updateDir = cWorkingDir() + u"tupdates/makugram"_q;
+			QDir(updateDir).removeRecursively();
 
 #ifdef Q_OS_WIN
-	// 5. Schedule background retry loop to delete .old file as soon as this process exits and releases lock
+			const auto nativeOld = QDir::toNativeSeparators(oldExe);
+			QProcess::startDetached(
+				u"powershell.exe"_q,
+				{
+					u"-NonInteractive"_q,
+					u"-WindowStyle"_q,
+					u"Hidden"_q,
+					u"-Command"_q,
+					QString("for ($i=0; $i -lt 30; $i++) { Start-Sleep -Seconds 1; if (!(Test-Path -LiteralPath '%1')) { break }; Remove-Item -LiteralPath '%1' -Force -ErrorAction SilentlyContinue; if (!(Test-Path -LiteralPath '%1')) { break } }").arg(nativeOld),
+				});
+#endif
+			cSetRestarting(true);
+			cSetRestartingToSettings(false);
+			Core::Quit();
+			return true;
+		} else {
+			QFile::rename(oldExe, currentExe);
+		}
+	}
+
+#ifdef Q_OS_WIN
+	// 3. Fallback: if running from Program Files without admin rights, elevate via UAC PowerShell
+	const auto nativeCurrent = QDir::toNativeSeparators(currentExe);
 	const auto nativeOld = QDir::toNativeSeparators(oldExe);
-	QProcess::startDetached(
+	const auto nativeNew = QDir::toNativeSeparators(newExePath);
+	const auto exeNameWithoutExt = QFileInfo(currentExe).baseName();
+
+	const auto script = QString(
+		"Start-Sleep -Milliseconds 800; "
+		"Stop-Process -Name '%1' -Force -ErrorAction SilentlyContinue; "
+		"if (Test-Path -LiteralPath '%3') { Remove-Item -LiteralPath '%3' -Force -ErrorAction SilentlyContinue }; "
+		"Move-Item -LiteralPath '%2' -Destination '%3' -Force; "
+		"Move-Item -LiteralPath '%4' -Destination '%2' -Force; "
+		"Start-Process -FilePath '%2'")
+		.arg(exeNameWithoutExt)
+		.arg(nativeCurrent)
+		.arg(nativeOld)
+		.arg(nativeNew);
+
+	const auto elevated = QProcess::startDetached(
 		u"powershell.exe"_q,
 		{
-			u"-NonInteractive"_q,
+			u"-NoProfile"_q,
 			u"-WindowStyle"_q,
 			u"Hidden"_q,
 			u"-Command"_q,
-			QString("for ($i=0; $i -lt 30; $i++) { Start-Sleep -Seconds 1; if (!(Test-Path -LiteralPath '%1')) { break }; Remove-Item -LiteralPath '%1' -Force -ErrorAction SilentlyContinue; if (!(Test-Path -LiteralPath '%1')) { break } }").arg(nativeOld),
+			QString("Start-Process powershell -Verb runAs -ArgumentList '-NoProfile -WindowStyle Hidden -Command \"\"\"%1\"\"\"'").arg(script)
 		});
+
+	if (elevated) {
+		cSetRestarting(true);
+		cSetRestartingToSettings(false);
+		Core::Quit();
+		return true;
+	}
 #endif
 
-	// 6. Trigger restart cleanly!
-	cSetRestarting(true);
-	cSetRestartingToSettings(false);
-	Core::Quit();
-	return true;
+	if (outError) {
+		*outError = Tr::Get(
+			u"Не удалось обновить MakuGram.exe (нет прав доступа)."_q,
+			u"Failed to update MakuGram.exe (access denied)."_q);
+	}
+	return false;
 }
 
 struct DownloadSession {
@@ -160,6 +206,7 @@ struct DownloadSession {
 	QString downloadPath;
 	QString extractedExePath;
 	bool isZip = false;
+	bool isInstaller = false;
 	bool readyToRestart = false;
 };
 
@@ -230,23 +277,45 @@ public:
 			info.htmlUrl = obj.value(u"html_url"_q).toString();
 			info.body = obj.value(u"body"_q).toString();
 
-			// Find best asset: .exe first, then .zip
+			const auto inProgramFiles = QDir::toNativeSeparators(cExeDir()).contains(u"Program Files"_q, Qt::CaseInsensitive);
 			const auto assets = obj.value(u"assets"_q).toArray();
-			for (const auto &val : assets) {
-				const auto a = val.toObject();
-				const auto aName = a.value(u"name"_q).toString();
-				if (aName.endsWith(u".exe"_q, Qt::CaseInsensitive)) {
-					info.asset.name = aName;
-					info.asset.url = a.value(u"browser_download_url"_q).toString();
-					info.asset.size = a.value(u"size"_q).toVariant().toLongLong();
-					break;
+
+			// 1. If installed in Program Files, prefer Setup installer (.exe)
+			if (inProgramFiles) {
+				for (const auto &val : assets) {
+					const auto a = val.toObject();
+					const auto aName = a.value(u"name"_q).toString();
+					if (aName.endsWith(u".exe"_q, Qt::CaseInsensitive)
+						&& (aName.contains(u"setup"_q, Qt::CaseInsensitive)
+							|| aName.contains(u"installer"_q, Qt::CaseInsensitive))) {
+						info.asset.name = aName;
+						info.asset.url = a.value(u"browser_download_url"_q).toString();
+						info.asset.size = a.value(u"size"_q).toVariant().toLongLong();
+						break;
+					}
 				}
 			}
+
+			// 2. Otherwise (or if setup not found), prefer portable .zip
 			if (info.asset.url.isEmpty()) {
 				for (const auto &val : assets) {
 					const auto a = val.toObject();
 					const auto aName = a.value(u"name"_q).toString();
 					if (aName.endsWith(u".zip"_q, Qt::CaseInsensitive)) {
+						info.asset.name = aName;
+						info.asset.url = a.value(u"browser_download_url"_q).toString();
+						info.asset.size = a.value(u"size"_q).toVariant().toLongLong();
+						break;
+					}
+				}
+			}
+
+			// 3. Fallback: any .exe
+			if (info.asset.url.isEmpty()) {
+				for (const auto &val : assets) {
+					const auto a = val.toObject();
+					const auto aName = a.value(u"name"_q).toString();
+					if (aName.endsWith(u".exe"_q, Qt::CaseInsensitive)) {
 						info.asset.name = aName;
 						info.asset.url = a.value(u"browser_download_url"_q).toString();
 						info.asset.size = a.value(u"size"_q).toVariant().toLongLong();
@@ -382,7 +451,10 @@ private:
 					QDir().mkpath(updateDir);
 
 					session->isZip = release.asset.name.endsWith(u".zip"_q, Qt::CaseInsensitive);
-					session->downloadPath = updateDir + (session->isZip ? u"update.zip"_q : u"MakuGram_new.exe"_q);
+					session->isInstaller = release.asset.name.endsWith(u".exe"_q, Qt::CaseInsensitive)
+						&& (release.asset.name.contains(u"setup"_q, Qt::CaseInsensitive)
+							|| release.asset.name.contains(u"installer"_q, Qt::CaseInsensitive));
+					session->downloadPath = updateDir + (session->isZip ? u"update.zip"_q : (session->isInstaller ? release.asset.name : u"MakuGram_new.exe"_q));
 
 					QFile::remove(session->downloadPath);
 					session->file = std::make_unique<QFile>(session->downloadPath);
